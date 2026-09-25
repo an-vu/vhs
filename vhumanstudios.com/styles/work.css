@@ -1,0 +1,139 @@
+.work-year+.work-year {
+  margin-top: 56px
+}
+
+.work-year h2 {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.work-year ul {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+
+.work-year li {
+  font-size: clamp(34px, 4.6vw, 60px);
+  line-height: 1.1;
+  letter-spacing: -.045em;
+  overflow-wrap: break-word;
+}
+
+.work-year li+li {
+  margin-top: 8px
+}
+
+.project {
+  scroll-margin-top: calc(var(--header-height) + 16px)
+}
+
+.project[open] {
+  min-height: calc(100svh - var(--header-height) - 16px)
+}
+
+.project summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.project summary::-webkit-details-marker {
+  display: none
+}
+
+.project summary::after {
+  content: "v";
+  flex-shrink: 0;
+  align-self: center;
+  display: block;
+  width: 1em;
+  margin-right: 4px;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--nav-fg);
+  transform: rotate(-90deg);
+  transition: color .2s ease, transform .2s ease;
+}
+
+.project[open]>summary::after {
+  transform: rotate(0deg)
+}
+
+.project summary:hover::after,
+.project summary:focus-visible::after {
+  color: var(--fg)
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .project summary::after {
+    transition: none
+  }
+}
+
+.project-detail {
+  padding: 24px 0 36px;
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.55;
+  letter-spacing: normal;
+}
+
+.project-detail time {
+  display: block;
+  font-size: 14px;
+  color: var(--muted)
+}
+
+.project-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 20px 0 24px
+}
+
+.project-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  margin: 20px 0 24px;
+  background: rgba(48, 48, 46, .05);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.project-detail p {
+  max-width: 65ch;
+  margin: 0
+}
+
+.project-detail p+p {
+  margin-top: 1em
+}
+
+.project-detail .project-tagline {
+  margin-bottom: 10px;
+  font-size: clamp(28px, 2.8vw, 36px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  color: var(--fg);
+}
+
+@media(max-width:760px) {
+  .work-year+.work-year {
+    margin-top: 40px
+  }
+
+  .project-detail .project-tagline {
+    font-size: clamp(24px, 4vw, 28px)
+  }
+}

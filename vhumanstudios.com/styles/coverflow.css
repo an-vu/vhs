@@ -1,0 +1,190 @@
+.coverflow {
+  --gallery-height: clamp(250px, 50vw, 600px);
+  position: relative;
+  width: 100%;
+  margin: 18px 0 18px
+}
+
+.coverflow-stage {
+  position: relative;
+  height: var(--gallery-height);
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+.coverflow-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  height: 94%;
+  padding: 0;
+  background: none;
+  border: 0;
+  overflow: visible;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+
+
+  backface-visibility: hidden;
+}
+
+.coverflow-surface {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border: var(--image-border);
+  border-radius: inherit;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+/* Prepare only nearby galleries; release layers when they leave the viewport. */
+.coverflow.is-nearby .coverflow-card {
+  will-change: transform, opacity;
+}
+
+.coverflow.is-nearby .coverflow-near,
+.coverflow.is-nearby .coverflow-main {
+  will-change: opacity;
+}
+
+.coverflow-main { box-shadow: 0 4px 10px rgba(48, 48, 46, .21); }
+.coverflow-near { box-shadow: 0 3px 7px rgba(48, 48, 46, .12); }
+.coverflow-outer { box-shadow: 0 2px 5px rgba(48, 48, 46, .09); }
+
+.coverflow-near > * {
+  opacity: .72;
+  filter: blur(1.2px) brightness(.66);
+}
+
+.coverflow-outer > * {
+  opacity: .444984;
+  filter: blur(1.94164px) brightness(.45);
+}
+
+.coverflow-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.coverflow-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(48, 48, 46, .06);
+  font-size: 14px;
+  letter-spacing: normal;
+}
+
+.coverflow-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  margin: 0 auto;
+  padding: 0 12px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--nav-fg) 0%, transparent);
+}
+
+.coverflow-controls[hidden] {
+  display: none
+}
+
+.coverflow-controls button {
+  position: relative;
+  flex: none;
+  width: 24px;
+  height: 44px;
+  background: none;
+  border: 0;
+  border-radius: 22px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.coverflow-controls button::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 8px;
+  right: 8px;
+  height: 8px;
+  border-radius: 10px;
+  background: var(--nav-fg);
+  opacity: .55;
+  transition: background-color .25s linear, opacity .25s linear;
+}
+
+.coverflow-controls button:hover::before,
+.coverflow-controls button[aria-current="true"]::before {
+  background: var(--fg);
+  opacity: 1;
+}
+
+.coverflow-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.coverflow-stage:focus-visible,
+.coverflow-controls button:focus-visible {
+  outline-offset: -2px
+}
+
+.coverflow-single .coverflow-card {
+  width: 100%;
+  height: 100%;
+  cursor: default
+}
+
+@supports (-webkit-box-reflect: below 0px) {
+  .coverflow-stage {
+    height: calc(var(--gallery-height) + 20px);
+  }
+
+  .coverflow-card {
+    top: calc(var(--gallery-height) * .5);
+    height: calc(var(--gallery-height) * .94);
+    -webkit-box-reflect: below 3px linear-gradient(to bottom, transparent 96%, rgba(0, 0, 0, .045) 100%);
+  }
+
+  .coverflow-single .coverflow-card {
+    height: var(--gallery-height);
+  }
+
+  /* Avoid reflecting the entire crossfading layer stack on every moving frame. */
+  .coverflow.is-moving .coverflow-card {
+    -webkit-box-reflect: none;
+  }
+}
+
+@media(max-width:760px) {
+  .coverflow {
+    --gallery-height: clamp(250px, 50vw, 520px);
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+
+  .coverflow-card,
+  .coverflow-card img,
+  .coverflow-placeholder,
+  .coverflow-controls button,
+  .coverflow-controls button::before {
+    transition: none
+  }
+}
