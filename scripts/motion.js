@@ -154,22 +154,32 @@ const StudioMotion = (() => {
       if (onInput(wheel)) event.preventDefault();
     }, { passive: false });
     addEventListener("touchstart", event => {
-      touch = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY, gesture: gesture("touch", 0) } : null;
+      touch = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY,
+        time: performance.now(), lastMove: 0, gesture: gesture("touch", 0) } : null;
     }, { passive: true });
     addEventListener("touchmove", event => {
       if (!isActive() || !touch || event.touches.length !== 1) return;
       const point = event.touches[0], dx = touch.x - point.clientX, dy = touch.y - point.clientY;
+      const now = performance.now(), elapsed = Math.max(1, now - touch.time);
+      touch.time = now;
       touch.x = point.clientX; touch.y = point.clientY;
       if (Math.abs(dy) <= Math.abs(dx)) return;
       const g = touch.gesture, direction = Math.sign(dy);
-      if (g.direction !== direction) { g.direction = direction; g.total = 0; }
+      if (g.direction !== direction) { g.direction = direction; g.total = 0; g.velocity = 0; }
+      g.velocity = (g.velocity || 0) * .25 + Math.abs(dy) / elapsed * .75;
+      touch.lastMove = now;
       g.distance = Math.abs(dy); g.total += g.distance;
       if (onInput(g)) event.preventDefault();
     }, { passive: false });
-    function end() { touch = null; onEnd(); }
-    addEventListener("touchend", end, { passive: true });
-    addEventListener("touchcancel", end, { passive: true });
-    addEventListener("blur", () => { wheel = null; end(); });
+    function end(cancelled = false) {
+      const g = touch?.gesture;
+      if (g && performance.now() - touch.lastMove > 100) g.velocity = 0;
+      touch = null;
+      onEnd(cancelled ? null : g);
+    }
+    addEventListener("touchend", () => end(), { passive: true });
+    addEventListener("touchcancel", () => end(true), { passive: true });
+    addEventListener("blur", () => { wheel = null; end(true); });
     return { reset() { wheel = touch = null; } };
   }
   function acceptsKey(event) {

@@ -1,4 +1,4 @@
-function createTypingEntrance(brand) {
+function createTypingEntrance(brand, onComplete = () => {}) {
   const fullName = "vHuman Studios", finalName = "vHuman";
   let started = false, timer = null, count = 0, blinking = null;
 
@@ -15,6 +15,7 @@ function createTypingEntrance(brand) {
     brand.classList.add("entrance-complete");
     brand.textContent = finalName;
     brand.removeAttribute("aria-label");
+    onComplete();
   }
 
   function start() {
