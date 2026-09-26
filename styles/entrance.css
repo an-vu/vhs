@@ -52,6 +52,7 @@
   white-space:pre;
 }
 .intro-shuffle-probe{visibility:hidden}
+.intro-shuffle-letter{will-change:transform,opacity}
 @media(prefers-reduced-motion:reduce){
   .intro-brand{transition:none}
 }

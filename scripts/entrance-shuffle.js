@@ -109,7 +109,11 @@ function createShuffleEntrance(brand, onComplete = () => {}) {
       });
     }
     function fadeStudios() {
-      animate(second.filter(id => id >= 6), () => [{ opacity: 1 }, { opacity: 0 }], 800, () => wait(500, gather));
+      const studios = second.filter(id => id >= 6);
+      animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], 800, () => {
+        studios.forEach(id => letters[id].remove());
+        wait(500, gather);
+      });
     }
     function shuffleLetters() {
       move(ids, layouts[0], intermediate, () => {
