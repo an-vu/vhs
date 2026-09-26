@@ -43,6 +43,13 @@ html.experience,html.experience body{height:100%;overflow:hidden;overscroll-beha
 }
 .home-main h1 span{display:block}
 
+/* Keep the small set of moving homepage text elements on stable layers. */
+.experience .intro-brand,
+.experience .home-main h1 span,
+.experience .main-nav a{
+  will-change:transform,opacity;
+}
+
 @media(max-width:760px){
   .home-main{padding:24px 10px}
 }

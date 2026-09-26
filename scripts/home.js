@@ -65,8 +65,11 @@
     const mobile = width <= 760, move = M.clamp(logo.value);
     const startSize = Math.min(width * (mobile ? .16 : .1), mobile ? 88 : 150,
       Math.max(1, width - 40) / brandWidthPerPixel);
-    brand.style.top = `${height / 2 + ((mobile ? 36 : 43) - height / 2) * move}px`;
-    brand.style.fontSize = `${startSize + ((mobile ? 22 : 24) - startSize) * move}px`;
+    // Keep glyph layout stable; move and shrink the rendered wordmark instead.
+    const scale = 1 + ((mobile ? 22 : 24) / startSize - 1) * move;
+    brand.style.top = `${height / 2}px`;
+    brand.style.fontSize = `${startSize}px`;
+    brand.style.transform = `translate(-50%, -50%) translateY(${((mobile ? 36 : 43) - height / 2) * move}px) scale(${scale})`;
     line.style.opacity = move;
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
