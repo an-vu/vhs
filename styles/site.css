@@ -25,6 +25,7 @@ body {
 body {
   min-height: 100vh;
   font-family: Georgia, "Times New Roman", serif;
+  -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
   cursor: default;
