@@ -240,11 +240,7 @@ html.page-motion {
   }
 
   .footer-row {
-    flex-direction: column
-  }
-
-  .legal {
-    justify-content: flex-start
+    gap: 12px
   }
 }
 

@@ -15,22 +15,56 @@
   const lift = M.createLift();
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
-  const entrance = createStudioEntrance(brand);
+  let brandWidthPerPixel = 1;
+  function measureBrand() {
+    const probe = document.createElement("span");
+    probe.className = "brand";
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;font-size:100px;white-space:pre;width:max-content";
+    // Separate glyphs allow room for any shuffled order, not just the normal kerning.
+    for (const character of "vHuman Studios") {
+      const letter = document.createElement("span");
+      letter.style.display = "inline-block";
+      letter.textContent = character;
+      probe.append(letter);
+    }
+    document.body.append(probe);
+    brandWidthPerPixel = probe.getBoundingClientRect().width / 100 * 1.02;
+    probe.remove();
+  }
+  let autoAdvanceCancelled = false, autoAdvanceScheduled = false, autoAdvanceTimer = null;
+  let automaticTransition = false;
+  function cancelAutoAdvance() {
+    autoAdvanceCancelled = true;
+    clearTimeout(autoAdvanceTimer);
+  }
+  const entrance = createStudioEntrance(brand, () => {
+    if (autoAdvanceScheduled || autoAdvanceCancelled || !active || state !== 0) return;
+    autoAdvanceScheduled = true;
+    autoAdvanceTimer = setTimeout(() => {
+      if (active && state === 0 && !autoAdvanceCancelled && !document.hidden) {
+        go(1);
+        automaticTransition = true;
+      }
+    }, 5400);
+  });
   const nextStage = () => Math.min(2, Math.floor(state + .04) + 1);
   const loop = M.createLoop((dt, time) => {
     let moving = lift.advance(dt, time);
     for (const s of springs) {
       const preset = scrubbing || s.target === 0 ? M.presets.returning
         : s === logo || s === legal ? M.presets.smooth : M.presets.entrance;
-      moving = M.step(s, dt, preset) || moving;
+      moving = M.step(s, dt * (automaticTransition ? .70 : 1), preset) || moving;
     }
     render();
+    if (!moving) automaticTransition = false;
     return moving;
   }, () => active, lift.release);
 
   function render() {
     const mobile = width <= 760, move = M.clamp(logo.value);
-    const startSize = Math.min(width * (mobile ? .16 : .1), mobile ? 88 : 150);
+    const startSize = Math.min(width * (mobile ? .16 : .1), mobile ? 88 : 150,
+      Math.max(1, width - 40) / brandWidthPerPixel);
     brand.style.top = `${height / 2 + ((mobile ? 36 : 43) - height / 2) * move}px`;
     brand.style.fontSize = `${startSize + ((mobile ? 22 : 24) - startSize) * move}px`;
     line.style.opacity = move;
@@ -44,8 +78,9 @@
     loop.wake();
   }
   function go(next, immediate = false, direct = false) {
+    automaticTransition = false;
     next = Math.max(0, Math.min(2, next));
-    if (next > 0) entrance.finish();
+    if (next > 0) { cancelAutoAdvance(); entrance.finish(); }
     if (next === state && !immediate) return;
     const entering = state === 0 && next > 0;
     scrubbing = direct;
@@ -70,8 +105,18 @@
   const gestures = M.bindGestures({
     isActive: () => active,
     atBoundary: () => true,
-    onEnd() { lift.release(); loop.wake(); },
+    onEnd(g) {
+      lift.release();
+      // Touch has no native momentum here because we handle the gesture ourselves.
+      // Preserve precise slow drags and never carry a footer-dismiss gesture upward.
+      if (active && g?.source === "touch" && !g.used && g.direction < 0 &&
+          g.total > 12 && g.velocity > .25 && state > 0 && state <= 1) {
+        scrubUp(Math.min(height * .6, g.velocity * 280));
+      }
+      loop.wake();
+    },
     onInput(g) {
+      cancelAutoAdvance();
       if (g.direction < 0) {
         lift.release();
         if (g.used) return true;
@@ -97,8 +142,10 @@
       root.classList.remove("experience");
     }
     width = innerWidth;
+    measureBrand();
     height = active ? stage.clientHeight : innerHeight;
     if (!active) {
+      cancelAutoAdvance();
       lift.reset(); loop.stop(); gestures.reset();
       [brand, content, main, line, footer, ...items].forEach(element => {
         element.removeAttribute("style"); element.inert = false;

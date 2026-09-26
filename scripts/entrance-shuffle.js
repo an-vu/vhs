@@ -1,4 +1,4 @@
-function createShuffleEntrance(brand) {
+function createShuffleEntrance(brand, onComplete = () => {}) {
   const name = "vHuman Studios";
   let started = false, finished = false, timer = null;
   const animations = new Set();
@@ -13,6 +13,7 @@ function createShuffleEntrance(brand) {
     brand.classList.add("entrance-complete");
     brand.textContent = "vHuman";
     brand.removeAttribute("aria-label");
+    onComplete();
   }
 
   function start() {
@@ -60,15 +61,12 @@ function createShuffleEntrance(brand) {
     const layouts = [first, second, final].map(measure);
     const intermediate = measure(shuffled());
     const remainingOrder = shuffled(final);
-    if (remainingOrder.join() === final.join()) remainingOrder.push(remainingOrder.shift());
-    const remainingShuffle = measure(remainingOrder);
-    const nextOrder = shuffled(final);
-    while (nextOrder.join() === remainingOrder.join() || nextOrder.join() === final.join()) {
-      nextOrder.push(nextOrder.shift());
+    if (remainingOrder.every((id, index) => id === final[index])) {
+      remainingOrder.push(remainingOrder.shift());
     }
-    const nextShuffle = measure(nextOrder);
+    const remainingShuffle = measure(remainingOrder);
     probe.remove();
-    const width = Math.max(...[...layouts, intermediate, remainingShuffle, nextShuffle].map(layout => layout.width));
+    const width = Math.max(...[...layouts, intermediate, remainingShuffle].map(layout => layout.width));
     stage.style.width = `${width}px`;
     const x = (layout, id) => (width - layout.width) / 2 + layout.positions.get(id);
     const letters = ids.map(id => {
@@ -107,9 +105,7 @@ function createShuffleEntrance(brand) {
     }
     function gather() {
       move(final, layouts[1], remainingShuffle, () => {
-        wait(100, () => move(final, remainingShuffle, nextShuffle, () => {
-          wait(100, () => move(final, nextShuffle, layouts[2], finish, 800));
-        }));
+        wait(100, () => move(final, remainingShuffle, layouts[2], finish));
       });
     }
     function fadeStudios() {
@@ -117,7 +113,7 @@ function createShuffleEntrance(brand) {
     }
     function shuffleLetters() {
       move(ids, layouts[0], intermediate, () => {
-        wait(100, () => move(ids, intermediate, layouts[1], () => wait(300, fadeStudios)));
+        wait(100, () => move(ids, intermediate, layouts[1], () => wait(600, fadeStudios)));
       });
     }
     wait(400, () => animate(ids, () => [{ opacity: 0 }, { opacity: 1 }], 800, () => {

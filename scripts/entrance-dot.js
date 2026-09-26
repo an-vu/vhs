@@ -1,5 +1,5 @@
 // Homepage wordmark entrance. Start once; finish immediately when navigation takes over.
-function createDotEntrance(brand) {
+function createDotEntrance(brand, onComplete = () => {}) {
   let entranceStarted = false, dotAnimation = null;
   function finishEntrance() {
     if (!entranceStarted) return;
@@ -8,6 +8,7 @@ function createDotEntrance(brand) {
     brand.classList.add("entrance-complete");
     brand.textContent = "vHuman Studios";
     brand.removeAttribute("aria-label");
+    onComplete();
   }
   function startEntrance() {
     if (entranceStarted) return;
