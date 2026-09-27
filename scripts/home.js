@@ -15,6 +15,19 @@
   const lift = M.createLift();
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
+  let background = null, backgroundLoading = false;
+  function syncBackground() {
+    const visible = active && state >= 1 &&
+      [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
+    if (background) { background.setVisible(visible); return; }
+    // Prepare during the opening screen; playback still waits for settled text.
+    if (!active || backgroundLoading) return;
+    backgroundLoading = true;
+    import("./f35-background.js")
+      .then(module => module.createF35Background(document.getElementById("f35-background"), document.getElementById("f35Zoom")))
+      .then(controller => { background = controller; syncBackground(); })
+      .catch(error => console.warn("Aircraft background unavailable:", error));
+  }
   let brandWidthPerPixel = 1;
   function measureBrand() {
     const probe = document.createElement("span");
@@ -74,6 +87,7 @@
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
     M.paintFooter(footer, legal);
+    syncBackground();
   }
   function stretch(distance, source = "wheel") {
     if (state !== 2 || legal.value < .95) return;
@@ -145,6 +159,7 @@
       root.classList.remove("experience");
     }
     width = innerWidth;
+    syncBackground();
     measureBrand();
     height = active ? stage.clientHeight : innerHeight;
     if (!active) {

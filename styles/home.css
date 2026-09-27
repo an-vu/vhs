@@ -43,6 +43,16 @@ html.experience,html.experience body{height:100%;overflow:hidden;overscroll-beha
 }
 .home-main h1 span{display:block}
 
+#f35-background{position:absolute;inset:0;z-index:0;overflow:hidden}
+#f35-background canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#f35-background canvas:active{cursor:grabbing}
+.experience .home-content{pointer-events:none}
+.experience .home-content a{pointer-events:auto}
+.f35-zoom{position:absolute;right:20px;top:calc(var(--header-height) + 20px);z-index:3;display:flex;gap:8px}
+.f35-zoom[hidden]{display:none}
+.f35-zoom button{font:inherit;font-size:22px;color:var(--nav-fg);background:var(--bg);border:var(--image-border);border-radius:50%;width:40px;height:40px;cursor:pointer}
+.f35-zoom button:hover{color:var(--fg)}
+
 /* Keep the small set of moving homepage text elements on stable layers. */
 .experience .intro-brand,
 .experience .home-main h1 span,

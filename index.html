@@ -9,10 +9,18 @@
 <link rel="stylesheet" href="styles/site.css">
 <link rel="stylesheet" href="styles/home.css">
 <link rel="stylesheet" href="styles/entrance.css">
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
+</script>
 </head>
 <body>
 <div class="home-page">
   <section class="intro-stage">
+    <div id="f35-background" aria-hidden="true" hidden></div>
+    <div class="f35-zoom" id="f35Zoom" role="group" aria-label="Aircraft zoom" hidden>
+      <button type="button" data-zoom=".4" aria-label="Zoom aircraft out">−</button>
+      <button type="button" data-zoom="-.4" aria-label="Zoom aircraft in">+</button>
+    </div>
     <div class="header-blur" id="headerLine" aria-hidden="true"><span class="blur-layer"></span></div>
     <a href="index.html" class="brand intro-brand" id="introBrand">vHuman Studios</a>
 
