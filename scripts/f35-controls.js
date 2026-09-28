@@ -13,7 +13,9 @@ import {
 export function setupF35Controls({
   element,
   aircraft,
-  state
+  state,
+  isEnabled = () => true,
+  redraw = () => {}
 }) {
   let previousX = 0;
   let previousY = 0;
@@ -59,7 +61,7 @@ export function setupF35Controls({
     "pointerdown",
     (event) => {
       if (
-        !state.revealComplete
+        !state.revealComplete || !isEnabled()
       ) {
         return;
       }
@@ -110,7 +112,7 @@ export function setupF35Controls({
     "pointermove",
     (event) => {
       if (
-        !activePointers.has(
+        !isEnabled() || !activePointers.has(
           event.pointerId
         )
       ) {
@@ -160,6 +162,7 @@ export function setupF35Controls({
             );
         }
 
+        redraw();
         previousPinchDistance =
           currentDistance;
 
@@ -211,6 +214,7 @@ export function setupF35Controls({
         DRAG_SENSITIVITY *
         0.12;
 
+      redraw();
       state.velocityX =
         dy *
         DRAG_SENSITIVITY *
@@ -294,7 +298,7 @@ export function setupF35Controls({
     "wheel",
     (event) => {
       if (
-        !state.revealComplete
+        !state.revealComplete || !isEnabled()
       ) {
         return;
       }
@@ -311,10 +315,26 @@ export function setupF35Controls({
           MIN_CAMERA_Z,
           MAX_CAMERA_Z
         );
+      redraw();
     },
 
     {
       passive: false
     }
   );
+  function reset() {
+    for (const id of activePointers.keys()) {
+      if (element.hasPointerCapture(id)) element.releasePointerCapture(id);
+    }
+    activePointers.clear();
+    previousPinchDistance = null;
+    state.dragging = false;
+    state.velocityX = state.velocityY = 0;
+  }
+  element.addEventListener("lostpointercapture", event => {
+    if (activePointers.has(event.pointerId)) removePointer(event);
+  });
+  window.addEventListener("blur", reset);
+  return { reset };
+
 }

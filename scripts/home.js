@@ -15,7 +15,15 @@
   const lift = M.createLift();
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
-  let background = null, backgroundLoading = false;
+  let background = null, backgroundLoading = false, expanded = false;
+  function setExpanded(value) {
+    expanded = value;
+    root.classList.toggle("aircraft-expanded", value);
+    main.inert = brand.inert = value;
+    footer.inert = value || legal.target !== 1 || legal.value < .8;
+    gestures.reset();
+    lift.release();
+  }
   function syncBackground() {
     const visible = active && state >= 1 &&
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
@@ -24,7 +32,7 @@
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
     import("./f35-background.js")
-      .then(module => module.createF35Background(document.getElementById("f35-background"), document.getElementById("f35Zoom")))
+      .then(module => module.createF35Background(document.getElementById("f35-background"), document.getElementById("f35Expand"), setExpanded))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => console.warn("Aircraft background unavailable:", error));
   }
@@ -87,6 +95,7 @@
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
     M.paintFooter(footer, legal);
+    if (expanded) footer.inert = true;
     syncBackground();
   }
   function stretch(distance, source = "wheel") {
@@ -120,7 +129,7 @@
     go(position - distance / (height * .6), false, true);
   }
   const gestures = M.bindGestures({
-    isActive: () => active,
+    isActive: () => active && !expanded,
     atBoundary: () => true,
     onEnd(g) {
       lift.release();
@@ -179,6 +188,14 @@
     root.classList.remove("intro-loading");
   }
   addEventListener("keydown", event => {
+    if (expanded) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        background.setExpanded(false);
+        document.getElementById("f35Expand").focus({ preventScroll: true });
+      }
+      return;
+    }
     if (!active || !M.acceptsKey(event)) return;
     if (event.key === "Tab") { go(2, true); return; }
     let next;

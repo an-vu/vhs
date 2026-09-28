@@ -22,7 +22,7 @@ const studioProjects = [
         "tagline": "A little space for everything.",
         "image": null,
         "description": [
-            "Online real time testing",
+            "Online real time testing, LiDAR, CoverFlow,",
         ]
     },
     {
