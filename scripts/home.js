@@ -16,6 +16,7 @@
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
   let background = null, backgroundLoading = false, expanded = false;
+  let backgroundRevealed = false;
   function setExpanded(value) {
     expanded = value;
     root.classList.toggle("aircraft-expanded", value);
@@ -25,9 +26,14 @@
     lift.release();
   }
   function syncBackground() {
-    const visible = active && state >= 1 &&
+    const settled = active && state >= 1 &&
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
-    if (background) { background.setVisible(visible); return; }
+    if (background && settled) backgroundRevealed = true;
+    if (background) {
+      background.setVisible(active && backgroundRevealed);
+      document.getElementById("f35Expand").hidden = !settled;
+      return;
+    }
     // Prepare during the opening screen; playback still waits for settled text.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
@@ -97,6 +103,7 @@
     M.paintFooter(footer, legal);
     if (expanded) footer.inert = true;
     syncBackground();
+    background?.updateTextExclusion();
   }
   function stretch(distance, source = "wheel") {
     if (state !== 2 || legal.value < .95) return;

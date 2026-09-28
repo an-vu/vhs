@@ -13,6 +13,7 @@ import {
   POINT_COUNT,
   POINT_SIZE,
   POINT_COLOR,
+  POINT_DARK_COLOR,
   POINT_OPACITY,
   TWINKLE_CHANCE
 } from "./f35-config.js";
@@ -318,6 +319,10 @@ export function createF35PointCloud(
               depthWrite: false,
 
               uniforms: {
+                uTextMask: { value: null },
+                uTextEnabled: { value: 0 },
+                uTextViewport: { value: new THREE.Vector2(1, 1) },
+                uTextPixelRatio: { value: 1 },
                 uTime: {
                   value: 0
                 },
@@ -335,6 +340,7 @@ export function createF35PointCloud(
                     2
                 },
 
+                uDarkColor: { value: POINT_DARK_COLOR },
                 uColor: {
                   value:
                     POINT_COLOR
@@ -347,6 +353,7 @@ export function createF35PointCloud(
               },
 
               vertexShader: `
+
                 attribute vec3 aNormal;
                 attribute float aSize;
                 attribute float aTone;
@@ -533,8 +540,8 @@ export function createF35PointCloud(
 
                   float twinkleSize =
                     mix(
-                      0.72,
-                      1.68,
+                      0.68,
+                      1.85,
                       pulse
                     );
 
@@ -557,12 +564,18 @@ export function createF35PointCloud(
                   gl_Position =
                     projectionMatrix *
                     mvPosition;
+
                 }
               `,
 
               fragmentShader: `
                 uniform vec3 uColor;
+                uniform vec3 uDarkColor;
                 uniform float uOpacity;
+                uniform sampler2D uTextMask;
+                uniform float uTextEnabled;
+                uniform vec2 uTextViewport;
+                uniform float uTextPixelRatio;
 
                 varying float vTone;
                 varying float vAlpha;
@@ -592,16 +605,22 @@ export function createF35PointCloud(
                     );
 
                   vec3 finalColor =
-                    uColor *
-                    vTone;
+                    mix(uDarkColor, uColor, clamp(vTone / 1.6, 0.0, 1.0));
+
+                  float textAlpha = 1.0;
+                  if (uTextEnabled > 0.5) {
+                    vec2 uv = gl_FragCoord.xy / (uTextViewport * uTextPixelRatio);
+                    textAlpha = 1.0 - smoothstep(0.01, 0.95, texture2D(uTextMask, uv).a);
+                  }
 
                   gl_FragColor =
                     vec4(
                       finalColor,
                       uOpacity *
                       vAlpha *
-                      edge
+                      edge * textAlpha
                     );
+                  #include <colorspace_fragment>
                 }
               `
             });

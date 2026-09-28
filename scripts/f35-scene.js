@@ -14,6 +14,7 @@ export async function createF35Scene(container) {
   camera.position.copy(C.CAMERA_START);
   const curve = new THREE.CubicBezierCurve3(C.CAMERA_START, C.CAMERA_CONTROL_1, C.CAMERA_CONTROL_2, C.CAMERA_END);
   const state = { revealComplete: false, targetCameraZ: C.CAMERA_END.z, dragging: false, velocityX: 0, velocityY: 0 };
+  let textTexture;
   let material, visible = false, last = null, elapsed = 0;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   container.append(renderer.domElement);
@@ -69,6 +70,23 @@ export async function createF35Scene(container) {
   reduced.addEventListener("change", sync);
   return {
     aircraft, state, element: renderer.domElement,
+    setTextMask(canvas, enabled) {
+      if (!textTexture) {
+        textTexture = new THREE.CanvasTexture(canvas);
+        textTexture.generateMipmaps = false;
+        textTexture.minFilter = THREE.LinearFilter;
+        material.uniforms.uTextMask.value = textTexture;
+      }
+      textTexture.needsUpdate = true;
+      material.uniforms.uTextEnabled.value = enabled ? 1 : 0;
+      material.uniforms.uTextViewport.value.set(canvas.width, canvas.height);
+      material.uniforms.uTextPixelRatio.value = renderer.getPixelRatio();
+      if (visible && reduced.matches) draw(performance.now());
+    },
+    setTextMaskEnabled(enabled) {
+      material.uniforms.uTextEnabled.value = enabled ? 1 : 0;
+      if (visible && reduced.matches) draw(performance.now());
+    },
     setVisible(value) { if (value !== visible) { visible = value; if (visible) resize(); sync(); } },
     redraw() { if (visible && reduced.matches) draw(performance.now()); }
   };

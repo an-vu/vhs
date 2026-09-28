@@ -15,11 +15,13 @@ export const POINT_COUNT = 7000;
 export const POINT_SIZE = 0.014;
 
 export const POINT_COLOR =
-  new THREE.Color(0x555555);
+  new THREE.Color(0x62625e);
+
+export const POINT_DARK_COLOR = new THREE.Color(0x30302e);
 
 export const POINT_OPACITY = 0.88;
 
-export const TWINKLE_CHANCE = 0.20;
+export const TWINKLE_CHANCE = 0.40;
 
 // --------------------------------------------------
 // Camera reveal
