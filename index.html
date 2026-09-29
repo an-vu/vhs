@@ -1,68 +1,117 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>vHuman Studios</title>
-<link rel="icon" type="image/png" href="images/icons/vhuman-favicon.png">
-<script>document.documentElement.classList.add("intro-loading");</script>
-<link rel="stylesheet" href="styles/site.css">
-<link rel="stylesheet" href="styles/home.css?v=organized-20260928">
-<link rel="stylesheet" href="styles/entrance.css">
-<script type="importmap">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>vHuman Studios — Creative Technology Studio</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/favicon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png">
+  <script>document.documentElement.classList.add("intro-loading");</script>
+  <link rel="stylesheet" href="styles/site.css">
+  <link rel="stylesheet" href="styles/home.css?v=organized-20260928">
+  <link rel="stylesheet" href="styles/entrance.css">
+  <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
 </script>
+
+  <meta name="description"
+    content="vHuman Studios brings design and engineering together across digital products, software, interactive experiences, and 3D and spatial work.">
+  <link rel="canonical" href="https://vhumanstudios.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="vHuman Studios">
+  <meta property="og:title" content="vHuman Studios — Creative Technology Studio">
+  <meta property="og:description"
+    content="vHuman Studios brings design and engineering together across digital products, software, interactive experiences, and 3D and spatial work.">
+  <meta property="og:url" content="https://vhumanstudios.com/">
+  <meta property="og:image" content="https://vhumanstudios.com/images/icons/favicon-192.png">
+  <meta property="og:image:alt" content="vHuman Studios serif v logo">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://vhumanstudios.com/#organization",
+      "name": "vHuman Studios",
+      "alternateName": "vHuman",
+      "legalName": "vHuman LLC",
+      "url": "https://vhumanstudios.com/",
+      "description": "vHuman Studios brings design and engineering together across digital products, software, interactive experiences, and 3D and spatial work.",
+      "email": "eve@vhumanstudios.com",
+      "logo": "https://vhumanstudios.com/images/icons/favicon-192.png"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://vhumanstudios.com/#website",
+      "name": "vHuman Studios",
+      "alternateName": "vHuman",
+      "url": "https://vhumanstudios.com/",
+      "publisher": {
+        "@id": "https://vhumanstudios.com/#organization"
+      }
+    }
+  ]
+}
+</script>
 </head>
+
 <body>
-<div class="home-page">
-  <section class="intro-stage">
-    <div id="model-background" aria-hidden="true" hidden></div>
+  <div class="home-page">
+    <section class="intro-stage">
+      <div id="model-background" aria-hidden="true" hidden></div>
 
-    <div class="header-blur" id="headerLine" aria-hidden="true"><span class="blur-layer"></span></div>
-    <a href="index.html" class="brand intro-brand" id="introBrand">vHuman Studios</a>
+      <div class="header-blur" id="headerLine" aria-hidden="true"><span class="blur-layer"></span></div>
+      <a href="index.html" class="brand intro-brand" id="introBrand">vHuman Studios</a>
 
-    <div class="home-content" id="homeContent">
-      <main class="home-main">
-        <h1>
-          <span>Technology,</span>
-          <span>made human.</span>
-        </h1>
+      <div class="home-content" id="homeContent">
+        <main class="home-main">
+          <h1>
+            <span>Technology,</span>
+            <span>made human.</span>
+          </h1>
 
-        <nav class="main-nav">
-          <a href="work.html">Work</a>
-          <a href="about.html">About</a>
-          <a href="mailto:eve@vhumanstudios.com">Contact</a>
-        </nav>
-      </main>
+          <nav class="main-nav">
+            <a href="work.html">Work</a>
+            <a href="about.html">About</a>
+            <a href="mailto:eve@vhumanstudios.com">Contact</a>
+          </nav>
+        </main>
 
-      <div class="home-model-control">
-    <button class="model-expand" id="modelExpand" type="button" aria-label="Explore aircraft" aria-expanded="false" aria-controls="model-background" hidden>
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/>
-        <path class="collapse-icon" d="M4 9h5V4m6 0v5h5M9 20v-5H4m16 0h-5v5"/>
-      </svg>
-    </button>
-      </div>
-
-      <footer class="site-footer">
-    <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
-        <div class="wrap footer-row">
-          <div>© 2026 vHuman LLC</div>
-          <div class="legal">
-            <a href="legal.html">Legal</a>
-          </div>
+        <div class="home-model-control">
+          <button class="model-expand" id="modelExpand" type="button" aria-label="Explore aircraft"
+            aria-expanded="false" aria-controls="model-background" hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"
+              aria-hidden="true">
+              <path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
+              <path class="collapse-icon" d="M4 9h5V4m6 0v5h5M9 20v-5H4m16 0h-5v5" />
+            </svg>
+          </button>
         </div>
-      </footer>
 
-    </div>
-  </section>
-</div>
+        <footer class="site-footer">
+          <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
+          <div class="wrap footer-row">
+            <div>© 2026 vHuman LLC</div>
+            <div class="legal">
+              <a href="legal.html">Legal</a>
+            </div>
+          </div>
+        </footer>
 
-<script src="scripts/shared/motion.js"></script>
-<script src="scripts/entrance/dot.js"></script>
-<script src="scripts/entrance/typing.js"></script>
-<script src="scripts/entrance/shuffle.js"></script>
-<script src="scripts/entrance/index.js"></script>
-<script src="scripts/pages/home.js?v=organized-20260928"></script>
+      </div>
+    </section>
+  </div>
+
+  <script src="scripts/shared/motion.js"></script>
+  <script src="scripts/entrance/dot.js"></script>
+  <script src="scripts/entrance/typing.js"></script>
+  <script src="scripts/entrance/shuffle.js"></script>
+  <script src="scripts/entrance/index.js"></script>
+  <script src="scripts/pages/home.js?v=organized-20260928"></script>
 </body>
+
 </html>

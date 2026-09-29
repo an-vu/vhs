@@ -4,46 +4,46 @@ import { POINT_SIZE, POINT_COLOR, POINT_DARK_COLOR, POINT_OPACITY } from "./conf
 // Shared palette and text dissolve for the PLY vertex shader.
 export function createPointMaterial(renderer, settings = {}, vertexShader) {
   return new THREE.ShaderMaterial({
-              transparent: true,
-              depthWrite: false,
+    transparent: true,
+    depthWrite: false,
 
-              uniforms: {
-                uTextMask: { value: null },
-                uTextEnabled: { value: 0 },
-                uTextViewport: { value: new THREE.Vector2(1, 1) },
-                uTextPixelRatio: { value: 1 },
-                uTime: {
-                  value: 0
-                },
+    uniforms: {
+      uTextMask: { value: null },
+      uTextEnabled: { value: 0 },
+      uTextViewport: { value: new THREE.Vector2(1, 1) },
+      uTextPixelRatio: { value: 1 },
+      uTime: {
+        value: 0
+      },
 
-                uPointSize: {
-                  value:
-                    settings.POINT_SIZE ?? POINT_SIZE
-                },
+      uPointSize: {
+        value:
+          settings.POINT_SIZE ?? POINT_SIZE
+      },
 
-                uScale: {
-                  value:
-                    renderer
-                      .domElement
-                      .height /
-                    2
-                },
+      uScale: {
+        value:
+          renderer
+            .domElement
+            .height /
+          2
+      },
 
-                uDarkColor: { value: POINT_DARK_COLOR },
-                uColor: {
-                  value:
-                    POINT_COLOR
-                },
+      uDarkColor: { value: POINT_DARK_COLOR },
+      uColor: {
+        value:
+          POINT_COLOR
+      },
 
-                uOpacity: {
-                  value:
-                    settings.POINT_OPACITY ?? POINT_OPACITY
-                }
-              },
+      uOpacity: {
+        value:
+          settings.POINT_OPACITY ?? POINT_OPACITY
+      }
+    },
 
-              vertexShader,
+    vertexShader,
 
-              fragmentShader: `
+    fragmentShader: `
                 uniform vec3 uColor;
                 uniform vec3 uDarkColor;
                 uniform float uOpacity;
@@ -98,5 +98,5 @@ export function createPointMaterial(renderer, settings = {}, vertexShader) {
                   #include <colorspace_fragment>
                 }
               `
-            });
+  });
 }

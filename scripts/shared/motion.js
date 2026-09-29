@@ -65,7 +65,7 @@ const StudioMotion = (() => {
     if (hideAtRest) element.style.visibility = s.value > .001 ? "visible" : "hidden";
   }
 
-  function createLoop(update, isActive, onPause = () => {}) {
+  function createLoop(update, isActive, onPause = () => { }) {
     let frame = 0, last = 0;
     function tick(time) {
       frame = 0;
@@ -137,7 +137,8 @@ const StudioMotion = (() => {
     let wheel = null, touch = null;
     let lastWheel = -Infinity;
     function gesture(source, direction) {
-      return { source, direction, distance: 0, total: 0, used: false,
+      return {
+        source, direction, distance: 0, total: 0, used: false,
         startedAtBoundary: atBoundary(),
         consume() { this.used = true; }
       };
@@ -154,8 +155,10 @@ const StudioMotion = (() => {
       if (onInput(wheel)) event.preventDefault();
     }, { passive: false });
     addEventListener("touchstart", event => {
-      touch = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY,
-        time: performance.now(), lastMove: 0, gesture: gesture("touch", 0) } : null;
+      touch = event.touches.length === 1 ? {
+        x: event.touches[0].clientX, y: event.touches[0].clientY,
+        time: performance.now(), lastMove: 0, gesture: gesture("touch", 0)
+      } : null;
     }, { passive: true });
     addEventListener("touchmove", event => {
       if (!isActive() || !touch || event.touches.length !== 1) return;

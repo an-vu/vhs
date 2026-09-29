@@ -143,7 +143,7 @@
       // Touch has no native momentum here because we handle the gesture ourselves.
       // Preserve precise slow drags and never carry a footer-dismiss gesture upward.
       if (active && g?.source === "touch" && !g.used && g.direction < 0 &&
-          g.total > 12 && g.velocity > .25 && state > 0 && state <= 1) {
+        g.total > 12 && g.velocity > .25 && state > 0 && state <= 1) {
         scrubUp(Math.min(height * .6, g.velocity * 280));
       }
       loop.wake();

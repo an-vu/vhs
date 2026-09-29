@@ -1,5 +1,5 @@
 // Homepage wordmark entrance. Start once; finish immediately when navigation takes over.
-function createDotEntrance(brand, onComplete = () => {}) {
+function createDotEntrance(brand, onComplete = () => { }) {
   let entranceStarted = false, dotAnimation = null;
   function finishEntrance() {
     if (!entranceStarted) return;

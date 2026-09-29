@@ -14,7 +14,7 @@ export function setupModelControls({
   rotateView,
   state,
   isEnabled = () => true,
-  redraw = () => {}
+  redraw = () => { }
 }) {
   let previousX = 0;
   let previousY = 0;
@@ -45,10 +45,10 @@ export function setupModelControls({
 
     return Math.hypot(
       second.x -
-        first.x,
+      first.x,
 
       second.y -
-        first.y
+      first.y
     );
   }
 
@@ -141,9 +141,9 @@ export function setupModelControls({
 
         if (
           previousPinchDistance !==
-            null &&
+          null &&
           currentDistance !==
-            null
+          null
         ) {
           const difference =
             previousPinchDistance -

@@ -12,7 +12,7 @@ export async function createModelBackground(container, button, onExpand) {
   const glyphCache = new Map();
   function getGlyphs(element, rect, css, scale) {
     const key = JSON.stringify([element.textContent, css.fontSize, css.fontFamily,
-      css.fontStyle, css.fontWeight, css.letterSpacing, css.lineHeight, element.clientWidth]);
+    css.fontStyle, css.fontWeight, css.letterSpacing, css.lineHeight, element.clientWidth]);
     const cached = glyphCache.get(element);
     if (cached?.key === key) return cached;
     ctx.font = `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
@@ -28,8 +28,10 @@ export async function createModelBackground(container, button, onExpand) {
         if (/\s/.test(node.textContent[i])) continue;
         range.setStart(node, i); range.setEnd(node, i + 1);
         const r = range.getBoundingClientRect();
-        glyphs.push({ letter: node.textContent[i], x: (r.left - rect.left) / scale,
-          y: (r.top - rect.top + r.height / 2) / scale + (ascent - descent) / 2 });
+        glyphs.push({
+          letter: node.textContent[i], x: (r.left - rect.left) / scale,
+          y: (r.top - rect.top + r.height / 2) / scale + (ascent - descent) / 2
+        });
       }
     }
     const entry = { key, glyphs };
@@ -39,9 +41,9 @@ export async function createModelBackground(container, button, onExpand) {
   function paintTextMask() {
     const bounds = container.getBoundingClientRect();
     const rows = text.map(element => ({ element, rect: element.getBoundingClientRect(), css: getComputedStyle(element) }));
-    const key = JSON.stringify([bounds.x, bounds.y, bounds.width, bounds.height, ...rows.map(({element, rect, css}) =>
+    const key = JSON.stringify([bounds.x, bounds.y, bounds.width, bounds.height, ...rows.map(({ element, rect, css }) =>
       [element.textContent, rect.x, rect.y, rect.width, rect.height, css.fontSize, css.fontFamily,
-        css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform])]);
+      css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform])]);
     if (key === maskKey) return;
     maskKey = key;
     const width = Math.max(1, Math.round(bounds.width));

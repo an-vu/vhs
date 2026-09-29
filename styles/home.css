@@ -1,85 +1,202 @@
-html.experience,html.experience body{height:100%;overflow:hidden;overscroll-behavior:none}
-.experience .intro-stage{position:fixed;inset:0;height:100dvh}
+html.experience,
+html.experience body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none
+}
 
-.home-page{
-  position:relative;
-  min-height:100svh;
+.experience .intro-stage {
+  position: fixed;
+  inset: 0;
+  height: 100dvh
 }
-.intro-stage{
-  min-height:100svh;
-  position:relative;
+
+.home-page {
+  position: relative;
+  min-height: 100svh;
 }
-.intro-brand{
-  position:absolute;
-  left:50%;
-  top:calc(var(--header-height) / 2);
-  transform:translate(-50%,-50%);
-  z-index:3;
-  opacity:1;
+
+.intro-stage {
+  min-height: 100svh;
+  position: relative;
 }
-.home-content{
-  position:relative;
-  padding-top:var(--header-height);
-  display:flex;
-  flex-direction:column;
-  min-height:100svh;
+
+.intro-brand {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--header-height) / 2);
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  opacity: 1;
 }
-.experience .home-content{height:100%;min-height:0}
-.home-main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:space-between;
-  text-align:center;
-  padding:clamp(20px,4svh,40px) 20px 12px;
+
+.home-content {
+  position: relative;
+  padding-top: var(--header-height);
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
 }
-.home-main h1{
-  margin:0;
-  font-size:var(--display-size);
-  line-height:.9;
-  letter-spacing:-.055em;
-  font-weight:400;
+
+.experience .home-content {
+  height: 100%;
+  min-height: 0
 }
-.home-main h1 span{display:block}
-.home-main h1 span:first-child{font-size:.90em}
+
+.home-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  padding: clamp(20px, 4svh, 40px) 20px 12px;
+}
+
+.home-main h1 {
+  margin: 0;
+  font-size: var(--display-size);
+  line-height: .9;
+  letter-spacing: -.055em;
+  font-weight: 400;
+}
+
+.home-main h1 span {
+  display: block
+}
+
+.home-main h1 span:first-child {
+  font-size: .90em
+}
 
 /* Top: heading. Middle: aircraft. Bottom: navigation above the footer. */
-.home-main .main-nav{margin-top:32px;flex-shrink:0}
+.home-main .main-nav {
+  margin-top: 32px;
+  flex-shrink: 0
+}
 
-#model-background{position:absolute;inset:0;z-index:0;overflow:hidden}
-#model-background canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
-#model-background canvas:active{cursor:grabbing}
-.experience .home-content{pointer-events:none}
-.experience .home-content a{pointer-events:auto}
-.home-model-control{position:relative;z-index:4;flex-shrink:0;display:flex;justify-content:center;height:60px;padding-bottom:16px}
-.model-expand{pointer-events:auto;display:grid;place-items:center;width:44px;height:44px;color:var(--nav-fg);background:transparent;border:0;cursor:pointer}
-.model-expand[hidden],.collapse-icon{display:none}
-.model-expand:hover{color:var(--fg)}
-.model-expand[aria-expanded="true"] .expand-icon{display:none}
-.model-expand[aria-expanded="true"] .collapse-icon{display:block}
-#model-background{pointer-events:none}
-.aircraft-expanded #model-background{pointer-events:auto}
-.home-main h1,.home-main .main-nav{transition:translate .55s ease,opacity .55s ease}
-.aircraft-expanded .home-main h1{translate:0 -100px;opacity:0}
-.aircraft-expanded .home-main .main-nav{translate:0 100px;opacity:0}
-.aircraft-expanded .intro-brand,.aircraft-expanded .site-footer{visibility:hidden}
-@media(prefers-reduced-motion:reduce){
-  .home-main h1,.home-main .main-nav{transition:none}
+#model-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden
+}
+
+#model-background canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab
+}
+
+#model-background canvas:active {
+  cursor: grabbing
+}
+
+.experience .home-content {
+  pointer-events: none
+}
+
+.experience .home-content a {
+  pointer-events: auto
+}
+
+.home-model-control {
+  position: relative;
+  z-index: 4;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  height: 60px;
+  padding-bottom: 16px
+}
+
+.model-expand {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--nav-fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer
+}
+
+.model-expand[hidden],
+.collapse-icon {
+  display: none
+}
+
+.model-expand:hover {
+  color: var(--fg)
+}
+
+.model-expand[aria-expanded="true"] .expand-icon {
+  display: none
+}
+
+.model-expand[aria-expanded="true"] .collapse-icon {
+  display: block
+}
+
+#model-background {
+  pointer-events: none
+}
+
+.aircraft-expanded #model-background {
+  pointer-events: auto
+}
+
+.home-main h1,
+.home-main .main-nav {
+  transition: translate .55s ease, opacity .55s ease
+}
+
+.aircraft-expanded .home-main h1 {
+  translate: 0 -100px;
+  opacity: 0
+}
+
+.aircraft-expanded .home-main .main-nav {
+  translate: 0 100px;
+  opacity: 0
+}
+
+.aircraft-expanded .intro-brand,
+.aircraft-expanded .site-footer {
+  visibility: hidden
+}
+
+@media(prefers-reduced-motion:reduce) {
+
+  .home-main h1,
+  .home-main .main-nav {
+    transition: none
+  }
 }
 
 
 /* Keep the small set of moving homepage text elements on stable layers. */
 .experience .intro-brand,
 .experience .home-main h1 span,
-.experience .main-nav a{
-  will-change:transform,opacity;
+.experience .main-nav a {
+  will-change: transform, opacity;
 }
 
-@media(max-width:760px){
-  .home-main{padding:24px 10px 12px}
+@media(max-width:760px) {
+  .home-main {
+    padding: 24px 10px 12px
+  }
 }
-@media(max-height:600px){
-  .home-main{padding:16px 10px 8px}
-  .home-main .main-nav{margin-top:24px}
+
+@media(max-height:600px) {
+  .home-main {
+    padding: 16px 10px 8px
+  }
+
+  .home-main .main-nav {
+    margin-top: 24px
+  }
 }

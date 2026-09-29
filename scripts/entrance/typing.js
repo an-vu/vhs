@@ -1,4 +1,4 @@
-function createTypingEntrance(brand, onComplete = () => {}) {
+function createTypingEntrance(brand, onComplete = () => { }) {
   const fullName = "vHuman Studios", finalName = "vHuman";
   let started = false, timer = null, count = 0, blinking = null;
 

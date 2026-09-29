@@ -1,4 +1,4 @@
-function createShuffleEntrance(brand, onComplete = () => {}) {
+function createShuffleEntrance(brand, onComplete = () => { }) {
   const name = "vHuman Studios";
   let started = false, finished = false, timer = null;
   const animations = new Set();
@@ -95,7 +95,7 @@ function createShuffleEntrance(brand, onComplete = () => {}) {
         group.forEach(id => Object.assign(letters[id].style, frames(id).at(-1)));
         running.forEach(animation => { animations.delete(animation); animation.cancel(); });
         next();
-      }).catch(() => {}); // Navigation can cancel any phase.
+      }).catch(() => { }); // Navigation can cancel any phase.
     }
     function move(group, from, to, next, duration = 400) {
       animate(group, id => [
