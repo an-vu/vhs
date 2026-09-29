@@ -31,14 +31,14 @@
     if (background && settled) backgroundRevealed = true;
     if (background) {
       background.setVisible(active && backgroundRevealed);
-      document.getElementById("f35Expand").hidden = !settled;
+      document.getElementById("modelExpand").hidden = !settled;
       return;
     }
     // Prepare during the opening screen; playback still waits for settled text.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
-    import("./f35-background.js")
-      .then(module => module.createF35Background(document.getElementById("f35-background"), document.getElementById("f35Expand"), setExpanded))
+    import("../model/background.js")
+      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => console.warn("Aircraft background unavailable:", error));
   }
@@ -199,7 +199,7 @@
       if (event.key === "Escape") {
         event.preventDefault();
         background.setExpanded(false);
-        document.getElementById("f35Expand").focus({ preventScroll: true });
+        document.getElementById("modelExpand").focus({ preventScroll: true });
       }
       return;
     }

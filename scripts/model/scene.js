@@ -1,9 +1,11 @@
+import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
-import * as C from "./f35-config.js";
-import { createF35PointCloud } from "./f35-point-cloud.js";
+import * as defaults from "./config.js";
+import { createModelPointCloud } from "./point-cloud.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
-export async function createF35Scene(container) {
+export async function createModelScene(container, model) {
+  const C = { ...defaults, ...modelDefaults, ...model.settings };
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, .01, 100);
@@ -14,6 +16,18 @@ export async function createF35Scene(container) {
   camera.position.copy(C.CAMERA_START);
   const curve = new THREE.CubicBezierCurve3(C.CAMERA_START, C.CAMERA_CONTROL_1, C.CAMERA_CONTROL_2, C.CAMERA_END);
   const state = { revealComplete: false, targetCameraZ: C.CAMERA_END.z, dragging: false, velocityX: 0, velocityY: 0 };
+  // World X/Y match the interactive camera, which looks along -Z.
+  // Premultiplication keeps drag independent of the model's current heading.
+  const screenRight = new THREE.Vector3(1, 0, 0);
+  const screenUp = new THREE.Vector3(0, 1, 0);
+  const turn = new THREE.Quaternion();
+  let pitch = 0;
+  function rotateView(yawDelta, pitchDelta) {
+    const nextPitch = THREE.MathUtils.clamp(pitch + pitchDelta, -C.MAX_PITCH, C.MAX_PITCH);
+    aircraft.quaternion.premultiply(turn.setFromAxisAngle(screenUp, yawDelta));
+    aircraft.quaternion.premultiply(turn.setFromAxisAngle(screenRight, nextPitch - pitch));
+    pitch = nextPitch;
+  }
   let textTexture;
   let material, visible = false, last = null, elapsed = 0;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -42,8 +56,7 @@ export async function createF35Scene(container) {
     } else {
       camera.position.z = THREE.MathUtils.lerp(camera.position.z, state.targetCameraZ, reduced.matches ? 1 : 1 - (1 - C.ZOOM_SMOOTHING) ** frames);
       if (!state.dragging && !reduced.matches) {
-        aircraft.rotation.y += (state.velocityY + C.IDLE_ROTATION) * frames;
-        aircraft.rotation.x = THREE.MathUtils.clamp(aircraft.rotation.x + state.velocityX * frames, -C.MAX_PITCH, C.MAX_PITCH);
+        rotateView((state.velocityY + C.IDLE_ROTATION) * frames, state.velocityX * frames);
         state.velocityX *= C.INERTIA ** frames;
         state.velocityY *= C.INERTIA ** frames;
       }
@@ -62,14 +75,19 @@ export async function createF35Scene(container) {
     } else renderer.setAnimationLoop(draw);
   }
   resize();
-  try { material = await createF35PointCloud(aircraft, renderer); }
+  try {
+    if (model.format === "ply") {
+      const { createPLYPointCloud } = await import("./ply-points.js");
+      material = await createPLYPointCloud(aircraft, renderer, model);
+    } else material = await createModelPointCloud(aircraft, renderer, model.path);
+  }
   catch (error) { renderer.dispose(); renderer.domElement.remove(); throw error; }
   const observer = new ResizeObserver(resize);
   observer.observe(container);
   document.addEventListener("visibilitychange", sync);
   reduced.addEventListener("change", sync);
   return {
-    aircraft, state, element: renderer.domElement,
+    aircraft, state, rotateView, element: renderer.domElement,
     setTextMask(canvas, enabled) {
       if (!textTexture) {
         textTexture = new THREE.CanvasTexture(canvas);

@@ -6,13 +6,12 @@ import {
   WHEEL_ZOOM_SPEED,
   PINCH_ZOOM_SPEED,
   DRAG_SENSITIVITY,
-  VERTICAL_SENSITIVITY,
-  MAX_PITCH
-} from "./f35-config.js";
+  VERTICAL_SENSITIVITY
+} from "./config.js";
 
-export function setupF35Controls({
+export function setupModelControls({
   element,
-  aircraft,
+  rotateView,
   state,
   isEnabled = () => true,
   redraw = () => {}
@@ -193,21 +192,10 @@ export function setupF35Controls({
       previousY =
         event.clientY;
 
-      aircraft.rotation.y +=
-        dx *
-        DRAG_SENSITIVITY;
-
-      aircraft.rotation.x +=
-        dy *
-        DRAG_SENSITIVITY *
-        VERTICAL_SENSITIVITY;
-
-      aircraft.rotation.x =
-        THREE.MathUtils.clamp(
-          aircraft.rotation.x,
-          -MAX_PITCH,
-          MAX_PITCH
-        );
+      rotateView(
+        dx * DRAG_SENSITIVITY,
+        dy * DRAG_SENSITIVITY * VERTICAL_SENSITIVITY
+      );
 
       state.velocityY =
         dx *

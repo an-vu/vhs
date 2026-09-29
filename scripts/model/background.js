@@ -1,8 +1,9 @@
-import { createF35Scene } from "./f35-scene.js";
-import { setupF35Controls } from "./f35-controls.js";
+import { chooseModel } from "./registry.js";
+import { createModelScene } from "./scene.js";
+import { setupModelControls } from "./controls.js";
 
-export async function createF35Background(container, button, onExpand) {
-  const scene = await createF35Scene(container);
+export async function createModelBackground(container, button, onExpand) {
+  const scene = await createModelScene(container, chooseModel());
   let active = false, expanded = false, fade = null;
   const text = [...document.querySelectorAll("#introBrand, .home-main h1 span, .home-main .main-nav a")];
   const mask = document.createElement("canvas");
@@ -86,7 +87,7 @@ export async function createF35Background(container, button, onExpand) {
   document.fonts.addEventListener("loadingdone", () => {
     glyphCache.clear(); maskKey = ""; updateTextExclusion();
   });
-  const controls = setupF35Controls({ ...scene, isEnabled: () => active && expanded });
+  const controls = setupModelControls({ ...scene, isEnabled: () => active && expanded });
   function setExpanded(value) {
     expanded = value && active;
     controls.reset();
