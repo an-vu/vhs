@@ -1,7 +1,7 @@
 import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
 import * as defaults from "./config.js";
-import { createModelPointCloud } from "./point-cloud.js";
+import { createPLYPointCloud } from "./ply-points.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
 export async function createModelScene(container, model) {
@@ -75,12 +75,7 @@ export async function createModelScene(container, model) {
     } else renderer.setAnimationLoop(draw);
   }
   resize();
-  try {
-    if (model.format === "ply") {
-      const { createPLYPointCloud } = await import("./ply-points.js");
-      material = await createPLYPointCloud(aircraft, renderer, model);
-    } else material = await createModelPointCloud(aircraft, renderer, model.path);
-  }
+  try { material = await createPLYPointCloud(aircraft, renderer, model); }
   catch (error) { renderer.dispose(); renderer.domElement.remove(); throw error; }
   const observer = new ResizeObserver(resize);
   observer.observe(container);

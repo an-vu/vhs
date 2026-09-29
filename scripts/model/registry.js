@@ -1,5 +1,5 @@
-import f35 from "./settings/f35.js";
 import rb18 from "./settings/rb18.js";
+import f35Points from "./settings/f35-points.js";
 import * as THREE from "three";
 
 // Register each model's settings file below. Asset paths live in those files.
@@ -14,7 +14,7 @@ export const modelDefaults = {
   INITIAL_Y_ROTATION: -Math.PI / 6
 };
 
-export const models = [f35, rb18];
+export const models = [f35Points, rb18];
 
 export function chooseModel() {
   return models[Math.floor(Math.random() * models.length)];

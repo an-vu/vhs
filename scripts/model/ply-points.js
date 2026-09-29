@@ -44,6 +44,7 @@ export async function createPLYPointCloud(group, renderer, model) {
     uniform float uPointSize;
     uniform float uScale;
     uniform float uTwinkleSpeed;
+    uniform float uTwinkleMaxSize;
     varying float vTone;
     varying float vAlpha;
     void main() {
@@ -53,7 +54,7 @@ export async function createPLYPointCloud(group, renderer, model) {
       vAlpha = mix(1.0, smoothstep(0.15, 0.75, pulse), aSeed.w);
       vTone = aSeed.z * mix(1.0, mix(0.28, 1.08, pulse), aSeed.w);
       float baseSize = max(1.0, uPointSize * uScale / max(-view.z, 0.05));
-      float twinkleSize = mix(1.0, mix(0.25, 2.6, pulse), aSeed.w);
+      float twinkleSize = mix(1.0, mix(0.25, uTwinkleMaxSize, pulse), aSeed.w);
       gl_PointSize = clamp(baseSize * twinkleSize, 1.0, 10.0);
       // Subpixel sizes may be clamped by the GPU; fade their coverage as well.
       vAlpha *= min(1.0, baseSize * twinkleSize);
@@ -63,6 +64,7 @@ export async function createPLYPointCloud(group, renderer, model) {
     }
   `);
   material.uniforms.uTwinkleSpeed = { value: settings.TWINKLE_SPEED ?? 1 };
+  material.uniforms.uTwinkleMaxSize = { value: settings.TWINKLE_MAX_SIZE ?? 2.6 };
   const points = new THREE.Points(geometry, material);
   points.rotation.x = settings.MODEL_X_ROTATION ?? 0;
   group.add(points);

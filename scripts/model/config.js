@@ -3,7 +3,6 @@ import * as THREE from "three";
 // Point cloud
 // --------------------------------------------------
 
-export const POINT_COUNT = 7000;
 export const POINT_SIZE = 0.014;
 
 export const POINT_COLOR =
@@ -13,7 +12,6 @@ export const POINT_DARK_COLOR = new THREE.Color(0x30302e);
 
 export const POINT_OPACITY = 0.88;
 
-export const TWINKLE_CHANCE = 0.40;
 
 // Zoom
 // --------------------------------------------------
