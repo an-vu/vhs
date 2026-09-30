@@ -2,8 +2,16 @@ import { chooseModel } from "./registry.js";
 import { createModelScene } from "./scene.js";
 import { setupModelControls } from "./controls.js";
 
-export async function createModelBackground(container, button, onExpand) {
-  const scene = await createModelScene(container, chooseModel());
+export async function createModelBackground(container, button, onExpand, onControlReady = () => {}) {
+  let controlReady = false;
+  button.style.opacity = 0;
+  const scene = await createModelScene(container, chooseModel(), opacity => {
+    button.style.opacity = opacity;
+    if (opacity > 0 && !controlReady) {
+      controlReady = true;
+      onControlReady();
+    }
+  });
   let active = false, expanded = false, fade = null;
   const text = [...document.querySelectorAll("#introBrand, .home-main h1 span, .home-main .main-nav a")];
   const mask = document.createElement("canvas");
@@ -108,13 +116,15 @@ export async function createModelBackground(container, button, onExpand) {
   button.addEventListener("click", () => setExpanded(!expanded));
   return {
     setExpanded,
+    get controlReady() { return controlReady; },
     updateTextExclusion,
     setVisible(value) {
       if (value === active) return;
       active = value;
       if (!value) setExpanded(false);
       fade?.cancel();
-      container.hidden = button.hidden = !value;
+      container.hidden = !value;
+      if (!value) button.hidden = true;
       scene.setVisible(value);
       updateTextExclusion();
       if (value && !matchMedia("(prefers-reduced-motion: reduce)").matches) {

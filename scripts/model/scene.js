@@ -4,7 +4,7 @@ import * as defaults from "./config.js";
 import { createPLYPointCloud } from "./ply-points.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
-export async function createModelScene(container, model) {
+export async function createModelScene(container, model, onRevealProgress = () => {}) {
   const C = { ...defaults, ...modelDefaults, ...model.settings };
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   const scene = new THREE.Scene();
@@ -29,7 +29,7 @@ export async function createModelScene(container, model) {
     pitch = nextPitch;
   }
   let textTexture;
-  let material, visible = false, last = null, elapsed = 0;
+  let material, visible = false, last = null, elapsed = 0, lastControlOpacity = -1;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   container.append(renderer.domElement);
   function resize() {
@@ -63,6 +63,14 @@ export async function createModelScene(container, model) {
     }
     camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
+    // Use the same clock as the camera so stalls and hidden tabs stay in sync.
+    const progress = state.revealComplete ? 1 : THREE.MathUtils.clamp(
+      (elapsed * 1000 - C.REVEAL_HOLD - C.REVEAL_DURATION + 600) / 600, 0, 1);
+    const opacity = 1 - (1 - progress) ** 2;
+    if (opacity !== lastControlOpacity) {
+      lastControlOpacity = opacity;
+      onRevealProgress(opacity);
+    }
   }
   function sync() {
     last = null;
@@ -75,7 +83,11 @@ export async function createModelScene(container, model) {
     } else renderer.setAnimationLoop(draw);
   }
   resize();
-  try { material = await createPLYPointCloud(aircraft, renderer, model); }
+  try {
+    material = await createPLYPointCloud(aircraft, renderer, model);
+    // Prepare shaders during the intro without advancing the reveal animation.
+    await renderer.compileAsync(scene, camera);
+  }
   catch (error) { renderer.dispose(); renderer.domElement.remove(); throw error; }
   const observer = new ResizeObserver(resize);
   observer.observe(container);

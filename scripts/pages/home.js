@@ -31,14 +31,14 @@
     if (background && settled) backgroundRevealed = true;
     if (background) {
       background.setVisible(active && backgroundRevealed);
-      document.getElementById("modelExpand").hidden = !settled;
+      document.getElementById("modelExpand").hidden = !settled || !background.controlReady;
       return;
     }
     // Prepare during the opening screen; playback still waits for settled text.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
     import("../model/background.js")
-      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded))
+      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => console.warn("Aircraft background unavailable:", error));
   }
@@ -73,7 +73,7 @@
         go(1);
         automaticTransition = true;
       }
-    }, 5400);
+    }, 1500);
   });
   const nextStage = () => Math.min(2, Math.floor(state + .04) + 1);
   const loop = M.createLoop((dt, time) => {

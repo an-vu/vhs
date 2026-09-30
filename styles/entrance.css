@@ -97,3 +97,12 @@
     transition: none
   }
 }
+.intro-dot-stage {
+  position: relative;
+  display: inline-block;
+  white-space: pre;
+}
+
+.intro-dot-word {
+  display: inline-block;
+}

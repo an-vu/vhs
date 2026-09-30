@@ -1,4 +1,5 @@
-function createShuffleEntrance(brand, onComplete = () => { }) {
+function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
+  const t = { ...createShuffleEntrance.defaults, ...options };
   const name = "vHuman Studios";
   let started = false, finished = false, timer = null;
   const animations = new Set();
@@ -97,7 +98,7 @@ function createShuffleEntrance(brand, onComplete = () => { }) {
         next();
       }).catch(() => { }); // Navigation can cancel any phase.
     }
-    function move(group, from, to, next, duration = 400) {
+    function move(group, from, to, next, duration = t.move) {
       animate(group, id => [
         { transform: `translateX(${x(from, id)}px)`, opacity: 1 },
         { transform: `translateX(${x(to.positions.has(id) ? to : from, id)}px)`, opacity: to.positions.has(id) ? 1 : 0 }
@@ -105,25 +106,28 @@ function createShuffleEntrance(brand, onComplete = () => { }) {
     }
     function gather() {
       move(final, layouts[1], remainingShuffle, () => {
-        wait(100, () => move(final, remainingShuffle, layouts[2], finish));
+        wait(t.remainingPause, () => move(final, remainingShuffle, layouts[2], finish, t.finalMove));
       });
     }
     function fadeStudios() {
       const studios = second.filter(id => id >= 6);
-      animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], 800, () => {
+      animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], t.fadeStudios, () => {
         studios.forEach(id => letters[id].remove());
-        wait(500, gather);
+        wait(t.holdRemaining, gather);
       });
     }
     function shuffleLetters() {
       move(ids, layouts[0], intermediate, () => {
-        wait(100, () => move(ids, intermediate, layouts[1], () => wait(600, fadeStudios)));
+        wait(t.shufflePause, () => move(ids, intermediate, layouts[1], () => wait(t.holdScrambled, fadeStudios)));
       });
     }
-    wait(400, () => animate(ids, () => [{ opacity: 0 }, { opacity: 1 }], 800, () => {
-      wait(800, shuffleLetters);
+    wait(t.blank, () => animate(ids, () => [{ opacity: 0 }, { opacity: 1 }], t.fade, () => {
+      wait(t.hold, shuffleLetters);
     }));
   }
 
   return { start, finish };
 }
+
+createShuffleEntrance.defaults = Object.freeze({"blank": 400, "fade": 800, "hold": 800, "move": 350, "shufflePause": 100, "holdScrambled": 550, "fadeStudios": 700, "holdRemaining": 300, "finalMove": 650, "remainingPause": 100});
+createShuffleEntrance.duration = t => t.blank + t.fade + t.hold + 3 * t.move + t.finalMove + t.shufflePause + t.holdScrambled + t.fadeStudios + t.holdRemaining + t.remainingPause;

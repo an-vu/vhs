@@ -137,3 +137,14 @@
     font-size: clamp(24px, 4vw, 28px)
   }
 }
+.project summary h3 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+.project-gallery figure { margin: 0; }
+.project-gallery figcaption {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
