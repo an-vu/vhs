@@ -165,6 +165,7 @@ html.experience body {
 }
 
 .aircraft-expanded .intro-brand,
+.aircraft-expanded .header-blur,
 .aircraft-expanded .site-footer {
   visibility: hidden
 }

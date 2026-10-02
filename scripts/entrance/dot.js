@@ -275,14 +275,17 @@ function createDotEntrance(brand, onComplete = () => { }, options = {}) {
       // A modest angled contact sends the dot right/up. No minimum throw,
       // delayed release, compression hold, or extra launch boost.
       const nx = Math.cos(Math.PI / 8), ny = -Math.sin(Math.PI / 8);
-      const massRatio = .035, restitutionAtWord = .55;
+      const massRatio = .035, restitutionAtWord = .75;
       const relativeSpeed = impact === null ? 0 : (incomingX - motion(impact).velocity) * nx + incomingY * ny;
       const impulse = Math.max(0, -(1 + restitutionAtWord) * relativeSpeed / (1 + massRatio * nx * nx));
       const vx = incomingX + impulse * nx, vy = incomingY + impulse * ny;
       const recoilSpeed = -massRatio * impulse * nx;
       const exitDepth = Math.max(1, dotBottom - dotTop) + size * .02;
-      const flightDuration = contact ? (-vy + Math.sqrt(vy * vy
-        + 2 * gravity * Math.max(0, floor + exitDepth - contact.y))) / gravity : 0;
+      const landingTime = contact ? (-vy + Math.sqrt(vy * vy
+        + 2 * gravity * Math.max(0, floor - contact.y))) / gravity : 0;
+      const reboundY = -(vy + gravity * landingTime) * .55;
+      const lastFlight = (-reboundY + Math.sqrt(reboundY * reboundY + 2 * gravity * exitDepth)) / gravity;
+      const flightDuration = contact ? landingTime + lastFlight : 0;
       const playbackEnd = Math.max(end, (impact ?? 0) + flightDuration);
       const wordPosition = time => {
         if (impact === null || time <= impact || time >= centered) return wordX(time);
@@ -296,6 +299,8 @@ function createDotEntrance(brand, onComplete = () => { }, options = {}) {
       if (impact !== null) {
         times.add(impact);
         times.add(impact + Math.max(0, -vy / gravity));
+        times.add(impact + landingTime);
+        times.add(impact + landingTime - reboundY / gravity);
         times.add(impact + flightDuration);
       }
       for (let time = 0; time < playbackEnd; time += 16) times.add(time);
@@ -304,7 +309,9 @@ function createDotEntrance(brand, onComplete = () => { }, options = {}) {
         const elapsed = impact === null ? -1 : time - impact;
         const point = elapsed < 0 ? sample(time) : {
           x: contact.x + vx * elapsed,
-          y: contact.y + vy * elapsed + .5 * gravity * elapsed * elapsed
+          y: elapsed < landingTime
+            ? contact.y + vy * elapsed + .5 * gravity * elapsed * elapsed
+            : floor + reboundY * (elapsed - landingTime) + .5 * gravity * (elapsed - landingTime) ** 2
         };
         const offset = time / Math.max(1, playbackEnd);
         dotFrames.push({ transform: `translate(${point.x}px, ${point.y}px)`, offset });
@@ -336,7 +343,7 @@ function createDotEntrance(brand, onComplete = () => { }, options = {}) {
           const time = frame.offset * playbackEnd;
           const progress = clamp((time - braking) / Math.max(1, centered - braking));
           const compression = Math.sin(Math.PI * progress) ** 2;
-          return { transform: `translateX(${(5 - index) * size * .0104 * compression}px)`, offset: frame.offset };
+          return { transform: `translateX(${(5 - index) * size * .012 * compression}px)`, offset: frame.offset };
         });
         animate(letter, frames, { duration: playbackEnd, easing: "linear", fill: "forwards" });
       });

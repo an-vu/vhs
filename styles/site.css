@@ -7,7 +7,7 @@
   --image-radius: clamp(12px, 2vw, 18px);
   --header-height: 86px;
   --brand-size: 24px;
-  --blur-reach: 16px;
+  --blur-reach: 22px;
   --display-size: min(clamp(64px, 10vw, 150px), 12svh);
 }
 
@@ -128,7 +128,7 @@ html.page-motion {
   color: var(--fg)
 }
 
-/* A single soft edge fade; the header adds a light frosted finish. */
+/* Shared progressive glass. Footer reverses the direction and extension. */
 .header-blur,
 .footer-blur {
   position: absolute;
@@ -136,6 +136,7 @@ html.page-motion {
   right: 0;
   pointer-events: none;
   --fade-direction: to bottom;
+  --blur-inset: 0 0 calc(-1 * var(--blur-reach));
 }
 
 .header-blur {
@@ -148,11 +149,12 @@ html.page-motion {
   inset: 0;
   z-index: 0;
   --fade-direction: to top;
+  --blur-inset: calc(-1 * var(--blur-reach)) 0 0;
 }
 
 .blur-layer {
   position: absolute;
-  inset: 0 0 calc(-1 * var(--blur-reach));
+  inset: var(--blur-inset);
   background: var(--bg);
   --edge-mask: linear-gradient(var(--fade-direction),
       #000 calc(100% - var(--blur-reach)),
@@ -164,15 +166,38 @@ html.page-motion {
   mask-image: var(--edge-mask);
 }
 
-.footer-blur .blur-layer {
-  inset: calc(-1 * var(--blur-reach)) 0 0;
-}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :is(.header-blur, .footer-blur) .blur-layer {
+    background: linear-gradient(var(--fade-direction),
+        rgba(249, 248, 246, .55) 0%,
+        rgba(249, 248, 246, .55) 55%,
+        rgba(249, 248, 246, .3) 100%);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
 
-@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .header-blur .blur-layer {
-    background: rgba(249, 248, 246, .82);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+  :is(.header-blur, .footer-blur)::before,
+  :is(.header-blur, .footer-blur)::after {
+    content: "";
+    position: absolute;
+    inset: var(--blur-inset);
+    pointer-events: none;
+    -webkit-mask-image: var(--progressive-mask);
+    mask-image: var(--progressive-mask);
+  }
+
+  :is(.header-blur, .footer-blur)::before {
+    z-index: 1;
+    --progressive-mask: linear-gradient(var(--fade-direction), #000 55%, transparent 95%);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+
+  :is(.header-blur, .footer-blur)::after {
+    z-index: 2;
+    --progressive-mask: linear-gradient(var(--fade-direction), #000 40%, transparent 80%);
+    -webkit-backdrop-filter: blur(9px);
+    backdrop-filter: blur(9px);
   }
 }
 
@@ -231,7 +256,6 @@ html.page-motion {
   :root {
     --header-height: 72px;
     --brand-size: 22px;
-    --blur-reach: 12px;
     --display-size: min(clamp(58px, 17vw, 92px), 12svh)
   }
 
@@ -259,7 +283,9 @@ html.page-motion {
 }
 
 @media(prefers-reduced-transparency:reduce) {
-  .blur-layer {
+  .blur-layer,
+  :is(.header-blur, .footer-blur)::before,
+  :is(.header-blur, .footer-blur)::after {
     display: none;
   }
 
