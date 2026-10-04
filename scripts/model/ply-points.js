@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
 import { createPointMaterial } from "./point-material.js";
 
-export async function createPLYPointCloud(group, renderer, model) {
-  const geometry = await new PLYLoader().loadAsync(model.path);
+export async function createPLYPointCloud(group, renderer, model, sourceGeometry) {
+  const geometry = sourceGeometry ?? await new PLYLoader().loadAsync(model.path);
   const position = geometry.getAttribute("position");
   if (!position?.count) { geometry.dispose(); throw new Error("PLY has no vertices."); }
   geometry.computeBoundingBox();
@@ -14,6 +14,7 @@ export async function createPLYPointCloud(group, renderer, model) {
   }
   // Preserve source positions; center and scale uniformly for the shared framing.
   const scale = 3.5 / extent;
+  geometry.userData.pointScale = scale;
   geometry.center();
   geometry.scale(scale, scale, scale);
   const settings = model.settings;
@@ -36,9 +37,18 @@ export async function createPLYPointCloud(group, renderer, model) {
     seeds[i * 4 + 3] = Math.random() < (settings.TWINKLE_CHANCE ?? .4) ? 1 : 0;
   }
   geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 4));
-  const material = createPointMaterial(renderer, {
+  const material = createTwinkleMaterial(renderer, {
     ...settings, POINT_SIZE: (settings.POINT_SIZE ?? .002) * scale
-  }, `
+  });
+  const points = new THREE.Points(geometry, material);
+  points.rotation.x = settings.MODEL_X_ROTATION ?? 0;
+  group.add(points);
+  return material;
+}
+
+// Shared by homepage PLY models and mesh-vertex previews.
+export function createTwinkleMaterial(renderer, settings) {
+  const material = createPointMaterial(renderer, settings, `
     attribute vec4 aSeed;
     uniform float uTime;
     uniform float uPointSize;
@@ -65,8 +75,5 @@ export async function createPLYPointCloud(group, renderer, model) {
   `);
   material.uniforms.uTwinkleSpeed = { value: settings.TWINKLE_SPEED ?? 1 };
   material.uniforms.uTwinkleMaxSize = { value: settings.TWINKLE_MAX_SIZE ?? 2.6 };
-  const points = new THREE.Points(geometry, material);
-  points.rotation.x = settings.MODEL_X_ROTATION ?? 0;
-  group.add(points);
   return material;
 }

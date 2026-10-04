@@ -1,0 +1,29 @@
+.model-expand {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--nav-fg);
+  background: transparent;
+  border: 0;
+  cursor: pointer
+}
+
+.model-expand[hidden],
+.collapse-icon {
+  display: none
+}
+
+.model-expand:hover {
+  color: var(--fg)
+}
+
+.model-expand[aria-expanded="true"] .expand-icon {
+  display: none
+}
+
+.model-expand[aria-expanded="true"] .collapse-icon {
+  display: block
+}
+

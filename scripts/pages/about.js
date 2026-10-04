@@ -12,9 +12,16 @@
     let moving = false;
     for (const s of entrance) moving = M.step(s, dt) || moving;
     M.paintEntrance(lines, entrance);
+    if (!moving) announceReady();
     return moving;
   }, () => !reduced.matches);
 
+  function announceReady() {
+    if (document.fonts.status !== 'loaded' || document.documentElement.dataset.aboutReady) return;
+    if (!reduced.matches && (!entered || entrance.some(s => s.delay > 0 || s.velocity !== 0 || s.value !== s.target))) return;
+    document.documentElement.dataset.aboutReady = 'true';
+    dispatchEvent(new Event('about-ready'));
+  }
   function measureLines() {
     if (reduced.matches) return;
     const style = getComputedStyle(paragraph);
@@ -33,6 +40,7 @@
       [...sentences, ...links].forEach(element => element.removeAttribute("style"));
       sentences.forEach(element => { element.textContent = element.textContent; });
       lines = []; entrance = []; layout = ""; entered = true;
+      announceReady();
     } else measureLines();
   }
   addEventListener("resize", configure);
@@ -40,6 +48,6 @@
   configure();
   new ResizeObserver(measureLines).observe(paragraph);
   if (document.fonts.status === "loading") document.fonts.ready.then(() => {
-    layout = ""; measureLines();
+    layout = ""; configure();
   });
 })();

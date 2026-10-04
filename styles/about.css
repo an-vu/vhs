@@ -23,3 +23,47 @@
   display: block;
   white-space: nowrap
 }
+
+/* Same full-page background behavior as Home; projection places the rover right. */
+#about-rover {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+#about-rover.is-ready { opacity: 1; }
+#about-rover canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  touch-action: none;
+  cursor: grab;
+}
+#about-rover canvas:active { cursor: grabbing; }
+.about-page .about { position: relative; z-index: 1; }
+#about-model-expand { margin-top: 12px; }
+.about-model-expanded { overflow: hidden; }
+.about-model-expanded #about-rover { pointer-events: auto; }
+.about-model-expanded .about { pointer-events: none; }
+.about-intro, .about .main-nav {
+  transition: translate .55s ease, opacity .55s ease;
+}
+.about-model-expanded .about-intro { translate: 0 -100px; opacity: 0; }
+.about-model-expanded .about .main-nav { translate: 0 100px; opacity: 0; }
+.about-model-expanded .site-header,
+.about-model-expanded .site-footer { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  #about-rover, .about-intro, .about .main-nav { transition: none; }
+}
+
+/* A stable canvas prevents browser toolbar changes from shifting the projection. */
+@media (hover: none) and (pointer: coarse) {
+  #about-rover {
+    bottom: auto;
+    height: 100svh;
+  }
+}

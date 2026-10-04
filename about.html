@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="preload" href="models/curiosity.glb" as="fetch" crossorigin>
   <title>About vHuman Studios — Design &amp; Technology</title>
   <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/favicon-32.png">
@@ -11,6 +12,10 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="styles/site.css">
   <link rel="stylesheet" href="styles/about.css">
+  <link rel="stylesheet" href="styles/model-control.css">
+  <script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
+  </script>
 
   <meta name="description"
     content="Meet vHuman Studios, a creative technology studio bringing design and engineering together to make thoughtful digital products and interactive experiences.">
@@ -34,6 +39,8 @@
     </div>
   </header>
 
+  <div id="about-rover" aria-hidden="true"></div>
+
   <main class="page-content about wrap" aria-label="About vHuman Studios">
     <div class="about-content">
       <p class="about-intro">
@@ -48,6 +55,12 @@
         <a href="work.html">Work</a>
         <a href="mailto:eve@vhumanstudios.com">Contact</a>
       </nav>
+      <button class="model-expand" id="about-model-expand" type="button" aria-label="Explore Curiosity rover" aria-expanded="false" aria-controls="about-rover" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
+          <path class="collapse-icon" d="M4 9h5V4m6 0v5h5M9 20v-5H4m16 0h-5v5" />
+        </svg>
+      </button>
     </div>
   </main>
 
@@ -61,6 +74,7 @@
   <script src="scripts/shared/motion.js"></script>
   <script src="scripts/shared/page-scroll.js"></script>
   <script src="scripts/pages/about.js"></script>
+  <script type="module" src="scripts/model/about-rover.js"></script>
 </body>
 
 </html>
