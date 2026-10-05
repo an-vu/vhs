@@ -117,16 +117,6 @@ html.page-motion {
   justify-content: center;
 }
 
-.home-link {
-  position: absolute;
-  left: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.home-link:hover {
-  color: var(--fg)
-}
 
 /* Shared progressive glass. Footer reverses the direction and extension. */
 .header-blur,
@@ -309,3 +299,5 @@ html.page-motion {
     gap: 6px
   }
 }
+/* Prevent mouse/touch focus rings, including after controls are moved in the DOM. */
+html.pointer-input :is(a, button, summary, [tabindex]):focus { outline: none; }

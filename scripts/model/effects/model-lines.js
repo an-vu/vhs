@@ -2,11 +2,11 @@ import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
 
 export const linePresets = {
-  fine: { threshold: 20, width: 1, silhouetteWeight: 1.2, surface: 'solid', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .12 },
-  technical: { threshold: 40, width: 1, silhouetteWeight: 1.5, surface: 'ghost', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .12 },
+  fine: { threshold: 20, width: 1, silhouetteWeight: 1.2, surface: 'solid', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .05 },
+  technical: { threshold: 40, width: 1, silhouetteWeight: 1.5, surface: 'ghost', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .05 },
   hidden: { threshold: 40, width: 1, silhouetteWeight: 1.5, surface: 'ghost', surfaceOpacity: .02, hidden: 'dashed', hiddenOpacity: .12 }
 };
-export const lineDefaults = { ...linePresets.fine, creases: true, silhouettes: true, boundaries: true, triangles: false, triangleOpacity: 1, color: '#62625e', surfaceColor: '#b8b5af', dash: 5, gap: 4, shading: true, roughness: .8 };
+export const lineDefaults = { ...linePresets.fine, creases: true, creaseOpacity: 1, silhouettes: true, boundaries: true, triangles: false, triangleOpacity: 1, color: '#62625e', surfaceColor: '#b8b5af', dash: 5, gap: 4, shading: true, roughness: .8 };
 
 // Weld coincident positions for adjacency; original mesh geometry stays untouched.
 function edgeGeometry(source) {
@@ -48,7 +48,7 @@ attribute vec3 end, normalA, normalB;
 attribute vec2 corner;
 attribute float boundary;
 uniform vec2 resolution;
-uniform float width, silhouetteWeight, threshold, triangleOpacity, pixelRatio;
+uniform float width, silhouetteWeight, threshold, triangleOpacity, creaseOpacity, pixelRatio;
 uniform bool creases, silhouettes, boundaries, triangles;
 varying float visibleEdge, along, edgeOpacity, lineCoverage; varying vec3 scanPosition;
 ${scanBandGLSL}
@@ -60,7 +60,7 @@ void main(){
  bool crease=dot(normalize(normalA),normalize(normalB))<cos(radians(threshold));
  bool feature=(boundaries && boundary>.5) || (silhouettes && silhouette) || (creases && crease);
  visibleEdge=(triangles || feature)?1.:0.;
- edgeOpacity=feature?1.:triangleOpacity;
+ edgeOpacity=feature?(crease && !silhouette && boundary<.5 ? creaseOpacity : 1.):triangleOpacity;
  vec4 p=projectionMatrix*a, q=projectionMatrix*b;
  vec2 delta=(q.xy/q.w-p.xy/p.w)*resolution*.5;
  float lengthPx=length(delta);
@@ -83,19 +83,38 @@ varying float visibleEdge,along,edgeOpacity,lineCoverage; varying vec3 scanPosit
 ${scanBandGLSL}
 void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.))); #include <colorspace_fragment>
 }`.replace('; #include',';\n#include');
-export function createModelLines(meshes, scene) {
+export function createModelLines(meshes, scene, entrance = null) {
   const root = new THREE.Group(); scene.add(root); root.visible = false;
   const options = { ...lineDefaults }, resources = new Set(), copies = [];
   const uniforms = {  ...scanUniforms(), pixelRatio:{value:1}, resolution:{value:new THREE.Vector2()}, color:{value:new THREE.Color(options.color)} };
-  for (const key of ['width','triangleOpacity','silhouetteWeight','threshold','creases','silhouettes','boundaries','triangles','dash','gap']) uniforms[key]={value:options[key]};
+  for (const key of ['width','triangleOpacity','creaseOpacity','silhouetteWeight','threshold','creases','silhouettes','boundaries','triangles','dash','gap']) uniforms[key]={value:options[key]};
   const material = hidden => {
     const mat = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: { ...uniforms, opacity:{value:hidden?.12:1}, dashed:{value:hidden}, hiddenPass:{value:hidden} }, transparent:true, depthWrite:false, depthFunc:hidden?THREE.GreaterDepth:THREE.LessEqualDepth, side:THREE.DoubleSide });
+    if (entrance) {
+      mat.uniforms.entrance = entrance;
+      mat.fragmentShader = 'uniform float entrance;\n' + mat.fragmentShader.replace('void main(){',
+        'void main(){if(entrance < 999. && scanCoordinate(scanPosition) > entrance) discard;');
+    }
     resources.add(mat); return mat;
   };
   const front=material(false), back=material(true);
   const depth=new THREE.MeshBasicMaterial({colorWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1}); resources.add(depth);
-  const flat=new THREE.MeshBasicMaterial({color:options.surfaceColor,transparent:true,depthWrite:false}); resources.add(flat);
+  // Unlit surfaces should match their CSS/palette color without filmic remapping.
+  const flat=new THREE.MeshBasicMaterial({color:options.surfaceColor,transparent:true,depthWrite:false,toneMapped:false}); resources.add(flat);
   const lit=new THREE.MeshStandardMaterial({color:options.surfaceColor,transparent:true,depthWrite:false,roughness:.8}); resources.add(lit);
+  // Keep the complete depth surface, as in expanded mode, so the reveal does not
+  // expose particles from the far side of the rover through the scan band.
+  if (entrance) for (const mat of [flat, lit]) {
+    mat.onBeforeCompile = shader => {
+      shader.uniforms.entrance = entrance;
+      Object.assign(shader.uniforms, uniforms);
+      shader.vertexShader = 'varying vec3 entrancePosition;\n' + shader.vertexShader.replace('#include <project_vertex>',
+        '#include <project_vertex>\nentrancePosition = (modelMatrix * vec4(transformed, 1.)).xyz;');
+      shader.fragmentShader = 'uniform float entrance; varying vec3 entrancePosition;\n' + scanBandGLSL + shader.fragmentShader
+        .replace('void main() {', 'void main() {\nif (entrance < 999. && scanCoordinate(entrancePosition) > entrance) discard;');
+    };
+    mat.customProgramCacheKey = () => 'rover-entrance';
+  }
   let surface=lit;
   for (const source of meshes) {
     const geometry=edgeGeometry(source.geometry); resources.add(geometry);
@@ -105,13 +124,14 @@ export function createModelLines(meshes, scene) {
   return {
     options,
     setEnabled(value){root.visible=value;},
-    update(renderer,scan,matricesCurrent=false){
+    update(renderer,scan,matricesCurrent=false,modelScale=1){
       if(!root.visible)return;
       for(const key of ['scanVolume','scanTime','scanUneven','scanHeight','scanWidth','scanDirection','scanStrength','edgeInteraction','lineResponse','scanPalette'])uniforms[key].value=scan?.[key].value??(key==='scanWidth'?.1:key==='scanDirection'?1:0);
       renderer.getSize(uniforms.resolution.value);
-      for(const key of ['width','triangleOpacity','silhouetteWeight','threshold','creases','silhouettes','boundaries','triangles','dash','gap']) uniforms[key].value=options[key];
-      // Reference widths are desktop CSS pixels; shrink continuously on narrow views.
-      uniforms.width.value=options.width*THREE.MathUtils.clamp(uniforms.resolution.value.x/900,.4,1);
+      for(const key of ['width','triangleOpacity','creaseOpacity','silhouetteWeight','threshold','creases','silhouettes','boundaries','triangles','dash','gap']) uniforms[key].value=options[key];
+      // Match particle scaling: CSS-pixel dimensions at a 600px reference viewport.
+      const scale=Math.max(1,Math.min(uniforms.resolution.value.x,uniforms.resolution.value.y))/600*modelScale;
+      for(const key of ['width','dash','gap'])uniforms[key].value=options[key]*scale;
       uniforms.pixelRatio.value=renderer.getPixelRatio();
       uniforms.color.value.set(options.color);back.uniforms.opacity.value=options.hiddenOpacity;back.uniforms.dashed.value=options.hidden==='dashed';
       surface=options.shading?lit:flat; lit.roughness=options.roughness;

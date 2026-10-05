@@ -1,12 +1,13 @@
+import { runIdleSteps } from '../../shared/idle-work.js';
 import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
 
-export const spectralDefaults = { density: 100000, size: 1.6, variation: .35, spread: .012, twinkle: .35, twinkleSpeed: 1.4, drift: .003, driftSpeed: .45, intensity: 1, opacity: .85, palette: 0, scanEnabled: 1, scanSpeed: .18, scanWidth: .1, scanStrength: .85, edgeAttraction: .6, edgeReach: .025, lineResponse: 1, edgeDensity: .35, scanPalette: 0, scanVisibility: 0, scanHalo: .6, scanUneven: 0, scanVolume: 0 };
+export const spectralDefaults = { density: 100000, size: 1.6, variation: .35, spread: .012, twinkle: .35, twinkleSpeed: 1.4, drift: .003, driftSpeed: .45, intensity: 1, opacity: .85, palette: 0, scanEnabled: 1, scanSpeed: .18, scanWidth: .2, scanStrength: .85, edgeAttraction: .6, edgeReach: .025, lineResponse: 1, edgeDensity: .35, scanPalette: 0, scanVisibility: 0, scanHalo: .6, scanUneven: 0, scanVolume: 0 };
 
 export const spectralPalettes = ['Spectrum', 'Aurora', 'Ember', 'Ultraviolet', 'Glacier', 'vHuman'];
 
 // Triangle areas are measured in the displayed pose; samples remain component-local.
-export function createSpectral(meshes) {
+export function createSpectral(meshes, { deferPreparation = false } = {}) {
   const options = { ...spectralDefaults }, clouds = [], surfaces = [];
   const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3();
   const wa=new THREE.Vector3(), wb=new THREE.Vector3(), wc=new THREE.Vector3();
@@ -14,30 +15,39 @@ export function createSpectral(meshes) {
   const edge=new THREE.Line3(), candidate=new THREE.Vector3(), closest=new THREE.Vector3();
   let totalArea=0, time=0, scanTime=0, visible=false;
   const scanBounds=new THREE.Box3(), partBounds=new THREE.Box3(), viewport=new THREE.Vector2();
-  for(const mesh of meshes) {
-    // This preview supports rigid component animation, as used by the baked rover.
-    if(mesh.isSkinnedMesh || mesh.geometry.morphAttributes.position?.length) continue;
-    mesh.updateWorldMatrix(true,false);
-    const geometry=mesh.geometry, position=geometry.getAttribute('position'), index=geometry.index;
-    const count=Math.floor((index?.count??position.count)/3), cumulative=new Float64Array(count);
-    let area=0;
-    for(let i=0;i<count;i++) {
-      const vertex=j=>index?index.getX(i*3+j):i*3+j;
-      wa.fromBufferAttribute(position,vertex(0)).applyMatrix4(mesh.matrixWorld);
-      wb.fromBufferAttribute(position,vertex(1)).applyMatrix4(mesh.matrixWorld);
-      wc.fromBufferAttribute(position,vertex(2)).applyMatrix4(mesh.matrixWorld);
-      area+=ab.subVectors(wb,wa).cross(ac.subVectors(wc,wa)).length()*.5;
-      cumulative[i]=area;
+  let prepared = false, generation = 0;
+  function* prepareSurfaces() {
+    surfaces.length = 0; totalArea = 0;
+    for(const mesh of meshes) {
+      // This preview supports rigid component animation, as used by the baked rover.
+      if(mesh.isSkinnedMesh || mesh.geometry.morphAttributes.position?.length) continue;
+      mesh.updateWorldMatrix(true,false);
+      const geometry=mesh.geometry, position=geometry.getAttribute('position'), index=geometry.index;
+      const sampleMatrix = mesh.matrixWorld.clone();
+      const count=Math.floor((index?.count??position.count)/3), cumulative=new Float64Array(count);
+      let area=0;
+      for(let i=0;i<count;i++) {
+        const vertex=j=>index?index.getX(i*3+j):i*3+j;
+        wa.fromBufferAttribute(position,vertex(0)).applyMatrix4(sampleMatrix);
+        wb.fromBufferAttribute(position,vertex(1)).applyMatrix4(sampleMatrix);
+        wc.fromBufferAttribute(position,vertex(2)).applyMatrix4(sampleMatrix);
+        area+=ab.subVectors(wb,wa).cross(ac.subVectors(wc,wa)).length()*.5;
+        cumulative[i]=area;
+        if (i % 256 === 255) yield;
+      }
+      if(area>0){geometry.computeBoundingBox();surfaces.push({mesh,position,index,cumulative,area});totalArea+=area;}
+      yield;
     }
-    if(area>0){geometry.computeBoundingBox();surfaces.push({mesh,position,index,cumulative,area});totalArea+=area;}
+    prepared = true;
   }
-  const uniforms={time:{value:0}, pixelRatio:{value:1}, ...scanUniforms()};
+  if (!deferPreparation) for (const step of prepareSurfaces()) { /* synchronous Lab path */ }
+  const uniforms={time:{value:0}, population:{value:1}, pixelRatio:{value:1}, viewportScale:{value:1}, ...scanUniforms()};
   for(const key of ['size','variation','spread','twinkle','twinkleSpeed','drift','driftSpeed','intensity','opacity','palette','edgeAttraction','edgeReach','scanEnabled','scanVisibility','scanHalo'])uniforms[key]={value:options[key]};
   const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms,
     vertexShader:`attribute vec4 seed; attribute vec3 surfaceNormal, edgeTarget; attribute float edgePoint;
-    uniform float time,pixelRatio,size,variation,spread,twinkle,twinkleSpeed,drift,driftSpeed,intensity;
+    uniform float time,pixelRatio,viewportScale,size,variation,spread,twinkle,twinkleSpeed,drift,driftSpeed,intensity;
     uniform int palette,scanVisibility;
-    uniform float scanEnabled,scanHalo;
+    uniform float scanEnabled,scanHalo,population;
     uniform float edgeAttraction,edgeReach;
     ${scanBandGLSL}
     varying vec3 tint; varying float alpha;
@@ -93,9 +103,13 @@ export function createSpectral(meshes) {
       tint=mix(tint,scanColor(worldY,(seed.y-.5)*.7),band);
       tint=mix(tint,paletteInk,edgePoint*.45);
       alpha=mix(alpha,1.,band)*visibility;
+      // Stable seeds bring in progressively more dots, without rebuilding clouds.
+      alpha*=smoothstep(seed.w*.85,seed.w*.85+.15,population);
       float pointSize=size*mix(1.,.5,edgePoint)*pixelRatio*(1.+variation*(seed.z*2.-1.))*mix(1.,.85+.3*pulse,activeTwinkle)*4.45/max(-p.z,.1);
-      gl_PointSize=clamp(pointSize,1.,10.*pixelRatio);
-      alpha*=min(1.,pointSize*pointSize);
+      // Adapt the cap too, including settled scan-band and edge particles.
+      gl_PointSize=clamp(pointSize,1.,max(1.,10.*pixelRatio*viewportScale));
+      // GPUs rasterize at least one physical pixel; preserve subpixel coverage.
+      alpha*=pow(min(1.,pointSize/gl_PointSize),2.);
       gl_Position=visibility>.001?projectionMatrix*p:vec4(2.,2.,2.,1.);
     }`,
     fragmentShader:`
@@ -104,7 +118,8 @@ uniform float opacity; varying vec3 tint;varying float alpha;
     #include <colorspace_fragment>
     }`
   });
-  function rebuild() {
+  function* buildClouds() {
+    if (!prepared) yield* prepareSurfaces();
     for(const cloud of clouds){cloud.removeFromParent();cloud.geometry.dispose();}clouds.length=0;
     let allocated=0, cumulativeArea=0;
     for(const surface of surfaces) {
@@ -140,27 +155,49 @@ uniform float opacity; varying vec3 tint;varying float alpha;
         }
         closest.toArray(targets,i*3);
         seeds.set([Math.random()*Math.PI*2,Math.random(),Math.random(),Math.random()],i*4);
+        if (i % 256 === 255) yield;
       }
       const geometry=new THREE.BufferGeometry();
       geometry.setAttribute('edgePoint',new THREE.BufferAttribute(edgeFlags,1));geometry.setAttribute('edgeTarget',new THREE.BufferAttribute(targets,3));geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('surfaceNormal',new THREE.BufferAttribute(normals,3));geometry.setAttribute('seed',new THREE.BufferAttribute(seeds,4));
       const cloud=new THREE.Points(geometry,material);cloud.frustumCulled=false;cloud.visible=visible;mesh.add(cloud);clouds.push(cloud);
+      yield;
     }
   }
+  function rebuild() {
+    generation++;
+    for (const step of buildClouds()) { /* preserve synchronous Lab rebuilding */ }
+  }
+  async function rebuildAsync(signal, foreground = false) {
+    const version = ++generation;
+    return runIdleSteps(buildClouds(), () => signal?.aborted || generation !== version, foreground);
+  }
+  async function precompile(renderer, camera) {
+    if (!clouds.length) return;
+    const warmup = new THREE.Scene();
+    // Same material/attributes as the live clouds, without exposing them on the page.
+    warmup.add(new THREE.Points(clouds[0].geometry, material));
+    await renderer.compileAsync(warmup, camera);
+  }
   return {
-    options,
-    setEnabled(value){visible=value;if(!value){uniforms.scanStrength.value=0;uniforms.edgeInteraction.value=0;uniforms.lineResponse.value=0;}clouds.forEach(c=>c.visible=value);},
+    options, rebuildAsync, precompile,
+    setEnabled(value){if(visible===value)return;visible=value;if(!value){uniforms.scanStrength.value=0;uniforms.edgeInteraction.value=0;uniforms.lineResponse.value=0;}clouds.forEach(c=>c.visible=value);},
     rebuild,
-    update(dt,renderer,animate,interact=false,matricesCurrent=false){
+    update(dt,renderer,animate,interact=false,matricesCurrent=false,pointScale=1,population=1,scanRate=1){
       if(!visible)return;
-      if(animate){time+=dt;scanTime+=dt*options.scanSpeed;}
+      uniforms.population.value=population;
+      if(animate){time+=dt;scanTime+=dt*options.scanSpeed*scanRate;}
       uniforms.time.value=time;uniforms.scanTime.value=scanTime*10.;uniforms.pixelRatio.value=renderer.getPixelRatio();
       for(const key of Object.keys(options))if(uniforms[key])uniforms[key].value=options[key];
       renderer.getSize(viewport);
-      const responsive=THREE.MathUtils.clamp(viewport.x/900,.4,1);
-      uniforms.size.value=options.size*responsive;
-      uniforms.spread.value=options.spread*responsive;
-      uniforms.drift.value=options.drift*responsive;
-      uniforms.edgeReach.value=options.edgeReach*responsive;
+      // The shorter viewport dimension also handles tall mobile About canvases.
+      // Desktop framing stays unchanged when height is the limiting dimension.
+      const viewportScale=Math.max(1,Math.min(viewport.x,viewport.y))/600*pointScale;
+      uniforms.viewportScale.value=viewportScale;
+      uniforms.size.value=options.size*viewportScale;
+      // Scene-space distances retain the same relation to the model on every screen.
+      uniforms.spread.value=options.spread;
+      uniforms.drift.value=options.drift;
+      uniforms.edgeReach.value=options.edgeReach;
       uniforms.edgeInteraction.value=interact?1:0;
       uniforms.lineResponse.value=options.lineResponse;
       uniforms.scanStrength.value=options.scanEnabled?options.scanStrength:0;
@@ -168,7 +205,7 @@ uniform float opacity; varying vec3 tint;varying float alpha;
         scanBounds.makeEmpty();
         for(const {mesh} of surfaces){if(!matricesCurrent)mesh.updateWorldMatrix(true,false);partBounds.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);scanBounds.union(partBounds);}
         if(!scanBounds.isEmpty()){
-          const height=Math.max(.001,scanBounds.max.y-scanBounds.min.y), width=Math.max(.001,height*options.scanWidth*Math.sqrt(responsive));
+          const height=Math.max(.001,scanBounds.max.y-scanBounds.min.y), width=Math.max(.001,height*options.scanWidth);
           const phase=scanTime*Math.PI*2;
           const inset=Math.min(width*.5,height*.45), velocity=Math.sin(phase);
           uniforms.scanHeight.value=THREE.MathUtils.lerp(scanBounds.min.y+inset,scanBounds.max.y-inset,.5-.5*Math.cos(phase));
@@ -178,7 +215,8 @@ uniform float opacity; varying vec3 tint;varying float alpha;
       }
     },
     get scan(){return uniforms;},
+    get upwardProgress(){return Math.min(1,scanTime*2);},
     get count(){return clouds.reduce((n,c)=>n+c.geometry.getAttribute('position').count,0);},
-    dispose(){for(const c of clouds){c.removeFromParent();c.geometry.dispose();}material.dispose();}
+    dispose(){generation++;for(const c of clouds){c.removeFromParent();c.geometry.dispose();}material.dispose();}
   };
 }

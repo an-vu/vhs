@@ -9,26 +9,34 @@ import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createPLYPointCloud, createTwinkleMaterial } from '../model/ply-points.js';
 import { models, modelDefaults } from '../model/registry.js';
-import { POINT_COLOR, POINT_DARK_COLOR, IDLE_ROTATION } from '../model/config.js';
+import { POINT_COLOR, POINT_DARK_COLOR } from '../model/config.js';
 
 const host = document.querySelector('#rover');
 const modelSelect = document.querySelector('#model');
 const modelFolder = new URL('../../models/', import.meta.url);
 const status = document.querySelector('#status');
 const settings = document.querySelector('#settings');
+const animationSettings = document.querySelector('#animation-settings');
+const animationNote = document.querySelector('#animation-note');
+const animationPlayback = document.querySelector('#animation-playback');
+const emptyState = document.querySelector('#empty-state');
 const clipSelect = document.querySelector('#clip');
 const play = document.querySelector('#play');
 const progress = document.querySelector('#progress');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const events = new AbortController();
-const enabled = { lines: true, points: false, path: false, phase: false, scan: false, spectral: false };
+const enabled = { rotation: true, lines: true, points: false, path: false, phase: false, scan: false, spectral: false };
 let study, lineEffect, spectral;
 installEffectPanels();
 syncFalseColorControls();
 let renderer, controls, observer, mixer, model, action, pointMaterial;
 let frame = 0, last = null, elapsed = 0, visible = true, disposed = false;
-let playing = !reduced.matches;
+let playing = false;
 let twinkleSpeed = 1;
+const copyButton = document.querySelector('#copy-settings');
+const copyStatus = document.querySelector('#copy-status');
+const copyFallback = document.querySelector('#settings-copy-fallback');
+const rotationSpeed = () => THREE.MathUtils.degToRad(Number(document.querySelector('#rotation-speed').value));
 let pointOnly = false, loadVersion = 0;
 let preset, presetPoints, pointScale = 1, pointSettings;
 const pointGeometries = [];
@@ -43,15 +51,15 @@ function installEffectPanels() {
   const tabs = document.querySelector('.effect-tabs');
   tabs.setAttribute('aria-orientation', 'vertical');
   const groups = [
-    ['path','Path','Paths and pivot probes follow exported node origins. Angle labels show unsigned rotation change from the reference pose, not calibrated joint angles.'],
-    ['phase','Phase','Compare earlier or future animation poses. Future poses are sampled from the clip on a separate model copy; they are not physical predictions.'],
-    ['scan','Scan','Surface diagnostics only. False color represents distance from the scan plane, not temperature; depth and normals use the camera view.']
+    ['path','Path'],
+    ['phase','Phase'],
+    ['scan','Scan']
   ];
-  for (const [id,title,note] of groups) {
+  for (const [id,title] of groups) {
     const row=document.createElement('div');row.className='effect-tab';row.setAttribute('role','presentation');
     row.innerHTML=`<input type="checkbox" data-enable="${id}" aria-label="Enable ${title}"><button type="button" role="tab" id="tab-${id}" aria-controls="panel-${id}" aria-selected="false" tabindex="-1">${title}</button>`;tabs.append(row);
     const panel=document.createElement('section');panel.id=`panel-${id}`;panel.hidden=true;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',`tab-${id}`);
-    panel.innerHTML=`<h2>${title}</h2><p>${note}</p>`;
+    panel.innerHTML = '';
     const slider=(key,label,min,max,step,value)=>panel.insertAdjacentHTML('beforeend',`<label for="${id}-${key}">${label} <output id="${id}-${key}-value">${value}</output></label><input id="${id}-${key}" data-study="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}">`);
     const toggle=(key,label,checked=true,kind='study-effect')=>panel.insertAdjacentHTML('beforeend',`<label class="checkbox-label"><input id="${id}-${key}" data-${kind}="${key}" type="checkbox" ${checked?'checked':''}>${label}</label>`);
     const choice=(key,label,items)=>panel.insertAdjacentHTML('beforeend',`<label for="${id}-${key}">${label}</label><select id="${id}-${key}" data-study="${key}">${items.map(([value,text])=>`<option value="${value}">${text}</option>`).join('')}</select>`);
@@ -89,18 +97,16 @@ function installEffectPanels() {
   const row=document.createElement('div');row.className='effect-tab';row.setAttribute('role','presentation');
   row.innerHTML='<input type="checkbox" data-enable="spectral" aria-label="Enable Spectral"><button type="button" role="tab" id="tab-spectral" aria-controls="panel-spectral" aria-selected="false" tabindex="-1">Spectral</button>';tabs.append(row);
   const panel=document.createElement('section');panel.id='panel-spectral';panel.hidden=true;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','tab-spectral');
-  panel.innerHTML='<h2>Spectral</h2><p>Surface-sampled color particles with gentle twinkle and drift. Colors are expressive, not temperature data. Rigid animated mesh components are supported; vertex-only PLY files are not.</p><p>For a cloud-only view, enable Spectral and turn off Line and Dot.</p><p id="spectral-count"></p>';
+  panel.innerHTML='<p id="spectral-count"></p>';
   for(const [key,label,min,max,step] of [
-    ['density','Sampled points',10000,200000,5000],['edgeDensity','Points along edges (fraction)',0,.8,.05],['size','Point size (px)',.5,4,.1],['variation','Size variation',0,1,.05],['spread','Surface spread (scene units)',0,.12,.002],['twinkle','Twinkle strength',0,1,.05],['twinkleSpeed','Twinkle speed',0,3,.1],['drift','Drift amount (scene units)',0,.03,.001],['driftSpeed','Drift speed',0,2,.05],['intensity','Color intensity',0,1,.05],['opacity','Opacity',.05,1,.05],['scanSpeed','Scan cycles per second',0,.5,.01],['scanWidth','Scan width / model height',.02,.4,.01],['scanUneven','Scan irregularity (0 = straight)',0,1,.05],['scanHalo','Surrounding halo / band width',.1,2,.1],['scanStrength','Scan strength',0,1,.05],['edgeAttraction','Edge attraction',0,1,.05],['edgeReach','Edge attraction reach (scene units)',.005,.08,.005],['lineResponse','Line fade in scan',0,1,.05]
+    ['density','Sampled points',10000,200000,5000],['edgeDensity','Points along edges (fraction)',0,.8,.05],['size','Point size',.5,4,.1],['variation','Size variation',0,1,.05],['spread','Surface spread (scene units)',0,.12,.002],['twinkle','Twinkle strength',0,1,.05],['twinkleSpeed','Twinkle speed',0,3,.1],['drift','Drift amount (scene units)',0,.03,.001],['driftSpeed','Drift speed',0,2,.05],['intensity','Color intensity',0,1,.05],['opacity','Opacity',.05,1,.05],['scanSpeed','Scan cycles per second',0,.5,.01],['scanWidth','Scan width / model height',.02,.4,.01],['scanUneven','Scan irregularity (0 = straight)',0,1,.05],['scanHalo','Surrounding halo / band width',.1,2,.1],['scanStrength','Scan strength',0,1,.05],['edgeAttraction','Edge attraction',0,1,.05],['edgeReach','Edge attraction reach (scene units)',.005,.08,.005],['lineResponse','Line fade in scan',0,1,.05]
   ])panel.insertAdjacentHTML('beforeend',`<label for="spectral-${key}">${label}<output id="spectral-${key}-value">${spectralDefaults[key]}</output></label><input id="spectral-${key}" data-spectral="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${spectralDefaults[key]}">`);
   panel.insertAdjacentHTML('beforeend','<label><input type="checkbox" data-spectral="scanVolume"> Vary through all three dimensions</label>');
   panel.insertAdjacentHTML('beforeend',`<label for="spectral-palette">Palette</label><select id="spectral-palette" data-spectral="palette">${spectralPalettes.map((name,index)=>`<option value="${index}">${name}</option>`).join('')}</select>`);
   panel.insertAdjacentHTML('beforeend',`<label for="spectral-scanPalette">Scan palette</label><select id="spectral-scanPalette" data-spectral="scanPalette">${scanPalettes.map((name,index)=>`<option value="${index}">${name}</option>`).join('')}</select>`);
-  panel.insertAdjacentHTML('beforeend','<label for="spectral-scanVisibility">Dot visibility</label><select id="spectral-scanVisibility" data-spectral="scanVisibility"><option value="0">Everywhere</option><option value="1">Scan band only</option><option value="2">Scan band + surrounding halo</option></select><p>In either scan-only mode, dots settle onto the surface inside the band. The surrounding halo keeps its drift and twinkle, then fades to nothing. Rover parts still follow their animation. These modes need Shared scan band switched on; switching it off hides the dots.</p>');
-  panel.insertAdjacentHTML('beforeend','<label for="spectral-scanEnabled">Shared scan band</label><select id="spectral-scanEnabled" data-spectral="scanEnabled"><option value="1">On</option><option value="0">Off</option></select><p>The scan transitions through its selected palette, then returns to the particle palette. Edge particles are smaller, darker, and drift less; the total point budget stays the same. Line edges fade out within the band and return afterward. With Triangle edges enabled in Line, nearby dots also gather toward edges. Set Line fade in scan to 0 to keep lines visible.</p>');
+  panel.insertAdjacentHTML('beforeend','<label for="spectral-scanVisibility">Dot visibility</label><select id="spectral-scanVisibility" data-spectral="scanVisibility"><option value="0">Everywhere</option><option value="1">Scan band only</option><option value="2">Scan band + surrounding halo</option></select>');
+  panel.insertAdjacentHTML('beforeend','<label for="spectral-scanEnabled">Shared scan band</label><select id="spectral-scanEnabled" data-spectral="scanEnabled"><option value="1">On</option><option value="0">Off</option></select>');
   document.querySelector('.effect-panels').append(panel);
-  const picker = document.querySelector('#effect-picker');
-  document.querySelectorAll('[role="tab"]').forEach(tab => picker.add(new Option(tab.textContent, tab.id.slice(4))));
 }
 function syncFalseColorControls() {
   document.querySelector('#false-color-controls').hidden=document.querySelector('#scan-scanMode').value!=='1';
@@ -132,6 +138,62 @@ function readLineSettings() {
   });
 }
 function listen(target, name, callback) { target.addEventListener(name, callback, { signal: events.signal }); }
+function collectSettings() {
+  const read = attribute => Object.fromEntries([...document.querySelectorAll(`[data-${attribute}]`)].map(input => [
+    input.dataset[attribute.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())], input.type === 'checkbox' ? input.checked
+      : ['range', 'number'].includes(input.type) ? Number(input.value) : input.value
+  ]));
+  const points = read('setting');
+  return {
+    model: modelSelect.value,
+    enabled: { ...enabled },
+    rotation: read('rotation'),
+    points: {
+      POINT_SIZE: points['points-size'], POINT_OPACITY: points['points-opacity'],
+      VISIBLE_FRACTION: points.density / 100, TWINKLE_CHANCE: points.chance / 100,
+      TWINKLE_SPEED: points['twinkle-speed'], TWINKLE_MAX_SIZE: points['max-size'],
+      color: points['point-color'], darkColor: points['point-dark']
+    },
+    line: read('line'),
+    studies: { options: read('study'), effects: read('study-effect') },
+    spectral: read('spectral'),
+    animation: {
+      clip: action?.getClip().name ?? null,
+      playing, speed: Number(document.querySelector('#speed').value),
+      position: Number(progress.value)
+    },
+    units: {
+      rotation: 'degrees; speed in degrees/second; X/Y are the chosen base orientation',
+      pointSize: 'source-space units before model normalization',
+      spectralPointSize: 'CSS pixels at a 600px shortest viewport dimension; all spectral dots and their size cap scale together',
+      spectralScanWidth: 'fraction of model height',
+      spectralSpreadDriftAndEdgeReach: 'scene units',
+      lineWidthAndDashes: 'CSS pixels at a 600px reference viewport; scaled to viewport and model framing',
+      animationPosition: 'fraction of clip duration'
+    }
+  };
+}
+async function copySettings() {
+  if (!model) return;
+  const text = JSON.stringify(collectSettings(), null, 2);
+  copyFallback.hidden = true;
+  try {
+    await navigator.clipboard.writeText(text);
+    copyStatus.textContent = 'Copied';
+  } catch {
+    // LAN previews may not have clipboard access; keep a selectable fallback.
+    copyFallback.value = text;
+    copyFallback.hidden = false;
+    copyFallback.focus(); copyFallback.select();
+    let copied = false;
+    try { copied = document.execCommand('copy'); } catch {}
+    if (copied) {
+      copyFallback.hidden = true;
+      copyButton.focus();
+      copyStatus.textContent = 'Copied';
+    } else copyStatus.textContent = 'Press ⌘C or Ctrl+C to copy.';
+  }
+}
 function wake() { if (!disposed && renderer && visible && !document.hidden && !frame) frame = requestAnimationFrame(draw); }
 function draw(now) {
   frame = 0;
@@ -139,15 +201,15 @@ function draw(now) {
   last = now;
   if (playing) mixer?.update(dt);
   if (pointMaterial && !reduced.matches) pointMaterial.uniforms.uTime.value = elapsed += dt;
-  if (model && enabled.points && !reduced.matches && document.querySelector('#point-spin').checked) wrapper.rotation.y += IDLE_ROTATION * dt * 60;
+  if (model && enabled.rotation && rotationSpeed() > 0 && !reduced.matches) wrapper.rotation.y += rotationSpeed() * dt;
   controls.update();
   camera.updateMatrixWorld();
-  study?.update(dt, action?.time, !reduced.matches && playing, action?.getClip(), camera);
+  study?.update(dt, action?.time, !reduced.matches && (playing || !action), action?.getClip(), camera);
   spectral?.update(dt,renderer,!reduced.matches,!!enabled.lines && !!lineEffect?.options.triangles);
   lineEffect?.update(renderer,spectral?.scan);
   renderer.render(scene, camera);
   if (action) progress.value = action.time / Math.max(.001, action.getClip().duration);
-  if (enabled.spectral && !reduced.matches || study?.scanning && playing && !reduced.matches || playing && action || enabled.points && twinkleSpeed > 0 && !reduced.matches || model && enabled.points && !reduced.matches && document.querySelector('#point-spin').checked) wake();
+  if (enabled.spectral && !reduced.matches || study?.scanning && (playing || !action) && !reduced.matches || playing && action || enabled.points && twinkleSpeed > 0 && !reduced.matches || model && enabled.rotation && rotationSpeed() > 0 && !reduced.matches) wake();
   else last = null;
 }
 function pauseClock() { cancelAnimationFrame(frame); frame = 0; last = null; }
@@ -207,6 +269,10 @@ function appearance(prepare = false) {
 function selectClip() {
   mixer?.stopAllAction(); action = null;
   const clip = clips[Number(clipSelect.value)];
+  playing = !!clip && !reduced.matches;
+  animationPlayback.hidden = !clip;
+  animationNote.hidden = !!clip;
+  animationNote.textContent = clips.length || !model ? 'Select an animation.' : 'No animations in this model.';
   if (clip) {
     action = mixer.clipAction(clip); action.reset().setLoop(THREE.LoopPingPong, Infinity).play();
     mixer.update(0);
@@ -237,7 +303,16 @@ function clearModel() {
     material.dispose();
   });
   textures.forEach(texture => texture.dispose()); originals.clear(); meshes.length = 0;
-  model = mixer = action = null; clips = []; clipSelect.replaceChildren();
+  model = mixer = action = null; clips = [];
+  clipSelect.replaceChildren(new Option('Select an animation…', '-1'));
+  clipSelect.value = '-1';
+  animationSettings.disabled = true; animationPlayback.hidden = true;
+  animationNote.hidden = false; animationNote.textContent = 'Select an animation.';
+  copyButton.disabled = true; copyStatus.textContent = ''; copyFallback.hidden = true;
+  document.querySelector('#reset-view').disabled = true;
+  document.querySelector('#view-hint').hidden = true;
+  emptyState.hidden = false;
+  playing = false;
   wrapper.position.set(0, 0, 0); wrapper.scale.setScalar(1);
   elapsed = 0;
 }
@@ -309,16 +384,18 @@ async function discoverModels() {
       if (!name.includes('/') && /\.(glb|gltf|ply)$/i.test(name)) names.add(name);
     }
     if (!names.size) throw new Error('No supported models in listing');
-    modelSelect.replaceChildren(...[...names].sort().map(name => new Option(name, name)));
-    document.querySelector('#model-note').textContent = 'Models discovered from the models folder. Reload after adding a file.';
+    const selected = modelSelect.value;
+    modelSelect.replaceChildren(new Option('Select a model…', ''), ...[...names].sort().map(name => new Option(name, name)));
+    modelSelect.value = names.has(selected) ? selected : '';
   } catch (error) {
-    if (error.name !== 'AbortError') document.querySelector('#model-note').textContent = 'Using the bundled model list. Automatic discovery requires a server with directory listings, such as the local Python server.';
+    // Keep the bundled options when the host has no directory listing.
   }
 }
 async function loadModel() {
   const version = ++loadVersion;
   settings.disabled = true;
   clearModel(); renderer.render(scene, camera);
+  if (!modelSelect.value) { status.textContent = ''; wake(); return; }
   status.textContent = `Loading ${modelSelect.value}…`;
   let loaded;
   try {
@@ -383,11 +460,11 @@ async function loadModel() {
     camera.updateProjectionMatrix();
     controls.target.set(0, 0, 0); controls.update(); controls.saveState();
     for (const input of document.querySelectorAll('[data-enable]')) {
-      input.disabled = pointOnly && input.dataset.enable !== 'points';
-      if (pointOnly) enabled[input.dataset.enable] = input.dataset.enable === 'points';
+      input.disabled = pointOnly && !['points', 'rotation'].includes(input.dataset.enable);
+      if (pointOnly && input.dataset.enable !== 'rotation') enabled[input.dataset.enable] = input.dataset.enable === 'points';
       input.checked = enabled[input.dataset.enable];
     }
-    if (!pointOnly && !Object.values(enabled).some(Boolean)) {
+    if (!pointOnly && !Object.entries(enabled).some(([name, value]) => name !== 'rotation' && value)) {
       enabled.lines = true; document.querySelector('[data-enable="lines"]').checked = true;
     }
     applyPreviewDefaults();
@@ -397,10 +474,10 @@ async function loadModel() {
     mixer = new THREE.AnimationMixer(model);
     mixer.timeScale = Number(document.querySelector('#speed').value);
     clips = ply ? [] : loaded.animations;
-    console.table(clips.map((clip, index) => ({ index, name: clip.name, seconds: clip.duration })));
-    clipSelect.add(new Option('Static — no animation', '-1'));
+    clipSelect.replaceChildren(new Option('Select an animation…', '-1'));
     clips.forEach((clip, index) => clipSelect.add(new Option(`${index + 1}. ${clip.name} (${clip.duration.toFixed(1)}s)`, String(index))));
-    clipSelect.value = clips.length ? '0' : '-1';
+    clipSelect.value = '-1';
+    animationSettings.disabled = !clips.length;
     study = meshes.length ? createModelEffects({ model, meshes, clips, scene }) : null;
     for (const id of ['path','phase','scan','spectral']) {
       const input=document.querySelector(`[data-enable="${id}"]`);
@@ -414,13 +491,17 @@ async function loadModel() {
     if (study) document.querySelectorAll('[data-study]').forEach(input => {
       if (input.dataset.study !== 'target') study.options[input.dataset.study] = studyValue(input);
     });
-    playing = !reduced.matches;
+    playing = false;
     settings.disabled = false;
+    emptyState.hidden = true;
+    document.querySelector('#view-hint').hidden = false;
+    document.querySelector('#reset-view').disabled = false;
+    copyButton.disabled = false;
     document.querySelector('[role="tab"][aria-selected="true"]').click();
     if (pointOnly) document.querySelector('#tab-points').click();
     status.textContent = pointOnly
       ? `${loaded.getAttribute('position').count.toLocaleString()} source points · no faces or animation.`
-      : `${meshes.length} mesh parts · ${clips.length} animation clips`;
+      : `${meshes.length.toLocaleString()} meshes · ${meshes.reduce((total, mesh) => total + mesh.geometry.getAttribute('position').count, 0).toLocaleString()} vertices · ${meshes.reduce((total, mesh) => total + Math.floor((mesh.geometry.index?.count ?? mesh.geometry.getAttribute('position').count) / 3), 0).toLocaleString()} faces`;
     selectClip();
   } catch (error) {
     if (disposed || version !== loadVersion) return;
@@ -459,7 +540,7 @@ try {
     listen(document.querySelector('#speed'), 'input', event => { mixer.timeScale = Number(event.target.value); document.querySelector('#speed-value').value = `${event.target.value}×`; });
     listen(progress, 'input', () => { if (action) { playing = false; action.time = Number(progress.value) * action.getClip().duration; mixer.update(0); study?.reset(); updatePlay(); } });
     document.querySelectorAll('[data-enable]').forEach(input => listen(input, 'change', () => {
-      enabled[input.dataset.enable] = input.checked; appearance(); syncMobileEffect();
+      enabled[input.dataset.enable] = input.checked; appearance();
     }));
     listen(document.querySelector('#line-preset'), 'change', event => {
       const preset = linePresets[event.target.value]; if (!preset) return;
@@ -475,13 +556,11 @@ try {
     }));
     const tabs = [...document.querySelectorAll('[role="tab"]')];
     function selectTab(tab) {
-      document.querySelector('#effect-picker').value = tab.id.slice(4);
       tabs.forEach(item => {
         const selected = item === tab;
         item.setAttribute('aria-selected', String(selected)); item.tabIndex = selected ? 0 : -1;
         document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
       });
-      syncMobileEffect();
     }
     tabs.forEach((tab, index) => {
       listen(tab, 'click', () => selectTab(tab));
@@ -492,18 +571,6 @@ try {
         const next = tabs[event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length];
         selectTab(next); next.focus();
       });
-    });
-    function syncMobileEffect() {
-      const id = document.querySelector('#effect-picker').value;
-      const source = document.querySelector(`[data-enable="${id}"]`);
-      const toggle = document.querySelector('#effect-toggle');
-      toggle.checked = source.checked; toggle.disabled = source.disabled;
-    }
-    listen(document.querySelector('#effect-picker'), 'change', event => selectTab(document.getElementById(`tab-${event.target.value}`)));
-    listen(document.querySelector('#effect-toggle'), 'change', event => {
-      const id = document.querySelector('#effect-picker').value;
-      const source = document.querySelector(`[data-enable="${id}"]`);
-      source.checked = event.target.checked; source.dispatchEvent(new Event('change'));
     });
     document.querySelectorAll('[data-study-effect]').forEach(input => listen(input,'change',()=>{appearance();wake();}));
     document.querySelectorAll('[data-study]').forEach(input => listen(input, 'input', () => {
@@ -555,17 +622,23 @@ try {
         }
         case 'point-color': pointMaterial.uniforms.uColor.value.set(input.value); break;
         case 'point-dark': pointMaterial.uniforms.uDarkColor.value.set(input.value); break;
-        case 'model-x': (presetPoints ?? wrapper).rotation.x = THREE.MathUtils.degToRad(value); break;
-        case 'model-y': wrapper.rotation.y = THREE.MathUtils.degToRad(value); break;
       }
       wake();
     }));
     document.querySelector('#motion-note').textContent = reduced.matches ? 'Reduced motion: automatic playback and twinkle are off. Play is available manually.' : '';
-    listen(document.querySelector('#point-spin'), 'change', wake);
+    document.querySelectorAll('[data-rotation]').forEach(input => listen(input, 'input', () => {
+      const value = Number(input.value);
+      document.getElementById(`${input.id}-value`).value = input.value;
+      if (input.dataset.rotation === 'xDegrees') (presetPoints ?? wrapper).rotation.x = THREE.MathUtils.degToRad(value);
+      if (input.dataset.rotation === 'yDegrees') wrapper.rotation.y = THREE.MathUtils.degToRad(value);
+      wake();
+    }));
+    listen(copyButton, 'click', copySettings);
     listen(document.querySelector('#reset-points'), 'click', loadModel);
     listen(modelSelect, 'change', loadModel);
     await discoverModels();
-    if (!disposed) await loadModel();
+    selectClip();
+    if (!disposed && modelSelect.value) await loadModel();
 } catch (error) {
   console.error('Model preview:', error);
   status.textContent = 'Could not start the viewer. Open this page through your local HTTP server; check the console for details.';

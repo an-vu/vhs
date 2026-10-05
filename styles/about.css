@@ -1,3 +1,5 @@
+.about-page { --about-block-lift: 24px; }
+
 .about {
   --headline-size: clamp(34px, 4.6vw, 60px);
   --nav-align: flex-start;
@@ -24,16 +26,19 @@
   white-space: nowrap
 }
 
-/* Same full-page background behavior as Home; projection places the rover right. */
+/* Foreground preview; the canvas lets clicks pass through to the page. */
 #about-rover {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 4;
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
 }
 #about-rover.is-ready { opacity: 1; }
+@media (max-width: 699px) {
+  #about-rover { transition: opacity .5s ease-out; }
+}
 #about-rover canvas {
   display: block;
   width: 100%;
@@ -44,10 +49,27 @@
   cursor: grab;
 }
 #about-rover canvas:active { cursor: grabbing; }
-.about-page .about { position: relative; z-index: 1; }
+.about-page .about {
+  position: relative;
+  z-index: 1;
+  padding-top: max(40px, calc(58svh - var(--header-height) - 2px - var(--about-block-lift)));
+}
 #about-model-expand { margin-top: 12px; }
+.about-model-placeholder { display: block; width: 44px; height: 44px; margin-top: 12px; }
+@media (max-width: 699px) {
+  .about-page .about {
+    padding-top: max(40px, calc(50svh - var(--header-height) - 14px - var(--about-block-lift)));
+  }
+}
 .about-model-expanded { overflow: hidden; }
-.about-model-expanded #about-rover { pointer-events: auto; }
+.about-rover-background #about-rover { z-index: 0; }
+.about-model-expanded #about-rover { pointer-events: auto; z-index: 4; }
+.about-model-expanded #about-model-expand {
+  position: fixed;
+  /* Coordinates follow the placeholder so expanding never relocates the control. */
+  margin: 0;
+  z-index: 5;
+}
 .about-model-expanded .about { pointer-events: none; }
 .about-intro, .about .main-nav {
   transition: translate .55s ease, opacity .55s ease;

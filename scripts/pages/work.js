@@ -1,20 +1,8 @@
 (() => {
   const content = document.querySelector('.work-content');
   if (!content) return;
-  function openLinkedProject() {
-    let id;
-    try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
-    const project = document.getElementById(id);
-    if (!project?.matches('details.project') || !content.contains(project)) return;
-    content.querySelectorAll('details.project[open]').forEach(other => {
-      if (other !== project) other.open = false;
-    });
-    project.open = true;
-    requestAnimationFrame(() => project.scrollIntoView({ block: 'start', behavior: 'instant' }));
-  }
-  try { StudioContentList(content); } catch (error) { console.warn('Work motion unavailable:', error); }
-  openLinkedProject();
-  addEventListener('hashchange', openLinkedProject);
+  try { StudioContentList(content, { deepLinks: true }); }
+  catch (error) { console.warn('Work motion unavailable:', error); }
   const galleries = [...content.querySelectorAll('.project-gallery')];
   if (!galleries.length) return;
   import('../vflow/vflow.js').then(({ createVFlow }) => {

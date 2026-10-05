@@ -1,4 +1,4 @@
-function StudioContentList(content) {
+function StudioContentList(content, { deepLinks = false } = {}) {
   if (!content) return;
   const M = StudioMotion;
   StudioPageScroll(content);
@@ -46,9 +46,8 @@ function StudioContentList(content) {
   reduced.addEventListener("change", configure);
   configure();
   let alignFrame = 0;
-  content.addEventListener("toggle", event => {
-    const project = event.target;
-    if (!project.matches("details.project") || !project.open) return;
+  const linkedOpens = new WeakSet();
+  function alignProject(project, behavior) {
     // Also support browsers without native exclusive details groups.
     content.querySelectorAll("details.project[open]").forEach(other => {
       if (other !== project) other.open = false;
@@ -66,7 +65,26 @@ function StudioContentList(content) {
           M.paintEntrance([item.element], [item.spring]);
         }
       }
-      project.scrollIntoView({ block: "start", behavior: reduced.matches ? "instant" : "smooth" });
+      project.scrollIntoView({ block: "start", behavior });
     });
+  }
+  content.addEventListener("toggle", event => {
+    const project = event.target;
+    if (!project.matches("details.project")) return;
+    const linked = linkedOpens.delete(project);
+    if (!project.open) return;
+    alignProject(project, linked || reduced.matches ? "instant" : "smooth");
   }, true);
+  if (deepLinks) {
+    function openLinkedProject() {
+      let id;
+      try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+      const project = document.getElementById(id);
+      if (!project?.matches("details.project") || !content.contains(project)) return;
+      if (project.open) alignProject(project, "instant");
+      else { linkedOpens.add(project); project.open = true; }
+    }
+    openLinkedProject();
+    addEventListener("hashchange", openLinkedProject);
+  }
 }

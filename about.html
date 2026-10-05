@@ -2,6 +2,8 @@
 <html lang="en">
 
 <head>
+  <script src="/scripts/shared/focus-input.js"></script>
+  <script src="/scripts/shared/reload-top.js"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="preload" href="models/curiosity.glb" as="fetch" crossorigin>
@@ -44,7 +46,7 @@
   <main class="page-content about wrap" aria-label="About vHuman Studios">
     <div class="about-content">
       <p class="about-intro">
-        <span class="about-sentence">vHuman Studios is a creative technology studio focused on digital products,
+        <span class="about-sentence">vHuman is a creative technology studio focused on digital products,
           software, and interactive experiences.
           Our work brings design and engineering together to create technology that is useful, thoughtful, and enjoyable
           to use.</span>
@@ -55,8 +57,10 @@
         <a href="work.html">Work</a>
         <a href="mailto:eve@vhumanstudios.com">Contact</a>
       </nav>
-      <button class="model-expand" id="about-model-expand" type="button" aria-label="Explore Curiosity rover" aria-expanded="false" aria-controls="about-rover" hidden>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <button class="model-expand" id="about-model-expand" type="button" aria-label="Explore Curiosity rover"
+        aria-expanded="false" aria-controls="about-rover" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"
+          aria-hidden="true">
           <path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" />
           <path class="collapse-icon" d="M4 9h5V4m6 0v5h5M9 20v-5H4m16 0h-5v5" />
         </svg>
