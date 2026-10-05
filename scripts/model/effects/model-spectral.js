@@ -7,7 +7,7 @@ export const spectralDefaults = { density: 100000, size: 1.6, variation: .35, sp
 export const spectralPalettes = ['Spectrum', 'Aurora', 'Ember', 'Ultraviolet', 'Glacier', 'vHuman'];
 
 // Triangle areas are measured in the displayed pose; samples remain component-local.
-export function createSpectral(meshes, { deferPreparation = false } = {}) {
+export function createSpectral(meshes, { deferPreparation = false, scanRoot = null } = {}) {
   const options = { ...spectralDefaults }, clouds = [], surfaces = [];
   const a=new THREE.Vector3(), b=new THREE.Vector3(), c=new THREE.Vector3();
   const wa=new THREE.Vector3(), wb=new THREE.Vector3(), wc=new THREE.Vector3();
@@ -15,6 +15,7 @@ export function createSpectral(meshes, { deferPreparation = false } = {}) {
   const edge=new THREE.Line3(), candidate=new THREE.Vector3(), closest=new THREE.Vector3();
   let totalArea=0, time=0, scanTime=0, visible=false;
   const scanBounds=new THREE.Box3(), partBounds=new THREE.Box3(), viewport=new THREE.Vector2();
+  const meshToScan=new THREE.Matrix4();
   let prepared = false, generation = 0;
   function* prepareSurfaces() {
     surfaces.length = 0; totalArea = 0;
@@ -202,8 +203,17 @@ uniform float opacity; varying vec3 tint;varying float alpha;
       uniforms.lineResponse.value=options.lineResponse;
       uniforms.scanStrength.value=options.scanEnabled?options.scanStrength:0;
       if(options.scanEnabled){
+        if(scanRoot){
+          if(!matricesCurrent)scanRoot.updateWorldMatrix(true,false);
+          uniforms.worldToScan.value.copy(scanRoot.matrixWorld).invert();
+        } else uniforms.worldToScan.value.identity();
         scanBounds.makeEmpty();
-        for(const {mesh} of surfaces){if(!matricesCurrent)mesh.updateWorldMatrix(true,false);partBounds.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);scanBounds.union(partBounds);}
+        for(const {mesh} of surfaces){
+          if(!matricesCurrent)mesh.updateWorldMatrix(true,false);
+          meshToScan.multiplyMatrices(uniforms.worldToScan.value,mesh.matrixWorld);
+          partBounds.copy(mesh.geometry.boundingBox).applyMatrix4(meshToScan);
+          scanBounds.union(partBounds);
+        }
         if(!scanBounds.isEmpty()){
           const height=Math.max(.001,scanBounds.max.y-scanBounds.min.y), width=Math.max(.001,height*options.scanWidth);
           const phase=scanTime*Math.PI*2;

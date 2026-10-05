@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { paletteGLSL, paletteUniforms } from './model-palette.js';
 
 export const scanPalettes = ['Spectrum', 'vHuman', 'Phosphor', 'Amber', 'Ice Blue'];
@@ -5,6 +6,7 @@ export const scanPalettes = ['Spectrum', 'vHuman', 'Phosphor', 'Amber', 'Ice Blu
 // Shared by the particle and line shaders: one moving scan field and spectral trail.
 export const scanBandGLSL = `
 ${paletteGLSL}
+uniform mat4 worldToScan;
 uniform int scanPalette;
 uniform float scanHeight, scanWidth, scanDirection, scanStrength, edgeInteraction, lineResponse;
 uniform float scanTime, scanUneven, scanVolume;
@@ -25,6 +27,7 @@ float scanNoiseFlat(vec2 p){
 }
 // Shared world-space coordinates keep line fading and particles in sync.
 float scanCoordinate(vec3 p){
+  p=(worldToScan*vec4(p,1.)).xyz;
   if(scanUneven<=0.)return p.y;
   if(scanVolume<.5){
     vec2 cell=p.xz/max(scanWidth,.001)*2.;
@@ -62,5 +65,5 @@ vec3 scanColor(float y, float colorOffset){
 vec3 scanColor(float y){return scanColor(y,0.);}
 `;
 export function scanUniforms() {
-  return { ...paletteUniforms(), scanVolume:{value:0}, scanTime:{value:0}, scanUneven:{value:0}, scanPalette:{value:0}, edgeInteraction:{value:0}, lineResponse:{value:0}, scanHeight:{value:0}, scanWidth:{value:.1}, scanDirection:{value:1}, scanStrength:{value:0} };
+  return { ...paletteUniforms(), worldToScan:{value:new THREE.Matrix4()}, scanVolume:{value:0}, scanTime:{value:0}, scanUneven:{value:0}, scanPalette:{value:0}, edgeInteraction:{value:0}, lineResponse:{value:0}, scanHeight:{value:0}, scanWidth:{value:.1}, scanDirection:{value:1}, scanStrength:{value:0} };
 }

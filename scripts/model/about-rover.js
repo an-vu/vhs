@@ -202,7 +202,7 @@ function setExpanded(value, restoreFocus = false) {
 function prepareSpectral() {
   if (disposed || spectral || reduced.matches) return;
   if (spectralPreparation) return spectralPreparation;
-  const effect = createSpectral(meshes, { deferPreparation: true });
+  const effect = createSpectral(meshes, { deferPreparation: true, scanRoot: rotation });
   preparingSpectral = effect;
   Object.assign(effect.options, curiositySettings.spectral);
   if (viewportWidth < 700) {

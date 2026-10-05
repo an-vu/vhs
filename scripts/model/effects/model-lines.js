@@ -126,6 +126,8 @@ export function createModelLines(meshes, scene, entrance = null) {
     setEnabled(value){root.visible=value;},
     update(renderer,scan,matricesCurrent=false,modelScale=1){
       if(!root.visible)return;
+      if(scan?.worldToScan)uniforms.worldToScan.value.copy(scan.worldToScan.value);
+      else uniforms.worldToScan.value.identity();
       for(const key of ['scanVolume','scanTime','scanUneven','scanHeight','scanWidth','scanDirection','scanStrength','edgeInteraction','lineResponse','scanPalette'])uniforms[key].value=scan?.[key].value??(key==='scanWidth'?.1:key==='scanDirection'?1:0);
       renderer.getSize(uniforms.resolution.value);
       for(const key of ['width','triangleOpacity','creaseOpacity','silhouetteWeight','threshold','creases','silhouettes','boundaries','triangles','dash','gap']) uniforms[key].value=options[key];

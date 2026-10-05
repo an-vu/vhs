@@ -52,7 +52,7 @@
 .about-page .about {
   position: relative;
   z-index: 1;
-  padding-top: max(40px, calc(58svh - var(--header-height) - 2px - var(--about-block-lift)));
+  padding-top: max(40px, calc(58svh - var(--header-height) + 12px - var(--about-block-lift)));
 }
 #about-model-expand { margin-top: 12px; }
 .about-model-placeholder { display: block; width: 44px; height: 44px; margin-top: 12px; }
