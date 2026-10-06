@@ -50,7 +50,7 @@ float scanEnvelope(float y){
 float scanBand(float y){return scanStrength*scanEnvelope(y);}
 vec3 scanColor(float y, float colorOffset){
   float age=clamp(.5+(scanHeight-y)*scanDirection/scanWidth+colorOffset,0.,1.);
-  if(scanPalette==1)return age<.5?mix(palettePaper,paletteGray,smoothstep(0.,.5,age)):mix(paletteGray,paletteInk,smoothstep(.5,1.,age));
+  if(scanPalette==1)return age<.5?mix(scanPaper,scanGray,smoothstep(0.,.5,age)):mix(scanGray,scanInk,smoothstep(.5,1.,age));
   if(scanPalette==2)return studioColor(mix(vec3(.4,1.,.12),vec3(.015,.16,.035),age));
   if(scanPalette==3)return studioColor(mix(vec3(1.,.65,.08),vec3(.28,.065,.008),age));
   if(scanPalette==4)return studioColor(mix(vec3(.42,.85,1.),vec3(.025,.1,.38),age));

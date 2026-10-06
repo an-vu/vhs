@@ -45,7 +45,7 @@ export function createTextMask(container, text, onPaint) {
     if (mask.width !== width) mask.width = width;
     if (mask.height !== height) mask.height = height;
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = ctx.strokeStyle = ctx.shadowColor = "white";
+    ctx.fillStyle = ctx.strokeStyle = ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#F9F8F6";
     ctx.shadowBlur = bounds.width <= 760 ? 9 : 12;
     ctx.lineWidth = bounds.width <= 760 ? 2 : 3;
     ctx.lineJoin = "round";

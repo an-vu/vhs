@@ -54,7 +54,7 @@
 .vflow-shade {
   position: absolute;
   inset: 0;
-  background: var(--fg, #30302e);
+  background: #30302e;
   pointer-events: none
 }
 

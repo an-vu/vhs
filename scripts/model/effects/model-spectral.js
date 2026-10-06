@@ -1,3 +1,4 @@
+import { watchPaletteUniforms } from './model-palette.js';
 import { runIdleSteps } from '../../shared/idle-work.js';
 import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
@@ -172,6 +173,7 @@ uniform float opacity; varying vec3 tint;varying float alpha;
     const version = ++generation;
     return runIdleSteps(buildClouds(), () => signal?.aborted || generation !== version, foreground);
   }
+  const stopPalette = watchPaletteUniforms(uniforms);
   async function precompile(renderer, camera) {
     if (!clouds.length) return;
     const warmup = new THREE.Scene();
@@ -227,6 +229,6 @@ uniform float opacity; varying vec3 tint;varying float alpha;
     get scan(){return uniforms;},
     get upwardProgress(){return Math.min(1,scanTime*2);},
     get count(){return clouds.reduce((n,c)=>n+c.geometry.getAttribute('position').count,0);},
-    dispose(){generation++;for(const c of clouds){c.removeFromParent();c.geometry.dispose();}material.dispose();}
+    dispose(){stopPalette();generation++;for(const c of clouds){c.removeFromParent();c.geometry.dispose();}material.dispose();}
   };
 }

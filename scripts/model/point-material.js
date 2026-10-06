@@ -1,9 +1,12 @@
 import * as THREE from "three";
-import { POINT_SIZE, POINT_COLOR, POINT_DARK_COLOR, POINT_OPACITY } from "./config.js";
+import { POINT_SIZE, POINT_OPACITY } from "./config.js";
+
+import { paletteColors, watchModelPalette } from './effects/model-palette.js';
 
 // Shared palette and text dissolve for the PLY vertex shader.
 export function createPointMaterial(renderer, settings = {}, vertexShader) {
-  return new THREE.ShaderMaterial({
+  const colors = paletteColors();
+  const material = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     uniforms: {
@@ -14,8 +17,8 @@ export function createPointMaterial(renderer, settings = {}, vertexShader) {
       uTime: { value: 0 },
       uPointSize: { value: settings.POINT_SIZE ?? POINT_SIZE },
       uScale: { value: renderer.domElement.height / 2 },
-      uDarkColor: { value: POINT_DARK_COLOR },
-      uColor: { value: POINT_COLOR },
+      uDarkColor: { value: colors.ink },
+      uColor: { value: colors.gray },
       uOpacity: { value: settings.POINT_OPACITY ?? POINT_OPACITY }
     },
     vertexShader,
@@ -75,4 +78,10 @@ export function createPointMaterial(renderer, settings = {}, vertexShader) {
                 }
               `
   });
+  const stopPalette = watchModelPalette(colors => {
+    material.uniforms.uDarkColor.value.copy(colors.ink);
+    material.uniforms.uColor.value.copy(colors.gray);
+  });
+  material.addEventListener('dispose', stopPalette);
+  return material;
 }

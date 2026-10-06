@@ -1,3 +1,4 @@
+import { MODEL_THEME_EVENT } from "./effects/model-palette.js";
 import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
 import * as defaults from "./config.js";
@@ -89,6 +90,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
     await renderer.compileAsync(scene, camera);
   }
   catch (error) { renderer.dispose(); renderer.domElement.remove(); throw error; }
+  addEventListener(MODEL_THEME_EVENT, () => { if (visible && reduced.matches) draw(performance.now()); });
   const observer = new ResizeObserver(resize);
   observer.observe(container);
   document.addEventListener("visibilitychange", sync);

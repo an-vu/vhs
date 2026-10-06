@@ -147,10 +147,10 @@ html.page-motion {
   inset: var(--blur-inset);
   background: var(--bg);
   --edge-mask: linear-gradient(var(--fade-direction),
-      #000 calc(100% - var(--blur-reach)),
-      rgba(0, 0, 0, .85) calc(100% - var(--blur-reach) * .75),
-      rgba(0, 0, 0, .5) calc(100% - var(--blur-reach) * .5),
-      rgba(0, 0, 0, .15) calc(100% - var(--blur-reach) * .25),
+      var(--fg) calc(100% - var(--blur-reach)),
+      rgba(48, 48, 46, .85) calc(100% - var(--blur-reach) * .75),
+      rgba(48, 48, 46, .5) calc(100% - var(--blur-reach) * .5),
+      rgba(48, 48, 46, .15) calc(100% - var(--blur-reach) * .25),
       transparent 100%);
   -webkit-mask-image: var(--edge-mask);
   mask-image: var(--edge-mask);
@@ -178,14 +178,14 @@ html.page-motion {
 
   :is(.header-blur, .footer-blur)::before {
     z-index: 1;
-    --progressive-mask: linear-gradient(var(--fade-direction), #000 55%, transparent 95%);
+    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) 55%, transparent 95%);
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
   }
 
   :is(.header-blur, .footer-blur)::after {
     z-index: 2;
-    --progressive-mask: linear-gradient(var(--fade-direction), #000 40%, transparent 80%);
+    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) 40%, transparent 80%);
     -webkit-backdrop-filter: blur(9px);
     backdrop-filter: blur(9px);
   }

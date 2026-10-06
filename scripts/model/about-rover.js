@@ -4,6 +4,7 @@ import { setupModelControls } from './controls.js';
 import { INERTIA, MAX_PITCH, ZOOM_SMOOTHING } from './config.js';
 import { createModelLines } from './effects/model-lines.js';
 import { createSpectral } from './effects/model-spectral.js';
+import { paletteColors, MODEL_THEME_EVENT } from './effects/model-palette.js';
 import { createFrameClock } from '../shared/frame-clock.js';
 import { curiositySettings } from './settings/curiosity.js';
 import { createAboutRoverView } from './about-rover-view.js';
@@ -194,7 +195,7 @@ async function start() {
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.setClearColor(0, 0);
+    renderer.setClearColor(paletteColors().ink, 0);
     host.append(renderer.domElement);
     controls = setupModelControls({ element: renderer.domElement, state, rotateView,
       isEnabled: () => roverView.expanded && !roverView.transitioning, redraw: wake });
@@ -226,11 +227,12 @@ async function start() {
     wrapper.position.copy(bounds.getCenter(new THREE.Vector3())).multiplyScalar(-scale);
     scene.updateMatrixWorld(true);
     camera.position.copy(view); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
-    lines = createModelLines(meshes, scene, entrance);
+    lines = createModelLines(meshes, scene, entrance, { followTheme: true });
     Object.assign(lines.options, curiositySettings.line, {
       // Opaque paper-colored faces occlude page text while preserving the line style.
       surface: 'solid', shading: false,
-      surfaceColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f9f8f6'
+      color: '#' + paletteColors().ink.getHexString(),
+      surfaceColor: '#' + paletteColors().paper.getHexString()
     });
     lines.setEnabled(true);
     mixer = new THREE.AnimationMixer(model);
@@ -265,3 +267,5 @@ const textReady = document.documentElement.dataset.aboutReady ? Promise.resolve(
   addEventListener('about-ready', resolve, { once: true, signal: events.signal });
 });
 start();
+
+addEventListener(MODEL_THEME_EVENT, wake, { signal: events.signal });

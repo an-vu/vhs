@@ -1,6 +1,6 @@
 import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
-import { paletteColors } from './model-palette.js';
+import { paletteColors, watchPaletteUniforms } from './model-palette.js';
 
 const colors = paletteColors();
 
@@ -86,7 +86,7 @@ varying float visibleEdge,along,edgeOpacity,lineCoverage; varying vec3 scanPosit
 ${scanBandGLSL}
 void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.))); #include <colorspace_fragment>
 }`.replace('; #include',';\n#include');
-export function createModelLines(meshes, scene, entrance = null) {
+export function createModelLines(meshes, scene, entrance = null, { followTheme = false } = {}) {
   const root = new THREE.Group(); scene.add(root); root.visible = false;
   const options = { ...lineDefaults }, resources = new Set(), copies = [];
   const uniforms = {  ...scanUniforms(), pixelRatio:{value:1}, resolution:{value:new THREE.Vector2()}, color:{value:new THREE.Color(options.color)} };
@@ -124,6 +124,12 @@ export function createModelLines(meshes, scene, entrance = null) {
     const make=(g,m,order)=>{const object=new THREE.Mesh(g,m);object.matrixAutoUpdate=false;object.frustumCulled=false;object.renderOrder=order;root.add(object);return object;};
     copies.push({source,depth:make(source.geometry,depth,-100),surface:make(source.geometry,surface,-50),front:make(geometry,front,20),back:make(geometry,back,10)});
   }
+  const stopPalette = watchPaletteUniforms(uniforms, colors => {
+    if (followTheme) {
+      options.color = '#' + colors.ink.getHexString();
+      options.surfaceColor = '#' + colors.paper.getHexString();
+    }
+  });
   return {
     options,
     setEnabled(value){root.visible=value;},
@@ -143,6 +149,6 @@ export function createModelLines(meshes, scene, entrance = null) {
       surface.color.set(options.surfaceColor);surface.opacity=options.surface==='solid'?1:options.surfaceOpacity;
       for(const item of copies){if(!matricesCurrent)item.source.updateWorldMatrix(true,false);for(const key of ['depth','surface','front','back'])item[key].matrix.copy(item.source.matrixWorld);item.surface.material=surface;item.surface.visible=options.surface!=='none';item.back.visible=options.hidden!=='off';}
     },
-    dispose(){scene.remove(root);resources.forEach(r=>r.dispose());}
+    dispose(){stopPalette();scene.remove(root);resources.forEach(r=>r.dispose());}
   };
 }
