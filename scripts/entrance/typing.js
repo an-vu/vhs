@@ -47,5 +47,5 @@ function createTypingEntrance(brand, onComplete = () => { }, options = {}) {
   return { start, finish };
 }
 
-createTypingEntrance.defaults = Object.freeze({"blank": 400, "blink": 900, "before": 3, "beforeDelete": 2, "afterDelete": 2, "type": 120, "wordPause": 550, "erase": 100, "dismiss": 500});
+createTypingEntrance.defaults = Object.freeze({ "blank": 400, "blink": 900, "before": 3, "beforeDelete": 2, "afterDelete": 2, "type": 120, "wordPause": 550, "erase": 100, "dismiss": 500 });
 createTypingEntrance.duration = t => t.blank + t.blink * (t.before + t.beforeDelete + t.afterDelete) + 12 * t.type + t.wordPause + 7 * t.erase + t.dismiss;

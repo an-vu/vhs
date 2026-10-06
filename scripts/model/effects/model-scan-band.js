@@ -65,5 +65,5 @@ vec3 scanColor(float y, float colorOffset){
 vec3 scanColor(float y){return scanColor(y,0.);}
 `;
 export function scanUniforms() {
-  return { ...paletteUniforms(), worldToScan:{value:new THREE.Matrix4()}, scanVolume:{value:0}, scanTime:{value:0}, scanUneven:{value:0}, scanPalette:{value:0}, edgeInteraction:{value:0}, lineResponse:{value:0}, scanHeight:{value:0}, scanWidth:{value:.1}, scanDirection:{value:1}, scanStrength:{value:0} };
+  return { ...paletteUniforms(), worldToScan: { value: new THREE.Matrix4() }, scanVolume: { value: 0 }, scanTime: { value: 0 }, scanUneven: { value: 0 }, scanPalette: { value: 0 }, edgeInteraction: { value: 0 }, lineResponse: { value: 0 }, scanHeight: { value: 0 }, scanWidth: { value: .1 }, scanDirection: { value: 1 }, scanStrength: { value: 0 } };
 }

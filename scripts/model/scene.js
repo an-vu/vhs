@@ -5,7 +5,7 @@ import * as defaults from "./config.js";
 import { createPLYPointCloud } from "./ply-points.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
-export async function createModelScene(container, model, onRevealProgress = () => {}) {
+export async function createModelScene(container, model, onRevealProgress = () => { }) {
   const C = { ...defaults, ...modelDefaults, ...model.settings };
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   const scene = new THREE.Scene();

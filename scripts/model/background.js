@@ -3,7 +3,7 @@ import { chooseModel } from "./registry.js";
 import { createModelScene } from "./scene.js";
 import { setupModelControls } from "./controls.js";
 
-export async function createModelBackground(container, button, onExpand, onControlReady = () => {}) {
+export async function createModelBackground(container, button, onExpand, onControlReady = () => { }) {
   let controlReady = false;
   button.style.opacity = 0;
   const scene = await createModelScene(container, chooseModel(), opacity => {

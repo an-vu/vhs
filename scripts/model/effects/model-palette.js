@@ -34,10 +34,10 @@ export function paletteUniforms() {
   };
 }
 
-export function watchPaletteUniforms(uniforms, update = () => {}) {
+export function watchPaletteUniforms(uniforms, update = () => { }) {
   return watchModelPalette(colors => {
     for (const [key, role] of [['palettePaper', 'paper'], ['paletteInk', 'ink'], ['paletteGray', 'gray'],
-      ['scanPaper', 'scanPaper'], ['scanInk', 'scanInk'], ['scanGray', 'scanGray']]) uniforms[key].value.copy(colors[role]);
+    ['scanPaper', 'scanPaper'], ['scanInk', 'scanInk'], ['scanGray', 'scanGray']]) uniforms[key].value.copy(colors[role]);
     update(colors);
   });
 }

@@ -197,8 +197,10 @@ async function start() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.setClearColor(paletteColors().ink, 0);
     host.append(renderer.domElement);
-    controls = setupModelControls({ element: renderer.domElement, state, rotateView,
-      isEnabled: () => roverView.expanded && !roverView.transitioning, redraw: wake });
+    controls = setupModelControls({
+      element: renderer.domElement, state, rotateView,
+      isEnabled: () => roverView.expanded && !roverView.transitioning, redraw: wake
+    });
     const gltf = await new GLTFLoader().loadAsync(new URL('../../models/curiosity.glb', import.meta.url).href);
     if (disposed) {
       gltf.scene.traverse(object => {

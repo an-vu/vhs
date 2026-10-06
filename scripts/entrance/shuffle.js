@@ -78,9 +78,14 @@ function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
       return letter;
     });
 
+    const tracks = letters.map(letter => [{ time: 0, transform: letter.style.transform, opacity: 0, easing: 'linear' }]);
     let time = t.blank;
     function animate(group, frames, duration, easing = 'cubic-bezier(.45,0,.25,1)') {
-      group.forEach(id => timeline.animate(letters[id], frames(id), { duration, easing, fill: 'forwards' }, time));
+      group.forEach(id => {
+        const track = tracks[id], [from, to] = frames(id);
+        const start = { ...track[track.length - 1], ...from, time, easing };
+        track.push(start, { ...start, ...to, time: time + duration, easing: 'linear' });
+      });
       time += duration;
     }
     function move(group, from, to, duration = t.move) {
@@ -97,11 +102,20 @@ function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
     time += t.holdScrambled;
     const studios = second.filter(id => id >= 6);
     animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], t.fadeStudios);
-    timeline.at(time, () => studios.forEach(id => letters[id].remove()));
+    timeline.at(time, () => studios.forEach(id => {
+      letters[id].getAnimations().forEach(animation => animation.cancel());
+      letters[id].remove();
+    }));
     time += t.holdRemaining;
     move(final, layouts[1], remainingShuffle);
     time += t.remainingPause;
     move(final, remainingShuffle, layouts[2], t.finalMove);
+    // One transform/opacity animation per letter avoids competing filled effects.
+    tracks.forEach((track, id) => {
+      track.push({ ...track[track.length - 1], time });
+      timeline.animate(letters[id], track.map(({ time: at, ...frame }) => ({ ...frame, offset: at / time })),
+        { duration: time, easing: 'linear', fill: 'forwards' });
+    });
     timeline.at(time, finish);
     return timeline.start();
   }
@@ -109,5 +123,5 @@ function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
   return { start, finish };
 }
 
-createShuffleEntrance.defaults = Object.freeze({"blank": 400, "fade": 800, "hold": 800, "move": 350, "shufflePause": 100, "holdScrambled": 550, "fadeStudios": 700, "holdRemaining": 300, "finalMove": 650, "remainingPause": 100});
+createShuffleEntrance.defaults = Object.freeze({ "blank": 400, "fade": 800, "hold": 800, "move": 350, "shufflePause": 100, "holdScrambled": 550, "fadeStudios": 700, "holdRemaining": 300, "finalMove": 650, "remainingPause": 100 });
 createShuffleEntrance.duration = t => t.blank + t.fade + t.hold + 3 * t.move + t.finalMove + t.shufflePause + t.holdScrambled + t.fadeStudios + t.holdRemaining + t.remainingPause;
