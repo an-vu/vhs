@@ -1,12 +1,15 @@
 import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
+import { paletteColors } from './model-palette.js';
+
+const colors = paletteColors();
 
 export const linePresets = {
   fine: { threshold: 20, width: 1, silhouetteWeight: 1.2, surface: 'solid', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .05 },
   technical: { threshold: 40, width: 1, silhouetteWeight: 1.5, surface: 'ghost', surfaceOpacity: .03, hidden: 'off', hiddenOpacity: .05 },
   hidden: { threshold: 40, width: 1, silhouetteWeight: 1.5, surface: 'ghost', surfaceOpacity: .02, hidden: 'dashed', hiddenOpacity: .12 }
 };
-export const lineDefaults = { ...linePresets.fine, creases: true, creaseOpacity: 1, silhouettes: true, boundaries: true, triangles: false, triangleOpacity: 1, color: '#62625e', surfaceColor: '#b8b5af', dash: 5, gap: 4, shading: true, roughness: .8 };
+export const lineDefaults = { ...linePresets.fine, creases: true, creaseOpacity: 1, silhouettes: true, boundaries: true, triangles: false, triangleOpacity: 1, color: '#' + colors.gray.getHexString(), surfaceColor: '#' + colors.paper.getHexString(), dash: 5, gap: 4, shading: true, roughness: .8 };
 
 // Weld coincident positions for adjacency; original mesh geometry stays untouched.
 function edgeGeometry(source) {

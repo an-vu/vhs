@@ -1,8 +1,8 @@
 :root {
   --bg: #F9F8F6;
   --fg: #30302e;
-  --muted: #77736c;
   --nav-fg: #62625e;
+  --muted: var(--nav-fg);
   --image-border: .5px solid rgba(98, 98, 94, .3);
   --image-radius: clamp(12px, 2vw, 18px);
   --header-height: 86px;
@@ -300,4 +300,4 @@ html.page-motion {
   }
 }
 /* Prevent mouse/touch focus rings, including after controls are moved in the DOM. */
-html.pointer-input :is(a, button, summary, [tabindex]):focus { outline: none; }
+:root.pointer-input :focus { outline: none; }

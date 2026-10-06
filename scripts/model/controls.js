@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import {
   MIN_CAMERA_Z,
   MAX_CAMERA_Z,
@@ -18,298 +17,105 @@ export function setupModelControls({
 }) {
   let previousX = 0;
   let previousY = 0;
-
-  const activePointers =
-    new Map();
-
-  let previousPinchDistance =
-    null;
+  const activePointers = new Map();
+  let previousPinchDistance = null;
 
   function getPinchDistance() {
-    const pointers =
-      Array.from(
-        activePointers.values()
-      );
-
-    if (
-      pointers.length < 2
-    ) {
+    const pointers = Array.from(activePointers.values());
+    if (pointers.length < 2) {
       return null;
     }
-
-    const first =
-      pointers[0];
-
-    const second =
-      pointers[1];
-
-    return Math.hypot(
-      second.x -
-      first.x,
-
-      second.y -
-      first.y
-    );
+    const first = pointers[0];
+    const second = pointers[1];
+    return Math.hypot(second.x - first.x, second.y - first.y);
   }
 
-  // ------------------------------------------------
-  // Pointer down
-  // ------------------------------------------------
-
-  element.addEventListener(
-    "pointerdown",
-    (event) => {
-      if (
-        !state.revealComplete || !isEnabled()
-      ) {
-        return;
-      }
-
-      activePointers.set(
-        event.pointerId,
-        {
-          x: event.clientX,
-          y: event.clientY
-        }
-      );
-
-      element.setPointerCapture(
-        event.pointerId
-      );
-
-      if (
-        activePointers.size >= 2
-      ) {
-        state.dragging =
-          false;
-
-        previousPinchDistance =
-          getPinchDistance();
-
-        return;
-      }
-
-      state.dragging =
-        true;
-
-      previousX =
-        event.clientX;
-
-      previousY =
-        event.clientY;
-
-      state.velocityX = 0;
-      state.velocityY = 0;
+  // Capture one pointer for rotation, or two for pinch zoom.
+  element.addEventListener("pointerdown", (event) => {
+    if (!state.revealComplete || !isEnabled()) {
+      return;
     }
-  );
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    element.setPointerCapture(event.pointerId);
+    if (activePointers.size >= 2) {
+      state.dragging = false;
+      previousPinchDistance = getPinchDistance();
+      return;
+    }
+    state.dragging = true;
+    previousX = event.clientX;
+    previousY = event.clientY;
+    state.velocityX = 0;
+    state.velocityY = 0;
+  });
 
-  // ------------------------------------------------
-  // Pointer move
-  // ------------------------------------------------
+  element.addEventListener("pointermove", (event) => {
+    if (!isEnabled() || !activePointers.has(event.pointerId)) {
+      return;
+    }
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
-  element.addEventListener(
-    "pointermove",
-    (event) => {
-      if (
-        !isEnabled() || !activePointers.has(
-          event.pointerId
-        )
-      ) {
-        return;
+    // Pinch zoom.
+    if (activePointers.size >= 2) {
+      state.dragging = false;
+      const currentDistance = getPinchDistance();
+      if (previousPinchDistance !== null && currentDistance !== null) {
+        const difference = previousPinchDistance - currentDistance;
+        state.targetCameraZ += difference * PINCH_ZOOM_SPEED;
+        state.targetCameraZ = THREE.MathUtils.clamp(state.targetCameraZ, MIN_CAMERA_Z, MAX_CAMERA_Z);
       }
-
-      activePointers.set(
-        event.pointerId,
-        {
-          x: event.clientX,
-          y: event.clientY
-        }
-      );
-
-      // ----------------------------------------------
-      // Pinch zoom
-      // ----------------------------------------------
-
-      if (
-        activePointers.size >= 2
-      ) {
-        state.dragging =
-          false;
-
-        const currentDistance =
-          getPinchDistance();
-
-        if (
-          previousPinchDistance !==
-          null &&
-          currentDistance !==
-          null
-        ) {
-          const difference =
-            previousPinchDistance -
-            currentDistance;
-
-          state.targetCameraZ +=
-            difference *
-            PINCH_ZOOM_SPEED;
-
-          state.targetCameraZ =
-            THREE.MathUtils.clamp(
-              state.targetCameraZ,
-              MIN_CAMERA_Z,
-              MAX_CAMERA_Z
-            );
-        }
-
-        redraw();
-        previousPinchDistance =
-          currentDistance;
-
-        return;
-      }
-
-      // ----------------------------------------------
-      // Rotation
-      // ----------------------------------------------
-
-      if (
-        !state.dragging
-      ) {
-        return;
-      }
-
-      const dx =
-        event.clientX -
-        previousX;
-
-      const dy =
-        event.clientY -
-        previousY;
-
-      previousX =
-        event.clientX;
-
-      previousY =
-        event.clientY;
-
-      rotateView(
-        dx * DRAG_SENSITIVITY,
-        dy * DRAG_SENSITIVITY * VERTICAL_SENSITIVITY
-      );
-
-      state.velocityY =
-        dx *
-        DRAG_SENSITIVITY *
-        0.12;
-
       redraw();
-      state.velocityX =
-        dy *
-        DRAG_SENSITIVITY *
-        VERTICAL_SENSITIVITY *
-        0.12;
-    }
-  );
-
-  // ------------------------------------------------
-  // Pointer release
-  // ------------------------------------------------
-
-  function removePointer(
-    event
-  ) {
-    activePointers.delete(
-      event.pointerId
-    );
-
-    if (
-      element.hasPointerCapture(
-        event.pointerId
-      )
-    ) {
-      element.releasePointerCapture(
-        event.pointerId
-      );
-    }
-
-    previousPinchDistance =
-      activePointers.size >= 2
-        ? getPinchDistance()
-        : null;
-
-    if (
-      activePointers.size === 0
-    ) {
-      state.dragging =
-        false;
-
+      previousPinchDistance = currentDistance;
       return;
     }
 
-    if (
-      activePointers.size === 1
-    ) {
-      const remaining =
-        Array.from(
-          activePointers.values()
-        )[0];
+    // Rotation and release velocity.
+    if (!state.dragging) {
+      return;
+    }
+    const dx = event.clientX - previousX;
+    const dy = event.clientY - previousY;
+    previousX = event.clientX;
+    previousY = event.clientY;
+    rotateView(dx * DRAG_SENSITIVITY, dy * DRAG_SENSITIVITY * VERTICAL_SENSITIVITY);
+    state.velocityY = dx * DRAG_SENSITIVITY * 0.12;
+    redraw();
+    state.velocityX = dy * DRAG_SENSITIVITY * VERTICAL_SENSITIVITY * 0.12;
+  });
 
-      previousX =
-        remaining.x;
-
-      previousY =
-        remaining.y;
-
-      state.dragging =
-        true;
-
+  function removePointer(event) {
+    activePointers.delete(event.pointerId);
+    if (element.hasPointerCapture(event.pointerId)) {
+      element.releasePointerCapture(event.pointerId);
+    }
+    previousPinchDistance = activePointers.size >= 2 ? getPinchDistance() : null;
+    if (activePointers.size === 0) {
+      state.dragging = false;
+      return;
+    }
+    if (activePointers.size === 1) {
+      const remaining = Array.from(activePointers.values())[0];
+      previousX = remaining.x;
+      previousY = remaining.y;
+      state.dragging = true;
       state.velocityX = 0;
       state.velocityY = 0;
     }
   }
+  element.addEventListener("pointerup", removePointer);
+  element.addEventListener("pointercancel", removePointer);
 
-  element.addEventListener(
-    "pointerup",
-    removePointer
-  );
-
-  element.addEventListener(
-    "pointercancel",
-    removePointer
-  );
-
-  // ------------------------------------------------
-  // Wheel / trackpad zoom
-  // ------------------------------------------------
-
-  element.addEventListener(
-    "wheel",
-    (event) => {
-      if (
-        !state.revealComplete || !isEnabled()
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      state.targetCameraZ +=
-        event.deltaY *
-        WHEEL_ZOOM_SPEED;
-
-      state.targetCameraZ =
-        THREE.MathUtils.clamp(
-          state.targetCameraZ,
-          MIN_CAMERA_Z,
-          MAX_CAMERA_Z
-        );
-      redraw();
-    },
-
-    {
-      passive: false
+  // Wheel / trackpad zoom.
+  element.addEventListener("wheel", (event) => {
+    if (!state.revealComplete || !isEnabled()) {
+      return;
     }
-  );
+    event.preventDefault();
+    state.targetCameraZ += event.deltaY * WHEEL_ZOOM_SPEED;
+    state.targetCameraZ = THREE.MathUtils.clamp(state.targetCameraZ, MIN_CAMERA_Z, MAX_CAMERA_Z);
+    redraw();
+  }, { passive: false });
+
   function reset() {
     for (const id of activePointers.keys()) {
       if (element.hasPointerCapture(id)) element.releasePointerCapture(id);
@@ -324,5 +130,4 @@ export function setupModelControls({
   });
   window.addEventListener("blur", reset);
   return { reset };
-
 }

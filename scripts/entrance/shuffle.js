@@ -1,15 +1,13 @@
 function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
   const t = { ...createShuffleEntrance.defaults, ...options };
   const name = "vHuman Studios";
-  let started = false, finished = false, timer = null;
-  const animations = new Set();
+  let started = false, finished = false;
+  const timeline = createEntranceTimeline();
 
   function finish() {
     if (!started || finished) return;
     finished = true;
-    clearTimeout(timer);
-    animations.forEach(animation => animation.cancel());
-    animations.clear();
+    timeline.stop();
     brand.classList.remove("is-shuffling");
     brand.classList.add("entrance-complete");
     brand.textContent = "vHuman";
@@ -80,50 +78,32 @@ function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
       return letter;
     });
 
-    function wait(delay, next) {
-      timer = setTimeout(() => { if (!finished) next(); }, delay);
+    let time = t.blank;
+    function animate(group, frames, duration, easing = 'cubic-bezier(.45,0,.25,1)') {
+      group.forEach(id => timeline.animate(letters[id], frames(id), { duration, easing, fill: 'forwards' }, time));
+      time += duration;
     }
-    function animate(group, frames, duration, next, easing = "cubic-bezier(.45,0,.25,1)") {
-      const running = group.map(id => {
-        const animation = letters[id].animate(frames(id), {
-          duration, easing, fill: "forwards"
-        });
-        animations.add(animation);
-        return animation;
-      });
-      Promise.all(running.map(animation => animation.finished)).then(() => {
-        if (finished) return;
-        group.forEach(id => Object.assign(letters[id].style, frames(id).at(-1)));
-        running.forEach(animation => { animations.delete(animation); animation.cancel(); });
-        next();
-      }).catch(() => { }); // Navigation can cancel any phase.
-    }
-    function move(group, from, to, next, duration = t.move) {
+    function move(group, from, to, duration = t.move) {
       animate(group, id => [
         { transform: `translateX(${x(from, id)}px)`, opacity: 1 },
         { transform: `translateX(${x(to.positions.has(id) ? to : from, id)}px)`, opacity: to.positions.has(id) ? 1 : 0 }
-      ], duration, next);
+      ], duration);
     }
-    function gather() {
-      move(final, layouts[1], remainingShuffle, () => {
-        wait(t.remainingPause, () => move(final, remainingShuffle, layouts[2], finish, t.finalMove));
-      });
-    }
-    function fadeStudios() {
-      const studios = second.filter(id => id >= 6);
-      animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], t.fadeStudios, () => {
-        studios.forEach(id => letters[id].remove());
-        wait(t.holdRemaining, gather);
-      });
-    }
-    function shuffleLetters() {
-      move(ids, layouts[0], intermediate, () => {
-        wait(t.shufflePause, () => move(ids, intermediate, layouts[1], () => wait(t.holdScrambled, fadeStudios)));
-      });
-    }
-    wait(t.blank, () => animate(ids, () => [{ opacity: 0 }, { opacity: 1 }], t.fade, () => {
-      wait(t.hold, shuffleLetters);
-    }));
+    animate(ids, () => [{ opacity: 0 }, { opacity: 1 }], t.fade);
+    time += t.hold;
+    move(ids, layouts[0], intermediate);
+    time += t.shufflePause;
+    move(ids, intermediate, layouts[1]);
+    time += t.holdScrambled;
+    const studios = second.filter(id => id >= 6);
+    animate(studios, () => [{ opacity: 1 }, { opacity: 0 }], t.fadeStudios);
+    timeline.at(time, () => studios.forEach(id => letters[id].remove()));
+    time += t.holdRemaining;
+    move(final, layouts[1], remainingShuffle);
+    time += t.remainingPause;
+    move(final, remainingShuffle, layouts[2], t.finalMove);
+    timeline.at(time, finish);
+    return timeline.start();
   }
 
   return { start, finish };

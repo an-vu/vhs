@@ -2,13 +2,22 @@ import * as THREE from 'three';
 
 // One color treatment for Spectral particles and the shared Line/particle scan.
 // Three.Color converts the CSS sRGB tokens to the shader's linear working space.
-export function paletteUniforms() {
+export function paletteColors() {
   const style = getComputedStyle(document.documentElement);
   const color = (token, fallback) => new THREE.Color(style.getPropertyValue(token).trim() || fallback);
   return {
-    palettePaper: { value: color('--bg', '#F9F8F6') },
-    paletteInk: { value: color('--fg', '#30302e') },
-    paletteGray: { value: color('--nav-fg', '#62625e') }
+    paper: color('--bg', '#F9F8F6'),
+    ink: color('--fg', '#30302e'),
+    gray: color('--nav-fg', '#62625e')
+  };
+}
+
+export function paletteUniforms() {
+  const colors = paletteColors();
+  return {
+    palettePaper: { value: colors.paper },
+    paletteInk: { value: colors.ink },
+    paletteGray: { value: colors.gray }
   };
 }
 
