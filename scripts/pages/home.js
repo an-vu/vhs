@@ -1,6 +1,8 @@
 (() => {
   const M = StudioMotion;
+  const preview = window.StudioDissolveEntrance;
   const root = document.documentElement;
+  root.classList.toggle('dissolve-preview', !!preview);
   const stage = document.querySelector(".intro-stage");
   const brand = document.getElementById("introBrand");
   const content = document.getElementById("homeContent");
@@ -16,7 +18,7 @@
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
   let background = null, backgroundLoading = false, expanded = false;
-  let backgroundRevealed = false;
+  let backgroundRevealed = false, formationPending = false, formationReady = false;
   function setExpanded(value) {
     expanded = value;
     root.classList.toggle("aircraft-expanded", value);
@@ -28,19 +30,34 @@
   function syncBackground() {
     const settled = active && state >= 1 &&
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
+    // Start this delay when the last text spring settles, independently of
+    // model loading. The entrance keeps the dots moving until the handoff.
+    if (preview && settled && !formationPending) {
+      formationPending = true;
+      entrance.waitBeforeForm(() => { formationReady = true; syncBackground(); });
+    }
     if (background && settled) backgroundRevealed = true;
     if (background) {
-      background.setVisible(active && backgroundRevealed);
+      background.setTextSettled(settled);
+      if (preview && backgroundRevealed && formationReady && !background.dissolveStarted) {
+        background.beginDissolve(entrance.takeBubbles(), preview.settings.form ?? preview.factory.defaults.form, preview.settings.camera ?? preview.factory.defaults.camera);
+        preview.report('forming', entrance.elapsed);
+      }
+      background.setVisible(active && backgroundRevealed && (!preview || background.dissolveStarted));
       document.getElementById("modelExpand").hidden = !settled || !background.controlReady;
       return;
     }
-    // Prepare during the opening screen; playback still waits for settled text.
+    // Prepare in a worker during the opening pause/fade; reveal still waits for
+    // the existing entrance and text springs to finish.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
     import("../model/background.js")
-      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground))
+      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, preview ? { model: preview.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => preview.report('pullback', entrance.elapsed), onSettled: () => preview.report('model', entrance.elapsed) } : {}))
       .then(controller => { background = controller; syncBackground(); })
-      .catch(error => console.warn("Aircraft background unavailable:", error));
+      .catch(error => {
+        console.warn("Aircraft background unavailable:", error);
+        preview?.report(`Model unavailable: ${error.message}`, entrance.elapsed);
+      });
   }
   let brandWidthPerPixel = 1;
   function measureBrand() {
@@ -66,6 +83,8 @@
     clearTimeout(autoAdvanceTimer);
   }
   const entrance = createStudioEntrance(brand, () => {
+    syncBackground();
+    if (preview) { preview.report('hovering', entrance.elapsed); return; }
     if (autoAdvanceScheduled || autoAdvanceCancelled || !active || state !== 0) return;
     autoAdvanceScheduled = true;
     autoAdvanceTimer = setTimeout(() => {
@@ -74,13 +93,16 @@
         automaticTransition = true;
       }
     }, 1500);
+  }, {
+    onAdvance() { if (active && state === 0) go(1); },
+    onPhase(phase) { preview?.report(phase, entrance.elapsed); }
   });
   const nextStage = () => Math.min(2, Math.floor(state + .04) + 1);
   const loop = M.createLoop((dt, time) => {
     let moving = lift.advance(dt, time);
     for (const s of springs) {
       const preset = scrubbing || s.target === 0 ? M.presets.returning
-        : s === logo || s === legal ? M.presets.smooth : M.presets.entrance;
+        : s === legal || s === logo && !preview ? M.presets.smooth : M.presets.entrance;
       moving = M.step(s, dt * (automaticTransition ? .70 : 1), preset) || moving;
     }
     render();
@@ -97,7 +119,16 @@
     brand.style.top = `${height / 2}px`;
     brand.style.fontSize = `${startSize}px`;
     brand.style.transform = `translate(-50%, -50%) translateY(${((mobile ? 36 : 43) - height / 2) * move}px) scale(${scale})`;
-    line.style.opacity = move;
+    if (preview && state > 0) {
+      brand.style.top = `${mobile ? 36 : 43}px`;
+      brand.style.fontSize = `${mobile ? 22 : 24}px`;
+      brand.style.transform = `translate(-50%, -50%) translateY(${44 * (1 - logo.value)}px)`;
+      brand.style.opacity = move;
+    }
+    // Keep the backdrop-filter group at full opacity. Animating the parent
+    // opacity creates an intermediate backdrop surface during the reveal.
+    line.style.opacity = preview ? 1 : move;
+    line.style.visibility = preview && state === 0 ? 'hidden' : '';
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
     M.paintFooter(footer, legal);
@@ -120,9 +151,10 @@
     state = next;
     if (state < 2 || immediate) lift.release();
     logo.target = M.clamp(state);
+    if (preview) logo.delay = entering && !immediate ? M.entranceDelay(0) : 0;
     lines.forEach((s, i) => {
       s.target = M.clamp(state);
-      s.delay = entering && !immediate ? M.entranceDelay(i) : 0;
+      s.delay = entering && !immediate ? M.entranceDelay(i + (preview ? 1 : 0)) : 0;
     });
     legal.target = M.clamp(state - 1);
     if (state === 0 && content.contains(document.activeElement)) brand.focus({ preventScroll: true });

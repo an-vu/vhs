@@ -165,5 +165,5 @@ function createDotEntrance(brand, onComplete = () => { }, options = {}, onDurati
   return { start: startEntrance, finish: finishEntrance };
 }
 
-createDotEntrance.defaults = Object.freeze({ "blank": 400, "fade": 1600, "dropDelay": 1300, "drop": 1100, "landedHold": 350, "studiosDrop": 850, "dotExit": 1400, "center": 700, "rollAway": 300 });
+createDotEntrance.defaults = Object.freeze({"blank": 400, "fade": 1600, "dropDelay": 1300, "drop": 1100, "landedHold": 340, "studiosDrop": 850, "dotExit": 1400, "center": 700, "rollAway": 300});
 createDotEntrance.duration = t => Math.max(t.blank + t.fade, t.dropDelay + t.drop) + t.landedHold + Math.max(t.studiosDrop, Math.max(t.dotExit, t.dotExit * .72 + t.center) + t.rollAway);

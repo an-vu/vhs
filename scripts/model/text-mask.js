@@ -39,6 +39,7 @@ export function createTextMask(container, text, onPaint) {
       [element.textContent, rect.x, rect.y, rect.width, rect.height, css.fontSize, css.fontFamily,
       css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform])]);
     if (key === maskKey) return;
+    const painted = window.StudioDiagnostics?.start('Readability mask layout and paint');
     maskKey = key;
     const width = Math.max(1, Math.round(bounds.width));
     const height = Math.max(1, Math.round(bounds.height));
@@ -66,6 +67,7 @@ export function createTextMask(container, text, onPaint) {
       }
     }
     onPaint(mask);
+    painted?.();
   }
   return { update: paintTextMask, invalidate() { glyphCache.clear(); maskKey = ""; } };
 }

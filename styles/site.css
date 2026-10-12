@@ -2,6 +2,7 @@
   --bg: #F9F8F6;
   --fg: #30302e;
   --nav-fg: #62625e;
+  --light-gray: #C7C6C4;
   --muted: var(--nav-fg);
   --image-border: .5px solid rgba(98, 98, 94, .3);
   --image-radius: clamp(12px, 2vw, 18px);

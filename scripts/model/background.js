@@ -1,27 +1,33 @@
 import { createTextMask } from './text-mask.js';
-import { chooseModel } from "./registry.js";
+import { chooseModel, models } from "./registry.js";
 import { createModelScene } from "./scene.js";
 import { setupModelControls } from "./controls.js";
 
-export async function createModelBackground(container, button, onExpand, onControlReady = () => { }) {
+export async function createModelBackground(container, button, onExpand, onControlReady = () => { }, options = {}) {
   let controlReady = false;
+  let modelSettled = false, textSettled = false;
   button.style.opacity = 0;
-  const scene = await createModelScene(container, chooseModel(), opacity => {
+  const scene = await createModelScene(container, models.find(model => model.id === options.model) || chooseModel(), opacity => {
     button.style.opacity = opacity;
     if (opacity > 0 && !controlReady) {
       controlReady = true;
       onControlReady();
     }
-  });
+  }, { ...options, onSettled() {
+    modelSettled = true;
+    updateTextExclusion();
+    options.onSettled?.();
+  } });
   let active = false, expanded = false, fade = null;
   const text = [...document.querySelectorAll("#introBrand, .home-main h1 span, .home-main .main-nav a")];
   const textMask = createTextMask(container, text, canvas => scene.setTextMask(canvas, true));
   let measurement = 0, trackUntil = 0;
+  const canMask = () => active && !expanded && modelSettled && textSettled;
   function updateTextExclusion() {
-    if (measurement || !active || expanded) return;
+    if (measurement || !canMask()) return;
     measurement = requestAnimationFrame(() => {
       measurement = 0;
-      if (!active || expanded) return;
+      if (!canMask()) return;
       textMask.update();
       if (performance.now() < trackUntil) updateTextExclusion();
     });
@@ -50,6 +56,17 @@ export async function createModelBackground(container, button, onExpand, onContr
   }
   button.addEventListener("click", () => setExpanded(!expanded));
   return {
+    setTextSettled(value) {
+      if (value === textSettled) return;
+      textSettled = value;
+      if (!value) {
+        cancelAnimationFrame(measurement); measurement = 0;
+        scene.setTextMaskEnabled(false);
+        textMask.invalidate();
+      } else updateTextExclusion();
+    },
+    get dissolveStarted() { return scene.dissolveStarted; },
+    beginDissolve: scene.beginDissolve,
     setExpanded,
     get controlReady() { return controlReady; },
     updateTextExclusion,
@@ -62,7 +79,7 @@ export async function createModelBackground(container, button, onExpand, onContr
       if (!value) button.hidden = true;
       scene.setVisible(value);
       updateTextExclusion();
-      if (value && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (value && !options.model && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         fade = container.animate([{ opacity: 0 }, { opacity: 1 }], {
           duration: 1800, easing: "cubic-bezier(.25,.1,.25,1)"
         });

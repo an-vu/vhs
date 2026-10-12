@@ -123,5 +123,5 @@ function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
   return { start, finish };
 }
 
-createShuffleEntrance.defaults = Object.freeze({ "blank": 400, "fade": 800, "hold": 800, "move": 350, "shufflePause": 100, "holdScrambled": 550, "fadeStudios": 700, "holdRemaining": 300, "finalMove": 650, "remainingPause": 100 });
+createShuffleEntrance.defaults = Object.freeze({"blank": 400, "fade": 800, "hold": 800, "move": 350, "shufflePause": 100, "holdScrambled": 300, "fadeStudios": 700, "holdRemaining": 200, "finalMove": 700, "remainingPause": 100});
 createShuffleEntrance.duration = t => t.blank + t.fade + t.hold + 3 * t.move + t.finalMove + t.shufflePause + t.holdScrambled + t.fadeStudios + t.holdRemaining + t.remainingPause;

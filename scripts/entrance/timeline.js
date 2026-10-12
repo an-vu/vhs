@@ -4,15 +4,17 @@ function createEntranceTimeline() {
   let origin, stopped = false;
   function at(time, callback) { cues.push({ time, callback }); }
   function animate(element, frames, options, time = 0) {
-    const animation = element.animate(frames, options);
-    animation.pause();
+    // Build idle effects: animate()/pause() leaves a pending pause task that can
+    // race with assigning startTime, particularly during a busy page load.
+    const animation = new Animation(new KeyframeEffect(element, frames, options), document.timeline);
     animations.push({ animation, time });
     return animation;
   }
   function start() {
     if (origin !== undefined || stopped) return origin;
     origin = performance.now();
-    for (const { animation, time } of animations) animation.startTime = origin + time;
+    const animationOrigin = document.timeline.currentTime ?? origin;
+    for (const { animation, time } of animations) animation.startTime = animationOrigin + time;
     for (const cue of cues) {
       const timer = setTimeout(() => {
         timers.delete(timer);
