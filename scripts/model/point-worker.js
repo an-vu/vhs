@@ -1,3 +1,5 @@
+import { normalizePositions, sampleVisible, twinkleSeeds } from './point-prep.js?v=56ca5c514c';
+
 // The shipped point clouds are vertex-only binary XYZ PLYs. Keep their decoding
 // and all O(vertex-count) preparation off the animation thread.
 self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) => {
@@ -33,47 +35,9 @@ self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) =
       return result;
     });
     const count = positions.length / 3;
-    let scale, radius = 0;
-    measure('Worker geometry preparation', () => {
-      const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
-      for (let i = 0; i < positions.length; i++) {
-        const axis = i % 3;
-        min[axis] = Math.min(min[axis], positions[i]);
-        max[axis] = Math.max(max[axis], positions[i]);
-      }
-      const extent = Math.max(...max.map((value, axis) => value - min[axis]));
-      if (!(extent > 0)) throw new Error('PLY has invalid bounds');
-      scale = 3.5 / extent;
-      const center = min.map((value, axis) => (value + max[axis]) / 2);
-      for (let i = 0; i < positions.length; i += 3) {
-        for (let axis = 0; axis < 3; axis++) {
-          // Match the two Float32 writes made by Three's center(), then scale().
-          positions[i + axis] = Math.fround(positions[i + axis] - center[axis]) * scale;
-        }
-        radius = Math.max(radius, Math.hypot(positions[i], positions[i + 1], positions[i + 2]));
-      }
-    });
-    const indices = measure('Worker select visible vertices', () => {
-      const fraction = Math.max(0, Math.min(1, settings.VISIBLE_FRACTION ?? 1));
-      if (fraction === 1) return null;
-      const visible = Math.floor(count * fraction);
-      const pool = Uint32Array.from({ length: count }, (_, i) => i);
-      for (let i = 0; i < visible; i++) {
-        const j = i + Math.floor(Math.random() * (count - i));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      return pool.slice(0, visible);
-    });
-    const seeds = measure('Worker generate twinkle seeds', () => {
-      const result = new Float32Array(count * 4);
-      for (let i = 0; i < count; i++) {
-        result[i * 4] = Math.random() * Math.PI * 2;
-        result[i * 4 + 1] = 1.8 + Math.random() * 2.4;
-        result[i * 4 + 2] = .65 + Math.random() * .65;
-        result[i * 4 + 3] = Math.random() < (settings.TWINKLE_CHANCE ?? .4) ? 1 : 0;
-      }
-      return result;
-    });
+    const { scale, radius } = measure('Worker geometry preparation', () => normalizePositions(positions));
+    const indices = measure('Worker select visible vertices', () => sampleVisible(count, settings.VISIBLE_FRACTION ?? 1));
+    const seeds = measure('Worker generate twinkle seeds', () => twinkleSeeds(count, settings.TWINKLE_CHANCE));
     const dissolve = prepareDissolve ? measure('Worker prepare dissolve attributes', () => {
       const values = new Float32Array(count * 4);
       const colors = new Float32Array(count * 3);

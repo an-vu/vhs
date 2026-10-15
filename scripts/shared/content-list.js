@@ -1,4 +1,7 @@
-function StudioContentList(content, { deepLinks = false } = {}) {
+import { StudioMotion } from './motion.js?v=4c4ac8c2b5';
+import { StudioPageScroll } from './page-scroll.js?v=7b012a23a4';
+
+export function StudioContentList(content, { deepLinks = false } = {}) {
   if (!content) return;
   const M = StudioMotion;
   StudioPageScroll(content);

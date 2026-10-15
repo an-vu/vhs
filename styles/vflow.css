@@ -67,6 +67,11 @@
   filter: blur(1.94px)
 }
 
+/* The format wrapper takes no layout; the image sizes against the card. */
+.vflow-card picture {
+  display: contents;
+}
+
 .vflow-card img {
   display: block;
   width: 100%;

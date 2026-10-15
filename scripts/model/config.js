@@ -1,14 +1,9 @@
-import * as THREE from "three";
+// Point cloud colors come from the CSS palette (effects/model-palette.js).
 
 // Point cloud
 // --------------------------------------------------
 
 export const POINT_SIZE = 0.014;
-
-export const POINT_COLOR =
-  new THREE.Color(0x62625e);
-
-export const POINT_DARK_COLOR = new THREE.Color(0x30302e);
 
 export const POINT_OPACITY = 0.88;
 

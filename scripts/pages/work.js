@@ -1,3 +1,5 @@
+import { StudioContentList } from '../shared/content-list.js?v=d3453e2142';
+
 (() => {
   const content = document.querySelector('.work-content');
   if (!content) return;
@@ -5,11 +7,14 @@
   catch (error) { console.warn('Work motion unavailable:', error); }
   const galleries = [...content.querySelectorAll('.project-gallery')];
   if (!galleries.length) return;
-  import('../vflow/vflow.js').then(({ createVFlow }) => {
+  import('../vflow/vflow.js?v=72f5abdec5').then(({ createVFlow }) => {
     galleries.forEach(container => {
       const images = [...container.querySelectorAll('figure')].map(figure => {
         const image = figure.querySelector('img');
-        return { src: image?.getAttribute('src'), alt: image?.alt || '',
+        const sources = [...figure.querySelectorAll('picture > source')].map(source => ({
+          type: source.type, srcset: source.getAttribute('srcset'), sizes: source.getAttribute('sizes')
+        }));
+        return { src: image?.getAttribute('src'), alt: image?.alt || '', sources,
           caption: figure.querySelector('figcaption')?.textContent || '' };
       });
       const title = container.closest('.project').querySelector('summary').textContent;

@@ -175,9 +175,9 @@ html.experience body {
 
 /* Keep the Canvas2D-to-WebGL handoff in one layer. The header stays above
    both; page text moves forward only near the end of the camera pullback. */
-.dissolve-preview .home-content { z-index: 1; }
-.dissolve-preview #model-background,
-.dissolve-preview .dissolve-particles { z-index: 2; }
-.dissolve-preview.dissolve-text-front .home-content { z-index: 3; }
-.dissolve-preview #headerLine { z-index: 4; }
-.dissolve-preview #introBrand { z-index: 5; }
+.dissolve-entrance .home-content { z-index: 1; }
+.dissolve-entrance #model-background,
+.dissolve-entrance .dissolve-particles { z-index: 2; }
+.dissolve-entrance.dissolve-text-front .home-content { z-index: 3; }
+.dissolve-entrance #headerLine { z-index: 4; }
+.dissolve-entrance #introBrand { z-index: 5; }

@@ -5,7 +5,7 @@ export function loadPreparedPoints(model, prepareDissolve = false) {
   return new Promise((resolve, reject) => {
     const diagnostic = window.StudioDiagnostics;
     const done = diagnostic?.start('Worker model preparation (async wall time)');
-    const worker = new Worker(new URL('./point-worker.js', import.meta.url), { type: 'module' });
+    const worker = new Worker(new URL('./point-worker.js?v=41248f8979', import.meta.url), { type: 'module' });
     const fail = error => { worker.terminate(); reject(error); };
     worker.onerror = event => fail(new Error(event.message || 'Point worker failed'));
     worker.onmessageerror = () => fail(new Error('Invalid point worker response'));

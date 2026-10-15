@@ -1,7 +1,5 @@
 .legal-copy {
   max-width: 70ch;
-  -webkit-user-select: text;
-  user-select: text;
 }
 
 .legal-copy h3 {

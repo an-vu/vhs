@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { POINT_SIZE, POINT_OPACITY } from "./config.js";
+import { POINT_SIZE, POINT_OPACITY } from "./config.js?v=e8bf0ee147";
 
-import { paletteColors, watchModelPalette } from './effects/model-palette.js';
+import { paletteColors, watchModelPalette } from './effects/model-palette.js?v=5b179fe661';
 
 // Shared palette and text dissolve for the PLY vertex shader.
 export function createPointMaterial(renderer, settings = {}, vertexShader) {

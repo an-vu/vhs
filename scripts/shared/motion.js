@@ -1,5 +1,5 @@
 // Shared motion primitives. Page scripts own their navigation and scroll policy.
-const StudioMotion = (() => {
+export const StudioMotion = (() => {
   const clamp = value => Math.max(0, Math.min(1, value));
   const spring = (value, target = value, delay = 0) => ({ value, target, velocity: 0, delay });
   const presets = {

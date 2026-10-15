@@ -1,4 +1,6 @@
-function createTypingEntrance(brand, onComplete = () => { }, options = {}) {
+import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
+
+export function createTypingEntrance(brand, onComplete = () => { }, options = {}) {
   const t = { ...createTypingEntrance.defaults, ...options };
   const fullName = 'vHuman Studios', finalName = 'vHuman';
   const timeline = createEntranceTimeline();

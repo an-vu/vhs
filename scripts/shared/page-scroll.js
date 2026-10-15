@@ -1,4 +1,6 @@
-function StudioPageScroll(content) {
+import { StudioMotion } from './motion.js?v=4c4ac8c2b5';
+
+export function StudioPageScroll(content) {
   const M = StudioMotion;
   const root = document.documentElement;
   const footer = document.querySelector(".site-footer");

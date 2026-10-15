@@ -1,8 +1,11 @@
-(() => {
+import { StudioMotion } from '../shared/motion.js?v=4c4ac8c2b5';
+
+// `factory` creates the selected entrance; `dissolve` holds the Dissolve
+// entrance's model and timing options, or null for the other entrances.
+export function startHome(factory, dissolve) {
   const M = StudioMotion;
-  const preview = window.StudioDissolveEntrance;
   const root = document.documentElement;
-  root.classList.toggle('dissolve-preview', !!preview);
+  root.classList.toggle('dissolve-entrance', !!dissolve);
   const stage = document.querySelector(".intro-stage");
   const brand = document.getElementById("introBrand");
   const content = document.getElementById("homeContent");
@@ -22,7 +25,7 @@
   // Dissolve's word has already become particles, so the logo first fades in
   // at the header. Any later return uses the center-to-header path, which
   // matches the header pose once the logo has settled there.
-  let headerArrival = !!preview;
+  let headerArrival = !!dissolve;
   function setExpanded(value) {
     expanded = value;
     root.classList.toggle("aircraft-expanded", value);
@@ -37,18 +40,18 @@
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
     // Start this delay when the last text spring settles, independently of
     // model loading. The entrance keeps the dots moving until the handoff.
-    if (preview && settled && !formationPending) {
+    if (dissolve && settled && !formationPending) {
       formationPending = true;
       entrance.waitBeforeForm(() => { formationReady = true; syncBackground(); });
     }
     if (background && settled) backgroundRevealed = true;
     if (background) {
       background.setTextSettled(settled);
-      if (preview && backgroundRevealed && formationReady && !background.dissolveStarted) {
-        background.beginDissolve(entrance.takeBubbles(), preview.settings.form ?? preview.factory.defaults.form, preview.settings.camera ?? preview.factory.defaults.camera);
-        preview.report('forming', entrance.elapsed);
+      if (dissolve && backgroundRevealed && formationReady && !background.dissolveStarted) {
+        background.beginDissolve(entrance.takeBubbles(), dissolve.settings.form ?? factory.defaults.form, dissolve.settings.camera ?? factory.defaults.camera);
+        dissolve.report('forming', entrance.elapsed);
       }
-      background.setVisible(active && backgroundRevealed && (!preview || background.dissolveStarted));
+      background.setVisible(active && backgroundRevealed && (!dissolve || background.dissolveStarted));
       document.getElementById("modelExpand").hidden = !settled || !background.controlReady;
       return;
     }
@@ -56,12 +59,12 @@
     // the existing entrance and text springs to finish.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
-    import("../model/background.js")
-      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, preview ? { prepareDissolve: true, model: preview.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => preview.report('pullback', entrance.elapsed), onSettled: () => preview.report('model', entrance.elapsed) } : {}))
+    import("../model/background.js?v=e40259a880")
+      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, dissolve ? { prepareDissolve: true, model: dissolve.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => dissolve.report('pullback', entrance.elapsed), onSettled: () => dissolve.report('model', entrance.elapsed) } : {}))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => {
         backgroundFailed = true;
-        if (preview) {
+        if (dissolve) {
           entrance.dispose();
           root.classList.add('dissolve-text-front');
           if (active) go(1, true);
@@ -69,7 +72,7 @@
         document.getElementById("model-background").hidden = true;
         document.getElementById("modelExpand").hidden = true;
         console.warn("Aircraft background unavailable:", error);
-        preview?.report(`Model unavailable: ${error.message}`, entrance.elapsed);
+        dissolve?.report(`Model unavailable: ${error.message}`, entrance.elapsed);
       });
   }
   let brandWidthPerPixel = 1;
@@ -95,9 +98,9 @@
     autoAdvanceCancelled = true;
     clearTimeout(autoAdvanceTimer);
   }
-  const entrance = createStudioEntrance(brand, () => {
+  const entrance = factory(brand, () => {
     syncBackground();
-    if (preview) { preview.report('hovering', entrance.elapsed); return; }
+    if (dissolve) { dissolve.report('hovering', entrance.elapsed); return; }
     if (autoAdvanceScheduled || autoAdvanceCancelled || !active || state !== 0) return;
     autoAdvanceScheduled = true;
     autoAdvanceTimer = setTimeout(() => {
@@ -106,9 +109,9 @@
         automaticTransition = true;
       }
     }, 1500);
-  }, {
+  }, dissolve?.settings, undefined, {
     onAdvance() { if (active && state === 0) go(1); },
-    onPhase(phase) { preview?.report(phase, entrance.elapsed); }
+    onPhase(phase) { dissolve?.report(phase, entrance.elapsed); }
   });
   const nextStage = () => Math.min(2, Math.floor(state + .04) + 1);
   const loop = M.createLoop((dt, time) => {
@@ -137,11 +140,11 @@
       brand.style.fontSize = `${mobile ? 22 : 24}px`;
       brand.style.transform = `translate(-50%, -50%) translateY(${44 * (1 - logo.value)}px)`;
       brand.style.opacity = move;
-    } else if (preview && !headerArrival) brand.style.removeProperty('opacity');
+    } else if (dissolve && !headerArrival) brand.style.removeProperty('opacity');
     // Keep the backdrop-filter group at full opacity. Animating the parent
     // opacity creates an intermediate backdrop surface during the reveal.
-    line.style.opacity = preview ? 1 : move;
-    line.style.visibility = preview && state === 0 ? 'hidden' : '';
+    line.style.opacity = dissolve ? 1 : move;
+    line.style.visibility = dissolve && state === 0 ? 'hidden' : '';
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
     M.paintFooter(footer, legal);
@@ -270,4 +273,4 @@
   addEventListener("resize", configure);
   motion.addEventListener("change", configure);
   configure();
-})();
+}

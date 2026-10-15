@@ -1,6 +1,6 @@
 // Calculate bounce, collision and wordmark keyframes once; no DOM or playback state.
 // Geometry uses CSS pixels; timing values use milliseconds.
-function createDotMotion(t, {
+export function createDotMotion(t, {
   size, floor, shift, dotLeft, dotInkWidth, dotHeight, humanRight,
   studioWidth, pivotX, pivotY, restingY, dRect
 }) {

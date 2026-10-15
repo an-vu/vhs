@@ -1,8 +1,9 @@
-import { defaults, ease } from "./settings.js";
-import { createMotion } from "./motion.js";
+import { defaults, ease } from "./settings.js?v=0d5c3d13fd";
+import { createMotion } from "./motion.js?v=31446df000";
 
 // Images: [{ src: "images/project.jpg", alt: "Description", caption: "Optional caption" }].
 // Omit src for a labelled placeholder while preparing the project imagery.
+// Optional `sources: [{ type, srcset, sizes }]` offer modern formats; src stays the fallback.
 export function createVFlow(images, title = "Project", options = {}) {
   if (!Array.isArray(images) || !images.length) {
     throw new TypeError("vFlow needs at least one image or placeholder.");
@@ -28,12 +29,22 @@ export function createVFlow(images, title = "Project", options = {}) {
     card.className = "vflow-card";
     card.setAttribute("aria-label", `Show image ${index + 1}: ${image.alt || image.caption || title}`);
     if (image.src) {
-      const picture = document.createElement("img");
-      picture.src = image.src;
-      picture.alt = image.alt || "";
-      picture.loading = "lazy";
-      picture.decoding = "async";
-      picture.draggable = false;
+      const picture = document.createElement("picture");
+      for (const { type, srcset, sizes } of image.sources || []) {
+        const source = document.createElement("source");
+        if (type) source.type = type;
+        source.srcset = srcset;
+        if (sizes) source.sizes = sizes;
+        picture.append(source);
+      }
+      // Set lazy loading before src, or the detached image starts downloading.
+      const img = document.createElement("img");
+      img.alt = image.alt || "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.draggable = false;
+      img.src = image.src;
+      picture.append(img);
       card.append(picture);
     } else {
       const placeholder = document.createElement("span");

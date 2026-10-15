@@ -1,5 +1,5 @@
 // Every cue and animation uses the same origin, so late callbacks cannot shift later phases.
-function createEntranceTimeline() {
+export function createEntranceTimeline() {
   const cues = [], animations = [], timers = new Set();
   let origin, stopped = false;
   function at(time, callback) { cues.push({ time, callback }); }

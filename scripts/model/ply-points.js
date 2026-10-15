@@ -1,49 +1,31 @@
 import * as THREE from "three";
-import { loadPreparedPoints } from "./point-loader.js";
-import { createPointMaterial } from "./point-material.js";
+import { loadPreparedPoints } from "./point-loader.js?v=85779dd487";
+import { createPointMaterial } from "./point-material.js?v=c2a61ef961";
+import { normalizePositions, sampleVisible, twinkleSeeds } from "./point-prep.js?v=56ca5c514c";
 
 export async function createPLYPointCloud(group, renderer, model, sourceGeometry, prepareDissolve = false) {
   const diagnostic = window.StudioDiagnostics;
   const geometry = sourceGeometry ?? await loadPreparedPoints(model, prepareDissolve);
   const settings = model.settings;
   if (sourceGeometry) {
+    // Spatial Lab already loaded this geometry; prepare it as the worker does.
     const prepared = diagnostic?.start('Geometry bounds, centering and scaling');
     const position = geometry.getAttribute("position");
     if (!position?.count) { geometry.dispose(); throw new Error("PLY has no vertices."); }
-    geometry.computeBoundingBox();
-    const size = geometry.boundingBox.getSize(new THREE.Vector3());
-    const extent = Math.max(size.x, size.y, size.z);
-    if (!(extent > 0) || !Number.isFinite(extent)) {
-      geometry.dispose(); throw new Error("PLY has invalid bounds.");
-    }
-    // Preserve source positions; center and scale uniformly for the shared framing.
-    const scale = 3.5 / extent;
-    geometry.userData.pointScale = scale;
-    geometry.center();
-    geometry.scale(scale, scale, scale);
+    let normalized;
+    try { normalized = normalizePositions(position.array); }
+    catch (error) { geometry.dispose(); throw error; }
+    position.needsUpdate = true;
+    geometry.boundingBox = null;
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), normalized.radius);
+    geometry.userData.pointScale = normalized.scale;
     prepared?.();
     const sampled = diagnostic?.start('Select visible vertices');
-    const fraction = THREE.MathUtils.clamp(settings.VISIBLE_FRACTION ?? 1, 0, 1);
-    if (fraction < 1) {
-      // Select unique existing vertices once, rather than hiding them in the shader.
-      const count = Math.floor(position.count * fraction);
-      const indices = Uint32Array.from({ length: position.count }, (_, i) => i);
-      for (let i = 0; i < count; i++) {
-        const j = i + Math.floor(Math.random() * (position.count - i));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
-      }
-      geometry.setIndex(new THREE.BufferAttribute(indices.slice(0, count), 1));
-    }
+    const indices = sampleVisible(position.count, settings.VISIBLE_FRACTION ?? 1);
+    if (indices) geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     sampled?.();
     const seeded = diagnostic?.start('Generate twinkle seeds');
-    const seeds = new Float32Array(position.count * 4);
-    for (let i = 0; i < position.count; i++) {
-      seeds[i * 4] = Math.random() * Math.PI * 2;
-      seeds[i * 4 + 1] = 1.8 + Math.random() * 2.4;
-      seeds[i * 4 + 2] = .65 + Math.random() * .65;
-      seeds[i * 4 + 3] = Math.random() < (settings.TWINKLE_CHANCE ?? .4) ? 1 : 0;
-    }
-    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 4));
+    geometry.setAttribute("aSeed", new THREE.BufferAttribute(twinkleSeeds(position.count, settings.TWINKLE_CHANCE), 4));
     seeded?.();
   }
   const position = geometry.getAttribute('position');

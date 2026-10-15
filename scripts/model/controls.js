@@ -6,7 +6,7 @@ import {
   PINCH_ZOOM_SPEED,
   DRAG_SENSITIVITY,
   VERTICAL_SENSITIVITY
-} from "./config.js";
+} from "./config.js?v=e8bf0ee147";
 
 export function setupModelControls({
   element,

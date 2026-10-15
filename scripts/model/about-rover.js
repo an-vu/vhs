@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { setupModelControls } from './controls.js';
-import { INERTIA, MAX_PITCH, ZOOM_SMOOTHING } from './config.js';
-import { createModelLines } from './effects/model-lines.js';
-import { createSpectral } from './effects/model-spectral.js';
-import { paletteColors, MODEL_THEME_EVENT } from './effects/model-palette.js';
-import { createFrameClock } from '../shared/frame-clock.js';
-import { curiositySettings } from './settings/curiosity.js';
-import { createAboutRoverView } from './about-rover-view.js';
+import { setupModelControls } from './controls.js?v=e61f56e31f';
+import { INERTIA, MAX_PITCH, ZOOM_SMOOTHING } from './config.js?v=e8bf0ee147';
+import { createModelLines } from './effects/model-lines.js?v=8d2a9569d1';
+import { createSpectral } from './effects/model-spectral.js?v=2dac1bb73d';
+import { paletteColors, MODEL_THEME_EVENT } from './effects/model-palette.js?v=5b179fe661';
+import { createFrameClock } from '../shared/frame-clock.js?v=c8b3e8c63f';
+import { curiositySettings } from './settings/curiosity.js?v=fc24a56bf3';
+import { createAboutRoverView } from './about-rover-view.js?v=aa04523a86';
 
 const host = document.querySelector('#about-rover');
 const button = document.querySelector('#about-model-expand');
@@ -201,7 +201,7 @@ async function start() {
       element: renderer.domElement, state, rotateView,
       isEnabled: () => roverView.expanded && !roverView.transitioning, redraw: wake
     });
-    const gltf = await new GLTFLoader().loadAsync(new URL('../../models/curiosity.glb', import.meta.url).href);
+    const gltf = await new GLTFLoader().loadAsync(new URL('../../models/curiosity.glb?v=75713cacda', import.meta.url).href);
     if (disposed) {
       gltf.scene.traverse(object => {
         object.geometry?.dispose();

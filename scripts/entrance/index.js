@@ -1,10 +1,14 @@
 // Choose once per page load; resizing or scrolling never reselects the entrance.
-function chooseStudioEntrance(value = Math.random()) {
+export function chooseStudioEntrance(value = Math.random()) {
   return value < .40 ? 'dissolve' : value < .65 ? 'shuffle' : value < .90 ? 'dot' : 'typing';
 }
-function createStudioEntrance(brand, onComplete = () => { }, hooks = {}) {
-  const dissolve = window.StudioDissolveEntrance;
-  if (dissolve) return dissolve.factory(brand, onComplete, dissolve.settings, undefined, hooks);
-  const factories = { dot: createDotEntrance, typing: createTypingEntrance, shuffle: createShuffleEntrance };
-  return factories[window.StudioEntranceKind](brand, onComplete);
+// Download only the selected entrance.
+const loaders = {
+  dissolve: () => import('./dissolve.js?v=06120f051a').then(module => module.createDissolveEntrance),
+  shuffle: () => import('./shuffle.js?v=392236cb88').then(module => module.createShuffleEntrance),
+  dot: () => import('./dot.js?v=1ee6d0dec9').then(module => module.createDotEntrance),
+  typing: () => import('./typing.js?v=5bd761ec42').then(module => module.createTypingEntrance)
+};
+export function loadStudioEntrance(kind) {
+  return loaders[kind]();
 }

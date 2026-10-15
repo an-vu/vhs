@@ -1,4 +1,6 @@
-function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
+import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
+
+export function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
   const t = { ...createShuffleEntrance.defaults, ...options };
   const name = "vHuman Studios";
   let started = false, finished = false;

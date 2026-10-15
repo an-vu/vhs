@@ -1,6 +1,9 @@
+import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
+import { createDotMotion } from './dot-motion.js?v=94c6d049b9';
+
 // Homepage wordmark entrance. Start once; finish immediately when navigation takes over.
-// Load timeline.js and dot-motion.js first; this file owns measurements, playback and cleanup.
-function createDotEntrance(brand, onComplete = () => { }, options = {}, onDuration = () => { }) {
+// This file owns measurements, playback and cleanup; dot-motion.js owns the physics.
+export function createDotEntrance(brand, onComplete = () => { }, options = {}, onDuration = () => { }) {
   const t = { ...createDotEntrance.defaults, ...options };
   let entranceStarted = false, finished = false, animationOffset = 0;
   const timeline = createEntranceTimeline();
