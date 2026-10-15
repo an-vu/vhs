@@ -1,6 +1,6 @@
 // The shipped point clouds are vertex-only binary XYZ PLYs. Keep their decoding
 // and all O(vertex-count) preparation off the animation thread.
-self.onmessage = async ({ data: { path, settings } }) => {
+self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) => {
   const timings = [];
   const measure = (name, fn) => {
     const start = performance.now();
@@ -74,7 +74,21 @@ self.onmessage = async ({ data: { path, settings } }) => {
       }
       return result;
     });
-    self.postMessage({ positions, indices, seeds, scale, radius, timings },
-      [positions.buffer, seeds.buffer, ...(indices ? [indices.buffer] : [])]);
+    const dissolve = prepareDissolve ? measure('Worker prepare dissolve attributes', () => {
+      const values = new Float32Array(count * 4);
+      const colors = new Float32Array(count * 3);
+      const softCores = new Float32Array(count);
+      const visible = indices?.length ?? count;
+      for (let i = 0; i < visible; i++) {
+        const offset = (indices ? indices[i] : i) * 4;
+        values[offset] = Math.random() * 2 - 1;
+        values[offset + 1] = Math.random() * 2 - 1;
+        values[offset + 2] = 1;
+      }
+      return { values, colors, softCores };
+    }) : null;
+    self.postMessage({ positions, indices, seeds, scale, radius, timings, dissolve },
+      [positions.buffer, seeds.buffer, ...(indices ? [indices.buffer] : []),
+        ...(dissolve ? Object.values(dissolve).map(array => array.buffer) : [])]);
   } catch (error) { self.postMessage({ error: error.message }); }
 };

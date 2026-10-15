@@ -17,8 +17,12 @@
   const lift = M.createLift();
   let state = 0, scrubbing = false, active = false, keyReturnStop = false;
   let height = innerHeight, width = innerWidth;
-  let background = null, backgroundLoading = false, expanded = false;
+  let background = null, backgroundLoading = false, backgroundFailed = false, expanded = false;
   let backgroundRevealed = false, formationPending = false, formationReady = false;
+  // Dissolve's word has already become particles, so the logo first fades in
+  // at the header. Any later return uses the center-to-header path, which
+  // matches the header pose once the logo has settled there.
+  let headerArrival = !!preview;
   function setExpanded(value) {
     expanded = value;
     root.classList.toggle("aircraft-expanded", value);
@@ -28,6 +32,7 @@
     lift.release();
   }
   function syncBackground() {
+    if (backgroundFailed) return;
     const settled = active && state >= 1 &&
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
     // Start this delay when the last text spring settles, independently of
@@ -52,9 +57,17 @@
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
     import("../model/background.js")
-      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, preview ? { model: preview.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => preview.report('pullback', entrance.elapsed), onSettled: () => preview.report('model', entrance.elapsed) } : {}))
+      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, preview ? { prepareDissolve: true, model: preview.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => preview.report('pullback', entrance.elapsed), onSettled: () => preview.report('model', entrance.elapsed) } : {}))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => {
+        backgroundFailed = true;
+        if (preview) {
+          entrance.dispose();
+          root.classList.add('dissolve-text-front');
+          if (active) go(1, true);
+        }
+        document.getElementById("model-background").hidden = true;
+        document.getElementById("modelExpand").hidden = true;
         console.warn("Aircraft background unavailable:", error);
         preview?.report(`Model unavailable: ${error.message}`, entrance.elapsed);
       });
@@ -102,7 +115,7 @@
     let moving = lift.advance(dt, time);
     for (const s of springs) {
       const preset = scrubbing || s.target === 0 ? M.presets.returning
-        : s === legal || s === logo && !preview ? M.presets.smooth : M.presets.entrance;
+        : s === legal || s === logo && !headerArrival ? M.presets.smooth : M.presets.entrance;
       moving = M.step(s, dt * (automaticTransition ? .70 : 1), preset) || moving;
     }
     render();
@@ -119,12 +132,12 @@
     brand.style.top = `${height / 2}px`;
     brand.style.fontSize = `${startSize}px`;
     brand.style.transform = `translate(-50%, -50%) translateY(${((mobile ? 36 : 43) - height / 2) * move}px) scale(${scale})`;
-    if (preview && state > 0) {
+    if (headerArrival && state > 0) {
       brand.style.top = `${mobile ? 36 : 43}px`;
       brand.style.fontSize = `${mobile ? 22 : 24}px`;
       brand.style.transform = `translate(-50%, -50%) translateY(${44 * (1 - logo.value)}px)`;
       brand.style.opacity = move;
-    }
+    } else if (preview && !headerArrival) brand.style.removeProperty('opacity');
     // Keep the backdrop-filter group at full opacity. Animating the parent
     // opacity creates an intermediate backdrop surface during the reveal.
     line.style.opacity = preview ? 1 : move;
@@ -147,14 +160,15 @@
     if (next > 0) { cancelAutoAdvance(); entrance.finish(); }
     if (next === state && !immediate) return;
     const entering = state === 0 && next > 0;
+    if (next < state) headerArrival = false;
     scrubbing = direct;
     state = next;
     if (state < 2 || immediate) lift.release();
     logo.target = M.clamp(state);
-    if (preview) logo.delay = entering && !immediate ? M.entranceDelay(0) : 0;
+    if (headerArrival) logo.delay = entering && !immediate ? M.entranceDelay(0) : 0;
     lines.forEach((s, i) => {
       s.target = M.clamp(state);
-      s.delay = entering && !immediate ? M.entranceDelay(i + (preview ? 1 : 0)) : 0;
+      s.delay = entering && !immediate ? M.entranceDelay(i + (headerArrival ? 1 : 0)) : 0;
     });
     legal.target = M.clamp(state - 1);
     if (state === 0 && content.contains(document.activeElement)) brand.focus({ preventScroll: true });

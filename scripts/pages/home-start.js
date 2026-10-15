@@ -1,29 +1,45 @@
-// The lab and ordinary visits share the same Dissolve homepage path.
-const query = new URLSearchParams(location.search);
-if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js');
-let config;
-if (query.has('motionPreview')) {
-  try { config = JSON.parse(query.get('motionPreview')); }
-  catch (error) { console.warn('Entrance preview settings unavailable', error); }
+try {
+  // The lab and ordinary visits share the same Dissolve homepage path.
+  const query = new URLSearchParams(location.search);
+  if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js');
+  let config;
+  if (query.has('motionPreview')) {
+    try { config = JSON.parse(query.get('motionPreview')); }
+    catch (error) { console.warn('Entrance preview settings unavailable', error); }
+  }
+  window.StudioEntranceKind = config ? 'dissolve' : chooseStudioEntrance();
+  if (window.StudioEntranceKind === 'dissolve') {
+    const { createDissolveEntrance } = await import('../entrance/dissolve.js');
+    const dissolve = {
+      settings: { ...config?.settings, dotSettings: config?.dotSettings },
+      // Choose once per visit; explicit lab selections remain deterministic.
+      model: config ? (config.model === 'rb18' ? 'rb18' : 'f35-points')
+        : Math.random() < .5 ? 'f35-points' : 'rb18',
+      factory: createDissolveEntrance,
+      report(phase, elapsed) {
+        window.StudioDiagnostics?.phase(phase);
+        if (config) parent.postMessage({ type: 'studio:motion-preview', phase, elapsed }, location.origin);
+      }
+    };
+    window.StudioDissolveEntrance = dissolve;
+    if (config) window.StudioEntrancePreview = dissolve;
+  }
+  await import('./home.js');
+  window.StudioHomeReady = true;
+  dispatchEvent(new Event('studio:home-ready'));
+  window.StudioDissolveEntrance?.report('ready', 0);
+} catch (error) {
+  // A missing entrance/module must never leave the static homepage hidden.
+  console.warn('Homepage motion unavailable:', error);
+  const root = document.documentElement;
+  root.classList.remove('intro-loading', 'experience', 'dissolve-preview', 'dissolve-text-front');
+  document.querySelectorAll('#introBrand, #headerLine, .home-content, .home-main, .home-main h1 span, .home-main .main-nav a, .site-footer').forEach(element => {
+    element.removeAttribute('style'); element.inert = false;
+  });
+  document.querySelectorAll('.dissolve-particles').forEach(element => element.remove());
+  document.getElementById('model-background').hidden = true;
+  document.getElementById('modelExpand').hidden = true;
+  if (new URLSearchParams(location.search).has('motionPreview')) {
+    parent.postMessage({ type: 'studio:motion-preview', phase: `Model unavailable: ${error.message}`, elapsed: 0 }, location.origin);
+  }
 }
-window.StudioEntranceKind = config ? 'dissolve' : chooseStudioEntrance();
-if (window.StudioEntranceKind === 'dissolve') {
-  const { createDissolveEntrance } = await import('../entrance/dissolve.js');
-  const dissolve = {
-    settings: { ...config?.settings, dotSettings: config?.dotSettings },
-    // Choose once per visit; explicit lab selections remain deterministic.
-    model: config ? (config.model === 'rb18' ? 'rb18' : 'f35-points')
-      : Math.random() < .5 ? 'f35-points' : 'rb18',
-    factory: createDissolveEntrance,
-    report(phase, elapsed) {
-      window.StudioDiagnostics?.phase(phase);
-      if (config) parent.postMessage({ type: 'studio:motion-preview', phase, elapsed }, location.origin);
-    }
-  };
-  window.StudioDissolveEntrance = dissolve;
-  if (config) window.StudioEntrancePreview = dissolve;
-}
-await import('./home.js');
-window.StudioHomeReady = true;
-dispatchEvent(new Event('studio:home-ready'));
-window.StudioDissolveEntrance?.report('ready', 0);

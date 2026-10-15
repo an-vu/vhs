@@ -1,10 +1,10 @@
 // Shared by the entrance and Motion Lab. Percentages use 0–100; sizes are
-// CSS-pixel radii at a 600px viewport, scaled down on smaller screens.
+// CSS-pixel radii at the full 150px desktop wordmark, scaled with the word on smaller screens.
 export const dotGroups = [
   ['Color & population', [
     ['count', 'Number of dots', 420, 10, 2000, 1],
-    ['gray', 'Gray (%)', 35, 0, 100, 1],
-    ['black', 'Black (%)', 45, 0, 100, 1],
+    ['gray', 'Gray (%)', 50, 0, 100, 1],
+    ['black', 'Black (%)', 30, 0, 100, 1],
     ['lightGray', 'Light gray (%)', 20, 0, 100, 1],
     ['smallColors', 'Custom small-dot colors', 0, 0, 1, 1],
     ['smallGray', 'Small-dot gray (%)', 34, 0, 100, 1],
@@ -15,8 +15,8 @@ export const dotGroups = [
     ['mediumBlack', 'Medium-dot black (%)', 55, 0, 100, 1],
     ['mediumLightGray', 'Medium-dot light gray (%)', 5, 0, 100, 1],
     ['largeColors', 'Custom large-dot colors', 1, 0, 1, 1],
-    ['largeGray', 'Large-dot gray (%)', 10, 0, 100, 1],
-    ['largeBlack', 'Large-dot black (%)', 88, 0, 100, 1],
+    ['largeGray', 'Large-dot gray (%)', 28, 0, 100, 1],
+    ['largeBlack', 'Large-dot black (%)', 70, 0, 100, 1],
     ['largeLightGray', 'Large-dot light gray (%)', 2, 0, 100, 1]
   ]],
   ['Size', [
@@ -26,8 +26,8 @@ export const dotGroups = [
     ['smallMax', 'Small maximum radius (px)', 5.25, .1, 100, .05],
     ['mediumMin', 'Medium minimum radius (px)', 4, .1, 100, .1],
     ['mediumMax', 'Medium maximum radius (px)', 11, .1, 100, .1],
-    ['largeMin', 'Large minimum radius (px)', 18, .1, 100, .1],
-    ['largeMax', 'Large maximum radius (px)', 30, .1, 100, .1],
+    ['largeMin', 'Large minimum radius (px)', 16, .1, 100, .1],
+    ['largeMax', 'Large maximum radius (px)', 20, .1, 100, .1],
     ['smallBias', 'Small-dot size bias', 1.7, .1, 5, .1]
   ]],
   ['Soft-focus blur', [

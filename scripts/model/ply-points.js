@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { loadPreparedPoints } from "./point-loader.js";
 import { createPointMaterial } from "./point-material.js";
 
-export async function createPLYPointCloud(group, renderer, model, sourceGeometry) {
+export async function createPLYPointCloud(group, renderer, model, sourceGeometry, prepareDissolve = false) {
   const diagnostic = window.StudioDiagnostics;
-  const geometry = sourceGeometry ?? await loadPreparedPoints(model);
+  const geometry = sourceGeometry ?? await loadPreparedPoints(model, prepareDissolve);
   const settings = model.settings;
   if (sourceGeometry) {
     const prepared = diagnostic?.start('Geometry bounds, centering and scaling');

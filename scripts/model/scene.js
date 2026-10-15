@@ -114,7 +114,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
   }
   resize();
   try {
-    material = await createPLYPointCloud(aircraft, renderer, model);
+    material = await createPLYPointCloud(aircraft, renderer, model, undefined, options.prepareDissolve);
     // Prepare shaders during the intro without advancing the reveal animation.
     const compiled = diagnostic?.start('Shader compile (async wall time)');
     await renderer.compileAsync(scene, camera);
@@ -146,26 +146,27 @@ export async function createModelScene(container, model, onRevealProgress = () =
     get dissolveStarted() { return formationDuration !== null; },
     beginDissolve(snapshot, duration, pullbackDuration = C.REVEAL_DURATION) {
       if (!snapshot || formationDuration !== null) return;
-      const handedOff = diagnostic?.start('Dissolve attribute allocation and handoff');
+      const handedOff = diagnostic?.start('Dissolve snapshot handoff');
       const bubbles = snapshot.points;
       const geometry = material.userData.geometry;
-      const values = new Float32Array(geometry.getAttribute('position').count * 4);
-      const colors = new Float32Array(geometry.getAttribute('position').count * 3);
-      const softCores = new Float32Array(geometry.getAttribute('position').count);
+      const values = geometry.getAttribute('aDissolve');
+      const colors = geometry.getAttribute('aDissolveColor');
+      const softCores = geometry.getAttribute('aDissolveSoftCore');
       const indices = geometry.index?.array;
-      const count = indices?.length ?? geometry.getAttribute('position').count;
+      const count = Math.min(bubbles.length / 4, indices?.length ?? values.count);
+      const color = new THREE.Color();
+      // Full buffers were prepared in the worker and uploaded during warm-up.
+      // Only the entrance particles change at the visible handoff.
       for (let i = 0; i < count; i++) {
         const vertex = indices ? indices[i] : i;
-        if (i < bubbles.length / 4) {
-          values.set(bubbles.subarray(i * 4, i * 4 + 4), vertex * 4);
-          new THREE.Color(snapshot.colors[i]).toArray(colors, vertex * 3);
-          softCores[vertex] = snapshot.softCores?.[i] ?? 1;
-        }
-        else values.set([Math.random() * 2 - 1, Math.random() * 2 - 1, 1, 0], vertex * 4);
+        values.array.set(bubbles.subarray(i * 4, i * 4 + 4), vertex * 4);
+        color.set(snapshot.colors[i]).toArray(colors.array, vertex * 3);
+        softCores.array[vertex] = snapshot.softCores?.[i] ?? 1;
+        values.addUpdateRange(vertex * 4, 4);
+        colors.addUpdateRange(vertex * 3, 3);
+        softCores.addUpdateRange(vertex, 1);
       }
-      geometry.setAttribute('aDissolve', new THREE.BufferAttribute(values, 4));
-      geometry.setAttribute('aDissolveColor', new THREE.BufferAttribute(colors, 3));
-      geometry.setAttribute('aDissolveSoftCore', new THREE.BufferAttribute(softCores, 1));
+      values.needsUpdate = colors.needsUpdate = softCores.needsUpdate = true;
       formationDuration = Math.max(1, duration);
       cameraDuration = Math.max(1, pullbackDuration); elapsed = 0;
       material.uniforms.uFormation.value = 0;

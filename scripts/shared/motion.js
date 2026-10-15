@@ -131,11 +131,11 @@ const StudioMotion = (() => {
     };
   }
 
-  // One footer action per input burst; animation completion cannot unlock it.
+  // One action per intentional swipe; animation completion cannot unlock it.
   // Touch keeps its explicit finger-down/finger-up gesture boundary.
   function bindGestures({ isActive, atBoundary, onInput, onEnd }) {
     let wheel = null, touch = null;
-    let lastWheel = -Infinity;
+    let lastWheel = -Infinity, wheelStart = 0, wheelPeak = 0, wheelLow = 0;
     function gesture(source, direction) {
       return {
         source, direction, distance: 0, total: 0, used: false,
@@ -143,13 +143,24 @@ const StudioMotion = (() => {
         consume() { this.used = true; }
       };
     }
+    // Trackpad momentum keeps sending shrinking deltas with no gap, so a quick
+    // second swipe can arrive inside the same burst. Once a used gesture has
+    // faded to a third of its peak, a clear rise is a fresh push, not momentum.
+    // The 3x/10px margins ignore jitter and coalesced (doubled) momentum events;
+    // 120ms keeps an uneven start of one swipe from splitting it in two.
+    // Heuristic: wheel events do not report when a new trackpad swipe begins.
+    const freshPush = (distance, now) => wheel.used && now - wheelStart >= 120 &&
+      wheelLow <= wheelPeak / 3 && distance >= wheelLow * 3 && distance - wheelLow >= 10;
     addEventListener("wheel", event => {
       if (!isActive() || event.ctrlKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
       const now = performance.now(), direction = Math.sign(event.deltaY);
       const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
-      if (!wheel || now - lastWheel > 75 || wheel.direction !== direction) {
+      if (!wheel || now - lastWheel > 75 || wheel.direction !== direction || freshPush(distance, now)) {
         wheel = gesture("wheel", direction);
-      }
+        wheelStart = now;
+        wheelPeak = wheelLow = distance;
+      } else if (distance > wheelPeak) wheelPeak = wheelLow = distance;
+      else wheelLow = Math.min(wheelLow, distance);
       lastWheel = now;
       wheel.distance = distance; wheel.total += distance;
       if (onInput(wheel)) event.preventDefault();

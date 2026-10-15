@@ -75,12 +75,23 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     }
     remaining.forEach((seed, i) => { seed.color = i < gray ? 0 : 2; });
   }
-  let width, height, fontSize, word = [], ink, colors, mask;
+  let width, height, fontSize, sizeScale = 1, word = [], ink, colors, mask;
+  let wordmark = null, wordCenterX = 0, wordCenterY = 0;
   let frame = 0, last = null, elapsed = 0, started = false, disposed = false, transferred = false;
   let hovering = false, hoverAt = null, advanced = false;
   let formationDelayAt = null, onFormationReady = null;
-  const bubbles = new Float32Array(dots.count * 4);
+  let bubbles = new Float32Array(dots.count * 4);
+  function release() {
+    events.abort(); cancelAnimationFrame(frame); frame = 0;
+    canvas.remove(); canvas.width = canvas.height = 0;
+    if (mask) mask.width = mask.height = 0;
+    mask = null; word = []; bubbles = null;
+    if (wordmark?.parentNode === brand) wordmark.replaceWith(...wordmark.childNodes);
+    wordmark = null;
+    onFormationReady = null;
+  }
   function resize() {
+    if (disposed || transferred) return;
     width = Math.max(1, host.clientWidth); height = Math.max(1, host.clientHeight);
     const ratio = Math.min(devicePixelRatio, 2);
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
@@ -91,12 +102,17 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     colors = [palette.getPropertyValue('--nav-fg').trim() || '#62625E',
       palette.getPropertyValue('--light-gray').trim() || '#C7C6C4', ink];
     fontSize = parseFloat(style.fontSize);
-    mask = document.createElement('canvas'); mask.width = Math.ceil(width); mask.height = Math.ceil(height);
+    // Pixel values are tuned against the full desktop wordmark (150px). Scale
+    // with the word, so smaller screens keep the same dot-to-word proportions.
+    sizeScale = Math.min(1, fontSize / 150);
+    mask =document.createElement('canvas'); mask.width = Math.ceil(width); mask.height = Math.ceil(height);
     const context = mask.getContext('2d');
     context.font = `${style.fontWeight} ${fontSize}px ${style.fontFamily}`;
     context.letterSpacing = style.letterSpacing;
     context.textAlign = 'center'; context.textBaseline = 'alphabetic'; context.fillStyle = ink;
     const bounds = brand.getBoundingClientRect(), hostBounds = host.getBoundingClientRect();
+    wordCenterX = bounds.left - hostBounds.left + bounds.width / 2;
+    wordCenterY = bounds.top - hostBounds.top + bounds.height / 2;
     const metrics = context.measureText('Hg');
     const ascent = metrics.fontBoundingBoxAscent ?? fontSize * .8;
     const descent = metrics.fontBoundingBoxDescent ?? fontSize * .2;
@@ -111,30 +127,43 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
   }
   function advance() {
     if (!started || disposed || advanced || dotsOnly) return;
+    if (wordmark) wordmark.style.removeProperty('transform');
     advanced = true; hooks.onAdvance?.();
   }
   function draw(dt) {
     elapsed += dt * 1000;
     const dissolveAt = timing.blank + timing.fade + timing.hold;
     const progress = clamp((elapsed - dissolveAt) / Math.max(1, timing.dissolve));
-    const inflated = ease(progress / .14);
-    const flightTime = dotsOnly ? Math.min(elapsed, dissolveAt + timing.dissolve * 1.5) : elapsed;
-    const flight = Math.max(0, ((flightTime - dissolveAt) / Math.max(1, timing.dissolve) - .14) / .86);
+    // Reference recording: intact expansion through ~67ms, breakup through
+    // ~200ms, then continuous outward travel for the rest of the 1.35s clip.
+    // The lab's Dissolve duration scales this entire sequence together.
+    const referenceTime = (elapsed - dissolveAt) * 1350 / Math.max(1, timing.dissolve);
+    const burstAt = 1000 / 15;
+    const breakupEnd = 200;
+    const wordScale = reduced.matches ? 1 : 1 + .04 * ease(referenceTime / burstAt);
+    if (wordmark && !advanced) wordmark.style.transform = `scale(${wordScale})`;
+    const breakup = ease((referenceTime - burstAt) / (breakupEnd - burstAt));
+    const inflated = breakup;
+    const flightTime = dotsOnly ? Math.min(referenceTime, 1350 * 1.5) : referenceTime;
+    // Release starts with breakup, rather than waiting for every dot to inflate.
+    const flight = Math.max(0, (flightTime - burstAt) / (1350 - burstAt));
     const released = 1 - Math.exp(-dots.burst * flight) + flight * dots.flight;
     ctx.clearRect(0, 0, width, height);
     // Keep the visible word as native text, like the other entrances. The
     // low-resolution canvas mask is only for sampling particle origins.
     if (!advanced) brand.style.opacity = reduced.matches ? 1 : progress === 0
       ? ease((elapsed - timing.blank) / Math.max(1, timing.fade))
-      : 1 - ease((progress - .06) / .18);
+      : 1 - breakup;
     seeds.forEach((seed, i) => {
-      const letter = word[Math.floor(seed.x * word.length)];
+      const origin = word[Math.floor(seed.x * word.length)];
+      const letterX = wordCenterX + (origin[0] - wordCenterX) * wordScale;
+      const letterY = wordCenterY + (origin[1] - wordCenterY) * wordScale;
       const wide = seed.spread < dots.widePercent / 100;
-      const cloudX = wide ? width * (.02 + seed.y * .96) : letter[0] + seed.driftX * width * dots.spreadX / 100;
-      const cloudY = wide ? height * (.02 + seed.z * .96) : letter[1] + seed.driftY * height * dots.spreadY / 100 - fontSize * dots.upward / 100;
-      const x = letter[0] + (cloudX - letter[0]) * released + Math.sin(elapsed * .00045 * dots.driftSpeed + seed.phase) * dots.driftX * released;
-      const y = letter[1] + (cloudY - letter[1]) * released + Math.cos(elapsed * .00035 * dots.driftSpeed + seed.phase) * dots.driftY * released - Math.sin(Math.min(1, released) * Math.PI) * (8 + seed.z * 24);
-      const base = seed.radius * Math.min(1, Math.min(width, height) / 600);
+      const cloudX = wide ? width * (.02 + seed.y * .96) : letterX + seed.driftX * width * dots.spreadX / 100;
+      const cloudY = wide ? height * (.02 + seed.z * .96) : letterY + seed.driftY * height * dots.spreadY / 100 - fontSize * dots.upward / 100;
+      const x = letterX + (cloudX - letterX) * released + Math.sin(elapsed * .00045 * dots.driftSpeed + seed.phase) * dots.driftX * sizeScale * released;
+      const y = letterY + (cloudY - letterY) * released + Math.cos(elapsed * .00035 * dots.driftSpeed + seed.phase) * dots.driftY * sizeScale * released - Math.sin(Math.min(1, released) * Math.PI) * (8 + seed.z * 24) * sizeScale;
+      const base = seed.radius * sizeScale;
       const size = base * (.2 + .8 * inflated) * (i < largeCount ? .4 + .6 * Math.min(1, released) : 1);
       const alpha = inflated * seed.opacity;
       bubbles.set([x / width * 2 - 1, 1 - y / height * 2, size * 2, alpha], i * 4);
@@ -166,12 +195,19 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
   }
   function wake() { if (!disposed && !transferred && started && !document.hidden && !frame) { last = null; frame = requestAnimationFrame(tick); } }
   document.addEventListener('visibilitychange', () => { cancelAnimationFrame(frame); frame = 0; wake(); }, { signal: events.signal });
-  addEventListener('resize', () => { resize(); if (started && !transferred) draw(0); }, { signal: events.signal });
+  // Wait a frame so the homepage has applied the new wordmark size first.
+  addEventListener('resize', () => requestAnimationFrame(() => {
+    resize(); if (started && !disposed && !transferred) draw(0);
+  }), { signal: events.signal });
   addEventListener('vhuman:themechange', resize, { signal: events.signal });
   return {
     start() {
       if (started || disposed) return;
-      started = true; brand.style.transition = 'none'; brand.style.opacity = 0; brand.textContent = 'vHuman'; resize(); hooks.onPhase?.('entrance');
+      started = true; brand.style.transition = 'none'; brand.style.opacity = 0;
+      wordmark = document.createElement('span'); wordmark.textContent = 'vHuman';
+      wordmark.style.display = 'inline-block'; wordmark.style.transformOrigin = 'center';
+      brand.replaceChildren(wordmark);
+      resize(); hooks.onPhase?.('entrance');
       if (dotsOnly) { elapsed = timing.blank + timing.fade + timing.hold + timing.dissolve * 1.5; brand.style.visibility = 'hidden'; draw(0); }
       onDuration?.(createDissolveEntrance.duration(timing)); wake(); return performance.now();
     },
@@ -185,19 +221,21 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
       else wake();
     },
     takeBubbles() {
-      if (!started) return null;
-      draw(0); transferred = true; cancelAnimationFrame(frame); canvas.remove(); brand.style.removeProperty('opacity');
-      return {
+      if (!started || disposed || transferred) return null;
+      draw(0);
+      const snapshot = {
         points: bubbles.slice(), colors: seeds.map(seed => colors[seed.color]),
         // 1 means a crisp circle; softer dots carry their radial solid core.
         softCores: Float32Array.from(seeds, seed => seed.soft ? seed.softCore : 1)
       };
+      transferred = true; release(); brand.style.removeProperty('opacity');
+      return snapshot;
     },
     get phase() { return advanced ? 'loading' : hovering ? 'hovering' : 'entrance'; },
     get elapsed() { return elapsed; },
     finish() { if (!started || disposed || transferred) return; elapsed = Math.max(elapsed, createDissolveEntrance.duration(timing)); draw(0); },
-    dispose() { disposed = true; events.abort(); cancelAnimationFrame(frame); canvas.remove(); brand.style.removeProperty('opacity'); }
+    dispose() { disposed = true; release(); brand.style.removeProperty('opacity'); }
   };
 }
-createDissolveEntrance.defaults = Object.freeze({"blank": 400, "fade": 1300, "hold": 1200, "dissolve": 1400, "advance": 1400, "formDelay": 300, "form": 1700, "camera": 3000});
+createDissolveEntrance.defaults = Object.freeze({"blank": 400, "fade": 1300, "hold": 1200, "dissolve": 1350, "advance": 1400, "formDelay": 300, "form": 1700, "camera": 3000});
 createDissolveEntrance.duration = timing => timing.blank + timing.fade + timing.hold + timing.dissolve;
