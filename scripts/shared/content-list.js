@@ -1,5 +1,5 @@
-import { StudioMotion } from './motion.js?v=4c4ac8c2b5';
-import { StudioPageScroll } from './page-scroll.js?v=7b012a23a4';
+import { StudioMotion } from './motion.js';
+import { StudioPageScroll } from './page-scroll.js';
 
 export function StudioContentList(content, { deepLinks = false } = {}) {
   if (!content) return;

@@ -1,4 +1,4 @@
-import { normalizePositions, sampleVisible, twinkleSeeds } from './point-prep.js?v=56ca5c514c';
+import { normalizePositions, sampleVisible, twinkleSeeds } from './point-prep.js';
 
 // The shipped point clouds are vertex-only binary XYZ PLYs. Keep their decoding
 // and all O(vertex-count) preparation off the animation thread.

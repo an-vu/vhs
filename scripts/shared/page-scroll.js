@@ -1,4 +1,4 @@
-import { StudioMotion } from './motion.js?v=4c4ac8c2b5';
+import { StudioMotion } from './motion.js';
 
 export function StudioPageScroll(content) {
   const M = StudioMotion;

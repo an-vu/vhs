@@ -1,6 +1,6 @@
-import { watchPaletteUniforms } from './model-palette.js?v=5b179fe661';
-import { runIdleSteps } from '../../shared/idle-work.js?v=ba0b443d12';
-import { scanBandGLSL, scanUniforms } from './model-scan-band.js?v=429c6df536';
+import { watchPaletteUniforms } from './model-palette.js';
+import { runIdleSteps } from '../../shared/idle-work.js';
+import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
 
 export const spectralDefaults = { density: 100000, size: 1.6, variation: .35, spread: .012, twinkle: .35, twinkleSpeed: 1.4, drift: .003, driftSpeed: .45, intensity: 1, opacity: .85, palette: 0, scanEnabled: 1, scanSpeed: .18, scanWidth: .2, scanStrength: .85, edgeAttraction: .6, edgeReach: .025, lineResponse: 1, edgeDensity: .35, scanPalette: 0, scanVisibility: 0, scanHalo: .6, scanUneven: 0, scanVolume: 0 };

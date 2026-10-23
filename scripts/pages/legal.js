@@ -1,3 +1,3 @@
-import { StudioContentList } from '../shared/content-list.js?v=d3453e2142';
+import { StudioContentList } from '../shared/content-list.js';
 
 StudioContentList(document.querySelector(".legal-content"));

@@ -1,7 +1,7 @@
 export default {
   id: "f35-points",
   format: "ply",
-  path: new URL("../../../models/f35-points.ply?v=ff5b2f0b09", import.meta.url).href,
+  path: new URL("../../../models/f35-points.ply", import.meta.url).href,
   settings: {
     MODEL_X_ROTATION: -Math.PI / 2,
     POINT_SIZE: 0.002,

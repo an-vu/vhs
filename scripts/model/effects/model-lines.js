@@ -1,6 +1,6 @@
-import { scanBandGLSL, scanUniforms } from './model-scan-band.js?v=429c6df536';
+import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
-import { paletteColors, watchPaletteUniforms } from './model-palette.js?v=5b179fe661';
+import { paletteColors, watchPaletteUniforms } from './model-palette.js';
 
 const colors = paletteColors();
 
