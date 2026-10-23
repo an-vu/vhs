@@ -1,4 +1,4 @@
-import { ease } from "./settings.js?v=0d5c3d13fd";
+import { ease } from "./settings.js";
 
 // Pure geometry shared by painting and precomputed animation keyframes.
 export function createMotion(count, settings) {

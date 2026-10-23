@@ -1,4 +1,4 @@
-import { StudioContentList } from '../shared/content-list.js?v=d3453e2142';
+import { StudioContentList } from '../shared/content-list.js';
 
 (() => {
   const content = document.querySelector('.work-content');
@@ -7,7 +7,7 @@ import { StudioContentList } from '../shared/content-list.js?v=d3453e2142';
   catch (error) { console.warn('Work motion unavailable:', error); }
   const galleries = [...content.querySelectorAll('.project-gallery')];
   if (!galleries.length) return;
-  import('../vflow/vflow.js?v=72f5abdec5').then(({ createVFlow }) => {
+  import('../vflow/vflow.js').then(({ createVFlow }) => {
     galleries.forEach(container => {
       const images = [...container.querySelectorAll('figure')].map(figure => {
         const image = figure.querySelector('img');

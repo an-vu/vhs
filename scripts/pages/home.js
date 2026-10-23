@@ -1,4 +1,4 @@
-import { StudioMotion } from '../shared/motion.js?v=4c4ac8c2b5';
+import { StudioMotion } from '../shared/motion.js';
 
 // `factory` creates the selected entrance; `dissolve` holds the Dissolve
 // entrance's model and timing options, or null for the other entrances.
@@ -59,7 +59,7 @@ export function startHome(factory, dissolve) {
     // the existing entrance and text springs to finish.
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
-    import("../model/background.js?v=e40259a880")
+    import("../model/background.js")
       .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, dissolve ? { prepareDissolve: true, model: dissolve.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => dissolve.report('pullback', entrance.elapsed), onSettled: () => dissolve.report('model', entrance.elapsed) } : {}))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => {

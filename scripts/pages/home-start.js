@@ -3,15 +3,15 @@
 try {
   // The lab and ordinary visits share the same Dissolve homepage path.
   const query = new URLSearchParams(location.search);
-  if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js?v=e321cff13c');
+  if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js');
   let config;
   if (query.has('motionPreview')) {
     try { config = JSON.parse(query.get('motionPreview')); }
     catch (error) { console.warn('Entrance preview settings unavailable', error); }
   }
-  const { chooseStudioEntrance, loadStudioEntrance } = await import('../entrance/index.js?v=33910b9c12');
+  const { chooseStudioEntrance, loadStudioEntrance } = await import('../entrance/index.js');
   const kind = config ? 'dissolve' : chooseStudioEntrance();
-  const [factory, { startHome }] = await Promise.all([loadStudioEntrance(kind), import('./home.js?v=99faf2488f')]);
+  const [factory, { startHome }] = await Promise.all([loadStudioEntrance(kind), import('./home.js')]);
   const dissolve = kind !== 'dissolve' ? null : {
     settings: { ...config?.settings, dotSettings: config?.dotSettings },
     // Choose once per visit; explicit lab selections remain deterministic.

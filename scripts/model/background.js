@@ -1,7 +1,7 @@
-import { createTextMask } from './text-mask.js?v=01a7781af4';
-import { chooseModel, models } from "./registry.js?v=cf50c58257";
-import { createModelScene } from "./scene.js?v=0aeebe0a9a";
-import { setupModelControls } from "./controls.js?v=e61f56e31f";
+import { createTextMask } from './text-mask.js';
+import { chooseModel, models } from "./registry.js";
+import { createModelScene } from "./scene.js";
+import { setupModelControls } from "./controls.js";
 
 export async function createModelBackground(container, button, onExpand, onControlReady = () => { }, options = {}) {
   let controlReady = false;

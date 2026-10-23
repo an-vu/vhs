@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { paletteGLSL, paletteUniforms } from './model-palette.js?v=5b179fe661';
+import { paletteGLSL, paletteUniforms } from './model-palette.js';
 
 export const scanPalettes = ['Spectrum', 'vHuman', 'Phosphor', 'Amber', 'Ice Blue'];
 

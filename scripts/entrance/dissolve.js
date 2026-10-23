@@ -1,4 +1,4 @@
-import { dotSettings } from './dissolve-dots.js?v=e0fd978515';
+import { dotSettings } from './dissolve-dots.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
 const ease = value => { const t = clamp(value); return t * t * (3 - 2 * t); };

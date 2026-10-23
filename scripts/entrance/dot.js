@@ -1,5 +1,5 @@
-import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
-import { createDotMotion } from './dot-motion.js?v=94c6d049b9';
+import { createEntranceTimeline } from './timeline.js';
+import { createDotMotion } from './dot-motion.js';
 
 // Homepage wordmark entrance. Start once; finish immediately when navigation takes over.
 // This file owns measurements, playback and cleanup; dot-motion.js owns the physics.

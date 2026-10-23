@@ -1,5 +1,5 @@
-import { defaults, ease } from "./settings.js?v=0d5c3d13fd";
-import { createMotion } from "./motion.js?v=31446df000";
+import { defaults, ease } from "./settings.js";
+import { createMotion } from "./motion.js";
 
 // Images: [{ src: "images/project.jpg", alt: "Description", caption: "Optional caption" }].
 // Omit src for a labelled placeholder while preparing the project imagery.

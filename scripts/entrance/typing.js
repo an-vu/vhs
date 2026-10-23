@@ -1,4 +1,4 @@
-import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
+import { createEntranceTimeline } from './timeline.js';
 
 export function createTypingEntrance(brand, onComplete = () => { }, options = {}) {
   const t = { ...createTypingEntrance.defaults, ...options };

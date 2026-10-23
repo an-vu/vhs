@@ -1,5 +1,5 @@
-import rb18 from "./settings/rb18.js?v=9716b15e4d";
-import f35Points from "./settings/f35-points.js?v=0e9b3bc9ce";
+import rb18 from "./settings/rb18.js";
+import f35Points from "./settings/f35-points.js";
 import * as THREE from "three";
 
 // Register each model's settings file below. Asset paths live in those files.

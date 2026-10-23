@@ -1,8 +1,8 @@
-import { MODEL_THEME_EVENT } from "./effects/model-palette.js?v=5b179fe661";
-import { modelDefaults } from "./registry.js?v=cf50c58257";
+import { MODEL_THEME_EVENT } from "./effects/model-palette.js";
+import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
-import * as defaults from "./config.js?v=e8bf0ee147";
-import { createPLYPointCloud } from "./ply-points.js?v=409e772fb1";
+import * as defaults from "./config.js";
+import { createPLYPointCloud } from "./ply-points.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
 export async function createModelScene(container, model, onRevealProgress = () => { }, options = {}) {

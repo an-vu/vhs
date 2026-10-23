@@ -1,4 +1,4 @@
-import { createEntranceTimeline } from './timeline.js?v=7cbb00f227';
+import { createEntranceTimeline } from './timeline.js';
 
 export function createShuffleEntrance(brand, onComplete = () => { }, options = {}) {
   const t = { ...createShuffleEntrance.defaults, ...options };

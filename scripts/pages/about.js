@@ -1,5 +1,5 @@
-import { StudioMotion } from '../shared/motion.js?v=4c4ac8c2b5';
-import { StudioPageScroll } from '../shared/page-scroll.js?v=7b012a23a4';
+import { StudioMotion } from '../shared/motion.js';
+import { StudioPageScroll } from '../shared/page-scroll.js';
 
 (() => {
   const M = StudioMotion;

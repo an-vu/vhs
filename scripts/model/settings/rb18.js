@@ -1,7 +1,7 @@
 export default {
   id: "rb18",
   format: "ply",
-  path: new URL("../../../models/rb18-points.ply?v=d6cea01735", import.meta.url).href,
+  path: new URL("../../../models/rb18-points.ply", import.meta.url).href,
   settings: {
     MODEL_X_ROTATION: -Math.PI / 2,
     INITIAL_Y_ROTATION: Math.PI * 5 / 6,

@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { loadPreparedPoints } from "./point-loader.js?v=85779dd487";
-import { createPointMaterial } from "./point-material.js?v=c2a61ef961";
-import { normalizePositions, sampleVisible, twinkleSeeds } from "./point-prep.js?v=56ca5c514c";
+import { loadPreparedPoints } from "./point-loader.js";
+import { createPointMaterial } from "./point-material.js";
+import { normalizePositions, sampleVisible, twinkleSeeds } from "./point-prep.js";
 
 export async function createPLYPointCloud(group, renderer, model, sourceGeometry, prepareDissolve = false) {
   const diagnostic = window.StudioDiagnostics;
