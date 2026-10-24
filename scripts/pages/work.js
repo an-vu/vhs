@@ -63,8 +63,9 @@ import { createLogoStrip } from './logo-strip.js';
 
   // The row moves like vFlow: one continuous position that eases to the target
   // over a second (vFlow's curve). It has ends, in the page's order (Year Five
-  // first, on the left). A journey finishes before the next one starts. The glass circle and the
-  // logos are the indicator, so there are no dots.
+  // first, on the left). A new pick takes over from wherever the row is, so a
+  // tap mid-slide counts. The glass circle and the logos are the indicator, so
+  // there are no dots.
   const count = tabs.length, DURATION = 1000;
   const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
   const clampIndex = value => Math.max(0, Math.min(count - 1, value));
@@ -82,11 +83,9 @@ import { createLogoStrip } from './logo-strip.js';
   lens.append(...copies);
   track.dataset.glassCircle = 'outside';
   flow.append(lens);
-  // Apple's spacing (about 104 px center to center); on a phone it narrows so the ends stay in view.
-  // The logo strip's is that times --dock-scale (work.css), like its glass circle.
+  // The docks' sizes (work.css).
   const dockScale = () => parseFloat(getComputedStyle(flow).getPropertyValue('--dock-scale')) || 1;
   const dockSize = () => parseFloat(getComputedStyle(flow).getPropertyValue('--dock-size')) || 1;
-  const pitch = () => Math.min(104, flow.clientWidth * .22);
   let current = Math.max(0, panels.findIndex(panel => !panel.hidden));
   let position = current, journey = null, motion = 0;
   const labels = [...flow.querySelectorAll('.project-labels > span')];
@@ -158,7 +157,7 @@ import { createLogoStrip } from './logo-strip.js';
     motion = requestAnimationFrame(travel);
   }
   function select(i, { focus = false, first = false, duration, curve } = {}) {
-    if (journey || (i === current && !first)) return;
+    if (i === current && !first) return;
     const previous = panels[current];
     current = i;
     tabs.forEach((tab, j) => {
@@ -272,7 +271,9 @@ import { createLogoStrip } from './logo-strip.js';
   })), new URL('../../images/logos/', import.meta.url));
   const SPEED = .3, CRAWL = SPEED / 10; // spots per second
   let scroll = 0, speed = SPEED, last = 0, frame = 0, visible = true, held = false;
-  const place = () => logos.paint(scroll, pitch() * dockScale());
+  // Its logos sit one glass apart (its circle's width), where the project row's
+  // first neighbours sit too.
+  const place = () => logos.paint(scroll, 2 * (parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 67));
   function drift(now) {
     frame = 0;
     const dt = last ? Math.min((now - last) / 1000, .05) : 0;

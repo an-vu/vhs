@@ -254,10 +254,11 @@
 .project-flow-track button:is(:hover, :focus-visible) { color: var(--fg); }
 .project-flow-track button:is(:hover, :focus-visible) .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
 .project-labels > span { transition: opacity .3s cubic-bezier(0, 0, .5, 1); }
+/* Hidden logos still take a tap: on a phone the finger leaves the row after
+   every tap, so a tap where a logo just was has to count. */
 .project-flow.is-resting .project-flow-track button[aria-selected="false"],
 .project-flow.is-resting .project-labels > span {
   opacity: 0;
-  pointer-events: none;
   transition-duration: .9s;
 }
 /* Logos: one simple mark each in a 56 px box, drawn in the grade color, like
@@ -340,7 +341,7 @@
   top: 0;
   display: grid;
   place-items: center;
-  width: calc(88px * var(--dock-scale, 1));
+  width: calc(88px * var(--dock-scale, 1) * var(--dock-size, 1));
   height: 100%;
 }
 /* The middle circle is a lens: inside it the logos are big and in color, outside
@@ -384,10 +385,10 @@
 
 @media(max-width:760px) {
   .work-page { --logo-gap: 30px; --title-air: 32px }
-  /* On a phone the project dock is the size it was before the docks grew
+  /* On a phone both docks are the size they were before they grew
      (1 / --dock-scale): a 104 px glass, logos and gaps a quarter smaller, so
-     two logos show on each side. The logo strip keeps its size. */
-  .project-flow { --dock-size: .769 }
+     two project logos show on each side. */
+  .work-page { --dock-size: .769 }
   /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
      and the row's 2 px), a bit more than the project glass's 34 px to the title. */
   .work-clients { margin-top: 2px }
