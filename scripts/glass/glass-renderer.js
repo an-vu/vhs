@@ -12,7 +12,8 @@ import { createSnapshot } from './page-snapshot.js';
 //
 // The caller owns the loop and the shapes. attach() points it at a page (the
 // same one, or a page in a frame), resize() at the canvas's size, and draw()
-// paints one frame: shapes in CSS px of the page's viewport, with
+// paints one frame: shapes in CSS px of the canvas, which covers the view, its
+// top `offset` px below the view's (0 unless it's held inside the page), with
 //   x, y        center          hw, hh   half width and height
 //   radius      corner radius   smooth   corner exponent (2 round, 5 Apple)
 //   k           effect scale (the shape next to the one the look was tuned on)
@@ -76,6 +77,8 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   const changed = new Set(), animating = new Set();
   let lastRects = new WeakMap(), fixedParents = new WeakMap();
   let dpr = 1, dirty = true, doc = null, win = null, observer = null, ignored = [], unhook = () => {};
+  // The canvas's top on the page and in the view (CSS px), set each frame.
+  let canvasTop = 0, offset = 0;
 
   // Points the glass at a page: make its WebGL canvases keep their last frame
   // (the rover renders on demand, so a copy would otherwise come back blank) and
@@ -147,19 +150,20 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   }
 
   // One frame. `time` (s) drives the slow corner sway.
-  function draw(shapes, look, time) {
+  function draw(shapes, look, time, viewOffset = 0) {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     shapes = shapes.filter(item => item.appear > 0);
     if (!doc?.body || !shapes.length) return;
     const cssH = canvas.height / dpr;
+    offset = viewOffset; canvasTop = win.scrollY + offset;
 
     // Copy only the area the glasses can show (device px), on a 64px grid so small moves reuse it.
     const snap = (v, up) => (up ? Math.ceil : Math.floor)(v / 64) * 64;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const padOf = item => (40 + look.wall * 2 * Math.max(item.k, 1) + (look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0) + (look.shadow > 0 ? 110 : 0)) * dpr;
     for (const item of shapes) {
-      const echoes = look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0;
-      const pad = (40 + look.wall * 2 * Math.max(item.k, 1) + echoes + (look.shadow > 0 ? 110 : 0)) * dpr;
+      const pad = padOf(item);
       x0 = Math.min(x0, snap((item.x - item.hw) * dpr - pad)); y0 = Math.min(y0, snap((item.y - item.hh) * dpr - pad));
       x1 = Math.max(x1, snap((item.x + item.hw) * dpr + pad, true)); y1 = Math.max(y1, snap((item.y + item.hh) * dpr + pad, true));
     }
@@ -174,16 +178,18 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     }
     updateRing(x0, y0, x1, y1);
     refreshChanged(x0, y0, x1, y1);
-    const block = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-    if (!fixedBlock || ['x', 'y', 'w', 'h'].some(key => fixedBlock[key] !== block[key])) { fixedBlock = block; fixedDirty = liveDirty = true; }
+    const block = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, offset };
+    if (!fixedBlock || ['x', 'y', 'w', 'h', 'offset'].some(key => fixedBlock[key] !== block[key])) { fixedBlock = block; fixedDirty = liveDirty = true; }
+    // The fixed layer is copied where it sits in the view.
+    const inView = { ...block, y: block.y + Math.round(offset * dpr) };
     if (fixedDirty) {
       fixedDirty = false;
-      snapshot.fixed(fixedCanvas, doc, block, dpr);
+      snapshot.fixed(fixedCanvas, doc, inView, dpr);
       fixedTexture.image(fixedCanvas, false);
     }
     if (liveDirty) {
       liveDirty = false;
-      const css = { x: Math.floor(block.x / dpr), y: Math.floor(block.y / dpr), w: Math.ceil(block.w / dpr), h: Math.ceil(block.h / dpr) };
+      const css = { x: Math.floor(inView.x / dpr), y: Math.floor(inView.y / dpr), w: Math.ceil(block.w / dpr), h: Math.ceil(block.h / dpr) };
       const z = snapshot.fixed(liveCanvas, doc, css, 1, true);
       // The About text sits at z-index 1, so a rover at 0 or below is behind it.
       liveOn = z === null ? 0 : z <= 0 ? 1 : 2;
@@ -196,7 +202,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     const bg = (fill.match(/[\d.]+/g) ?? [249, 248, 246]).slice(0, 3).map(v => v / 255);
     const lum = bg[0] * .299 + bg[1] * .587 + bg[2] * .114;
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
-    gl.uniform4f(U.uRing, ring.w, ring.rows, Math.round(win.scrollY * dpr), 0);
+    gl.uniform4f(U.uRing, ring.w, ring.rows, Math.round(canvasTop * dpr), 0);
     gl.uniform4f(U.uFixed, fixedBlock.x, fixedBlock.y, fixedBlock.w, fixedBlock.h);
     gl.uniform1f(U.uLiveOn, liveOn);
     gl.uniform1f(U.uEdgePow, look.edgePower ?? 2.4);
@@ -208,8 +214,8 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     const reach = (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22) * dpr;
     const header = headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
     const footerOpacity = footerElement ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
-    gl.uniform4f(U.uHeader, header ? header.top * dpr : 0, header ? header.height * dpr : 0, reach, 0);
-    gl.uniform4f(U.uFooter, footer ? footer.top * dpr : 0, footer ? footer.bottom * dpr : 0, reach, footerOpacity);
+    gl.uniform4f(U.uHeader, header ? (header.top - offset) * dpr : 0, header ? header.height * dpr : 0, reach, 0);
+    gl.uniform4f(U.uFooter, footer ? (footer.top - offset) * dpr : 0, footer ? (footer.bottom - offset) * dpr : 0, reach, footerOpacity);
     gl.uniform3fv(U.uBg, bg);
     gl.uniform1f(U.uDark, 1 - Math.min(Math.max((lum - .3) / .3, 0), 1));
     gl.uniform1f(U.uDpr, dpr);
@@ -242,7 +248,13 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     // Premultiplied glass over a clear canvas: each glass blends over the ones before it.
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    // Each glass only shades its own box (plus its shadow), not the whole canvas.
+    gl.enable(gl.SCISSOR_TEST);
     for (const item of shapes) {
+      const pad = padOf(item), left = Math.max(0, Math.floor((item.x - item.hw) * dpr - pad)), right = Math.min(canvas.width, Math.ceil((item.x + item.hw) * dpr + pad));
+      const bottom = Math.max(0, Math.floor((cssH - item.y - item.hh) * dpr - pad)), top = Math.min(canvas.height, Math.ceil((cssH - item.y + item.hh) * dpr + pad));
+      if (right <= left || top <= bottom) continue;
+      gl.scissor(left, bottom, right - left, top - bottom);
       // Effect sizes follow the glass: its size next to the tuned one, and the bubble growing in.
       const size = item.scale * item.k, short = Math.min(item.hw, item.hh);
       gl.uniform1f(U.uScale, size);
@@ -260,6 +272,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
       item.uniforms?.(gl, U, size, short, dpr);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
+    gl.disable(gl.SCISSOR_TEST);
   }
 
   // Keeps page rows y0..y1 of the current view (plus some slack) in the ring,
@@ -273,7 +286,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
       clip = null;
       ringTexture.data(ring.w, ring.rows, null, true);
     }
-    const sy = Math.round(win.scrollY * dpr), top = sy + y0, bottom = sy + y1;
+    const sy = Math.round(canvasTop * dpr), top = sy + y0, bottom = sy + y1;
     if (top >= ring.v0 && bottom <= ring.v1) return;
     if (ring.v1 <= ring.v0 || bottom + slack <= ring.v0 || top - slack >= ring.v1) {
       ring.v0 = top - slack; ring.v1 = bottom + slack;
@@ -322,7 +335,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
       if (last && span[0] <= last[1]) Object.assign(last, [last[0], Math.max(last[1], span[1]), Math.min(last[2], span[2]), Math.max(last[3], span[3])]);
       else merged.push([...span]);
     }
-    const top = Math.round(sy * dpr) + y0, bottom = Math.round(sy * dpr) + y1;
+    const top = Math.round(canvasTop * dpr) + y0, bottom = Math.round(canvasTop * dpr) + y1;
     stale = [];
     for (const [a, b, left, right] of merged) {
       const c = Math.max(a, top), d = Math.min(b, bottom), l = Math.max(left, x0), r = Math.min(right, x1);

@@ -85,23 +85,27 @@ import { createLogoStrip } from './logo-strip.js';
   // Apple's spacing (about 104 px center to center); on a phone it narrows so the ends stay in view.
   // The logo strip's is that times --dock-scale (work.css), like its glass circle.
   const dockScale = () => parseFloat(getComputedStyle(flow).getPropertyValue('--dock-scale')) || 1;
+  const dockSize = () => parseFloat(getComputedStyle(flow).getPropertyValue('--dock-size')) || 1;
   const pitch = () => Math.min(104, flow.clientWidth * .22);
   let current = Math.max(0, panels.findIndex(panel => !panel.hidden));
   let position = current, journey = null, motion = 0;
   const labels = [...flow.querySelectorAll('.project-labels > span')];
-  // One even 40 px gap: from the glass's edge to the next logo, and between the
-  // logos outside it; a slide moves a logo across the glass and on at that
-  // spacing. At most four logos show on each side (the fifth fades out as it
+  // One even 40 px gap (times --dock-size): from the glass's edge to the next
+  // logo, and between the logos outside it; a slide moves a logo across the glass
+  // and on at that spacing. At most four logos show on each side (the fifth fades out as it
   // arrives), and fewer where the text column is narrower: a logo past the
   // column's edge fades out over half a step (--edge, a filter, so it doesn't
   // wait on the resting fade's transition).
   const GAP = 40, SIDE = 4;
-  function paint() {
-    const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
+  function spacing() {
     const size = tabs[0].firstElementChild.offsetWidth * .618 / dockScale();
     const glass = parseFloat(getComputedStyle(flow).getPropertyValue('--circle')) || 67;
-    const gap = GAP;
-    const step = size + gap, first = glass + gap + size / 2;
+    const gap = GAP * dockSize();
+    return { step: size + gap, first: glass + gap + size / 2 };
+  }
+  function paint() {
+    const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
+    const { step, first } = spacing();
     const at = t => Math.sign(t) * (Math.abs(t) <= 1 ? Math.abs(t) * first : first + (Math.abs(t) - 1) * step);
     tabs.forEach((tab, i) => {
       const offset = at(i - position), x = (middle + offset).toFixed(1);
@@ -141,13 +145,19 @@ import { createLogoStrip } from './logo-strip.js';
   flow.addEventListener('focusout', wake);
   function travel(now) {
     motion = 0;
-    const t = Math.min(1, (now - journey.start) / DURATION);
-    position = journey.from + (journey.to - journey.from) * ease(t);
+    const t = Math.min(1, (now - journey.start) / journey.duration);
+    position = journey.from + (journey.to - journey.from) * journey.curve(t);
     if (t >= 1) { position = journey.to; journey = null; }
     paint();
     if (journey) motion = requestAnimationFrame(travel);
   }
-  function select(i, { focus = false, first = false } = {}) {
+  function glide(to, duration = DURATION, curve = ease) {
+    cancelAnimationFrame(motion);
+    if (reduced.matches) { journey = null; position = to; paint(); return; }
+    journey = { from: position, to, start: performance.now(), duration, curve };
+    motion = requestAnimationFrame(travel);
+  }
+  function select(i, { focus = false, first = false, duration, curve } = {}) {
     if (journey || (i === current && !first)) return;
     const previous = panels[current];
     current = i;
@@ -157,11 +167,8 @@ import { createLogoStrip } from './logo-strip.js';
       labels[j]?.classList.toggle('is-selected', j === i);
     });
     wake();
-    if (first || reduced.matches) { position = i; paint(); }
-    else {
-      journey = { from: position, to: i, start: performance.now() };
-      motion = requestAnimationFrame(travel);
-    }
+    if (first) { position = i; paint(); }
+    else glide(i, duration, curve);
     panels.forEach((panel, j) => { panel.hidden = j !== i; });
     if (focus) tabs[i].focus();
     if (first) return;
@@ -181,29 +188,61 @@ import { createLogoStrip } from './logo-strip.js';
     event.preventDefault();
     select(clampIndex(next), { focus: true });
   });
-  // Swipe or drag sideways to step, like vFlow (35 px).
+  // Drag or swipe the row sideways: it follows the finger (pulling back past the
+  // ends), then coasts on at the swipe's speed and stops on the project nearest
+  // to where a phone's list would stop (iOS's deceleration), so a fast swipe
+  // crosses several projects and a slow one steps to the next. Taking hold
+  // stops a glide where it is.
+  const easeOut = t => 1 - (1 - t) ** 3;
   let drag = null;
   flow.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0) return;
     suppressClick = false;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false };
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, from: position, moves: [] };
   });
   flow.addEventListener('pointermove', event => {
     if (!drag || event.pointerId !== drag.id) return;
     const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
-    if (!drag.horizontal && Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
-    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+    if (!drag.horizontal) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+      if (Math.abs(dx) <= 10 || Math.abs(dx) <= Math.abs(dy)) return;
       drag.horizontal = suppressClick = true;
       flow.setPointerCapture(event.pointerId);
+      cancelAnimationFrame(motion); journey = null;
+      Object.assign(drag, { x: event.clientX, from: position });
     }
+    let to = drag.from - (event.clientX - drag.x) / spacing().step;
+    if (to < 0) to *= .35;
+    else if (to > count - 1) to = count - 1 + (to - count + 1) * .35;
+    position = to;
+    paint();
+    wake();
+    drag.moves.push([event.timeStamp, event.clientX]);
+    while (drag.moves.length > 2 && event.timeStamp - drag.moves[0][0] > 100) drag.moves.shift();
   });
+  function release(time) {
+    // Speed over the last tenth of a second (projects per ms); none if the finger stopped.
+    const moves = drag.moves.filter(([t]) => time - t < 100);
+    let speed = 0;
+    if (moves.length > 1 && moves.at(-1)[0] > moves[0][0]) speed = -(moves.at(-1)[1] - moves[0][1]) / (moves.at(-1)[0] - moves[0][0]) / spacing().step;
+    const target = clampIndex(Math.round(position + speed * .998 / (1 - .998)));
+    const distance = Math.abs(target - position);
+    // An ease-out leaves at three times its average speed: match the finger's.
+    const duration = Math.sign(speed) === Math.sign(target - position) && Math.abs(speed) > 1e-4
+      ? Math.min(1200, Math.max(300, 3 * distance / Math.abs(speed)))
+      : Math.min(600, 300 + 200 * distance);
+    if (target === current) glide(current, duration, easeOut);
+    else select(target, { duration, curve: easeOut });
+  }
   flow.addEventListener('pointerup', event => {
     if (!drag || event.pointerId !== drag.id) return;
-    const dx = event.clientX - drag.x;
-    if (drag.horizontal && Math.abs(dx) > 35) select(clampIndex(current + (dx < 0 ? 1 : -1)));
+    if (drag.horizontal) release(event.timeStamp);
     drag = null;
   });
-  flow.addEventListener('pointercancel', () => { drag = null; });
+  flow.addEventListener('pointercancel', event => {
+    if (drag?.horizontal) { drag.moves = []; release(event.timeStamp); }
+    drag = null;
+  });
   const linked = () => {
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { return -1; }

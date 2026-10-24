@@ -151,6 +151,12 @@ export function createSnapshot(onIconLoad) {
       if (element.hasAttribute('data-glass-ignore')) return;
       const style = win.getComputedStyle(element);
       if (style.display === 'none' || style.visibility === 'hidden') return;
+      // Text kept for screen readers only (clipped away, or cut to a 1 px box) isn't on screen.
+      if (style.clipPath === 'inset(50%)') return;
+      if (/hidden|clip/.test(style.overflow)) {
+        const box = element.getBoundingClientRect();
+        if (box.width <= 1 || box.height <= 1) return;
+      }
       // The header and footer glass is drawn by the shader.
       if (element.classList.contains('header-blur') || element.classList.contains('footer-blur')) return;
       opacity *= parseFloat(style.opacity);

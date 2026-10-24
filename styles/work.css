@@ -172,12 +172,18 @@
   --mark-reach: .85;
   /* Both docks' size, and the glass circle's radius: the lens both rows share. */
   --dock-scale: 1.3;
-  --circle: calc(min(calc(var(--select-size, 104) * 1px), 34vw) / 2 * var(--dock-scale));
+  /* The project dock's own size on top of that: glass, logos and gaps (phones: below). */
+  --dock-size: 1;
+  --logo-gap: 39px;
+  --title-air: 40px;
+}
+/* Worked out again on the project dock, so its --dock-size reaches them. */
+.work-page,
+.project-flow {
+  --circle: calc(min(calc(var(--select-size, 104) * 1px), 34vw) / 2 * var(--dock-scale) * var(--dock-size));
   /* A row's middle line (the row is the circle plus 2 px each side). */
   --row-mid: calc(var(--circle) + 2px);
   --logo: calc(var(--circle) * 2 * var(--mark-reach) / 2 / .5);
-  --logo-gap: 39px;
-  --title-air: 40px;
 }
 .work-page .page-content { padding-top: 0; }
 .project-flow {
@@ -202,8 +208,8 @@
   top: 50%;
   display: grid;
   place-items: center;
-  width: calc(88px * var(--dock-scale));
-  height: calc(88px * var(--dock-scale));
+  width: calc(88px * var(--dock-scale) * var(--dock-size));
+  height: calc(88px * var(--dock-scale) * var(--dock-size));
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -218,7 +224,7 @@
    one, half the other. No sizes in between. */
 .project-lens { position: absolute; inset: 0; pointer-events: none; }
 .project-lens .project-mark { color: var(--mark-color, var(--fg)); }
-.project-lens > span { position: absolute; left: 0; top: 50%; display: grid; place-items: center; width: calc(88px * var(--dock-scale)); height: calc(88px * var(--dock-scale)); }
+.project-lens > span { position: absolute; left: 0; top: 50%; display: grid; place-items: center; width: calc(88px * var(--dock-scale) * var(--dock-size)); height: calc(88px * var(--dock-scale) * var(--dock-size)); }
 /* Short names just under the (small) logos outside the glass, like Apple's
    product row, shown only for the logo pointed at (or focused); the selected
    one has none, its title is right below. */
@@ -378,5 +384,12 @@
 
 @media(max-width:760px) {
   .work-page { --logo-gap: 30px; --title-air: 32px }
+  /* On a phone the project dock is the size it was before the docks grew
+     (1 / --dock-scale): a 104 px glass, logos and gaps a quarter smaller, so
+     two logos show on each side. The logo strip keeps its size. */
+  .project-flow { --dock-size: .769 }
+  /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
+     and the row's 2 px), a bit more than the project glass's 34 px to the title. */
+  .work-clients { margin-top: 2px }
   .project-panel .project-tagline { font-size: clamp(24px, 4vw, 28px) }
 }

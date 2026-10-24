@@ -19,11 +19,15 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   // A page shown inside a glass tool (the Glass Lab's frame, data-glass-host)
   // already has glass drawn over it.
   if (window.frameElement?.hasAttribute('data-glass-host')) return null;
+  // The canvas rides in the page, not fixed to the screen: a phone scrolls the
+  // page apart from its scripts, so a fixed canvas could only catch up after each
+  // step (the glass lagged and stuck). Each frame it moves to the view and draws
+  // there, and between frames it scrolls with the page, glass and all.
   const canvas = document.createElement('canvas');
   canvas.className = 'glass-layer';
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('data-glass-ignore', '');
-  Object.assign(canvas.style, { position: 'fixed', left: '0', top: '0', width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: String(zIndex) });
+  Object.assign(canvas.style, { position: 'absolute', left: '0', top: '0', pointerEvents: 'none', zIndex: String(zIndex) });
   document.body.append(canvas);
   const renderer = createGlassRenderer(canvas);
   if (!renderer) { canvas.remove(); return null; }
@@ -63,15 +67,27 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     return entering(shape, look.entrance, clock - seen.get(target));
   }
 
+  // The view's size in CSS px, set on the canvas too: a phone's 100vh is the
+  // tallest view (toolbar hidden), so with the toolbar showing the canvas was
+  // stretched and the glass drawn lower the further down the screen it sat.
+  let width = 0, height = 0;
   function resize() {
-    renderer.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 2));
+    width = document.documentElement.clientWidth; height = innerHeight;
+    Object.assign(canvas.style, { width: `${width}px`, height: `${height}px` });
+    renderer.resize(width, height, Math.min(devicePixelRatio || 1, 2));
     start();
   }
   function frame(now) {
     raf = 0;
     const dt = last ? Math.min((now - last) / 1000, .05) : 1 / 60;
     last = now; clock += dt;
-    renderer.draw(targets.filter(target => onScreen.has(target)).map(shapeOf).filter(Boolean), look, clock);
+    if (innerHeight !== height || document.documentElement.clientWidth !== width) resize();
+    const shapes = targets.filter(target => onScreen.has(target)).map(shapeOf).filter(Boolean);
+    // Kept inside the page (past its ends while it bounces), so it never makes the page longer.
+    const end = document.body.getBoundingClientRect().bottom + scrollY;
+    const top = Math.min(Math.max(scrollY, 0), Math.max(0, end - height)), offset = top - scrollY;
+    canvas.style.transform = `translate(${scrollX}px, ${top}px)`;
+    renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), look, clock, offset);
     start();
   }
   function start() {
