@@ -88,6 +88,13 @@ def public_files():
         if path in found:
             continue
         source = ROOT / path
+        # A folder URL (new URL('logos/', import.meta.url)): the script names the files
+        # in it at run time, so every publishable file directly inside it goes out.
+        if source.is_dir() and not source.is_symlink():
+            pending.extend(child.relative_to(ROOT).as_posix() for child in sorted(source.iterdir())
+                           if child.is_file() and child.suffix in EXTENSIONS - {".html"}
+                           and not child.name.startswith("."))
+            continue
         # A link to a lab file works on the local server but not live, so it lands here.
         if not source.is_file() or source.is_symlink():
             raise ValueError(f"Missing or invalid public dependency: {path}")
@@ -130,7 +137,8 @@ def stamp(files):
             text = data.decode()
             for url in sorted(set(dependencies(path)), key=len, reverse=True):
                 target = local_path(url, path)
-                if target and not target.endswith(".html"):
+                # Pages and folders keep clean URLs (a folder's files carry no version).
+                if target and not target.endswith(".html") and not (ROOT / target).is_dir():
                     text = versioned(text, url, visit(target, trail + (path,)))
             data = text.encode()
         output[path] = data

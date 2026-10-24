@@ -24,6 +24,7 @@ const entrance = { value: -1000 };
 const dotBuildDuration = .5;
 const sweepDuration = 3;
 const animationDelay = .5;
+const animationSpeed = 1.5;
 const worldUp = new THREE.Vector3(0, 1, 0);
 const frameClock = createFrameClock();
 let spectralPreparation, preparingSpectral;
@@ -238,6 +239,7 @@ async function start() {
     });
     lines.setEnabled(true);
     mixer = new THREE.AnimationMixer(model);
+    mixer.timeScale = animationSpeed;
     if (gltf.animations[0]) mixer.clipAction(gltf.animations[0]).setLoop(THREE.LoopPingPong, Infinity).play();
     observer = new ResizeObserver(resize); observer.observe(host);
     mixer.update(0);
