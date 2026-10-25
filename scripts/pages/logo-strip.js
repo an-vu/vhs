@@ -63,13 +63,17 @@ export function createLogoStrip(strip, items, folder) {
   }
 
   // `scroll`: spots passed so far (it only grows); `step`: px between spots.
+  // Where the strip is too narrow for the fades at the 2nd and 6th spots (a
+  // phone), a logo also fades out before it reaches the edge, not cut off by it.
   function paint(scroll, step) {
     if (!items.length) return;
     const middle = strip.clientWidth / 2, base = Math.floor(scroll), fraction = scroll - base;
     for (let k = 0; k < SPOTS; k++) {
       const n = base + k, item = at(n);
       const offset = k - 3 - fraction, d = Math.abs(offset);
-      const transform = `translateX(${(middle + offset * step).toFixed(1)}px) translateX(-50%)`, opacity = clamp(3 - d).toFixed(3);
+      // Gone just as the widest logo (a quarter step each side of its middle) would touch it.
+      const edge = clamp((middle - d * step - .26 * step) / (.35 * step));
+      const transform = `translateX(${(middle + offset * step).toFixed(1)}px) translateX(-50%)`, opacity = Math.min(clamp(3 - d), edge).toFixed(3);
       for (const [element, kind] of [[flat[n % SPOTS], 'mono'], [colored[n % SPOTS], 'color']]) {
         if (element.dataset.logo !== item.logo) show(element, item, kind);
         element.style.transform = transform;
