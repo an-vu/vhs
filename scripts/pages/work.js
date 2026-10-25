@@ -125,9 +125,12 @@ import { createLogoStrip } from './logo-strip.js';
         : Math.max(0, Math.min(1, (half + step / 2 - Math.abs(offset)) / (step / 2), SIDE + 1 - Math.abs(i - position)))).toFixed(3);
       tab.style.transform = copies[i].style.transform = `translate(${x}px, -50%) translateX(-50%)`;
       tab.style.setProperty('--edge', edge);
-      // A name never shows in the glass: it fades out as its logo moves in.
-      const clear = Math.max(0, Math.min(1, (Math.abs(i - position) - .5) / .5));
-      if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', Math.min(edge, clear).toFixed(3)); }
+      // A name never shows in the glass: it fades out as its logo moves in. On a
+      // phone only the two logos beside the glass show theirs (the row is too tight
+      // for more): a name fades out as its logo moves on past that spot.
+      const d = Math.abs(i - position), clear = Math.max(0, Math.min(1, (d - .5) / .5));
+      const beside = phone.matches ? Math.max(0, Math.min(1, (1.6 - d) / .4)) : 1;
+      if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', Math.min(edge, clear, beside).toFixed(3)); }
     });
   }
   // A logo's name shows only while a mouse points at it (or it's focused), under it (work.css).
