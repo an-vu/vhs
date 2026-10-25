@@ -154,8 +154,7 @@ export function createDotMotion(t, {
   const contact = impact === null ? null : sample(impact);
   const incomingX = impact === null ? 0 : (contact.x - sample(Math.max(0, impact - 2)).x) / 2;
   const incomingY = impact === null ? 0 : (contact.y - sample(Math.max(0, impact - 2)).y) / 2;
-  // A modest angled contact sends the dot right/up. No minimum throw,
-  // delayed release, compression hold, or extra launch boost.
+  // A modest angled contact sends the dot right/up.
   const nx = Math.cos(Math.PI / 8), ny = -Math.sin(Math.PI / 8);
   const massRatio = .035, restitutionAtWord = .75;
   const relativeSpeed = impact === null ? 0 : (incomingX - motion(impact).velocity) * nx + incomingY * ny;

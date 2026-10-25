@@ -40,9 +40,11 @@ html.experience body {
 
 .experience .home-content {
   height: 100%;
-  min-height: 0
+  min-height: 0;
+  pointer-events: none
 }
 
+/* Top: heading. Middle: aircraft. Bottom: navigation above the footer. */
 .home-main {
   flex: 1;
   display: flex;
@@ -69,7 +71,6 @@ html.experience body {
   font-size: .90em
 }
 
-/* Top: heading. Middle: aircraft. Bottom: navigation above the footer. */
 .home-main .main-nav {
   margin-top: 32px;
   flex-shrink: 0
@@ -79,7 +80,8 @@ html.experience body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  overflow: hidden
+  overflow: hidden;
+  pointer-events: none
 }
 
 #model-background canvas {
@@ -94,10 +96,6 @@ html.experience body {
   cursor: grabbing
 }
 
-.experience .home-content {
-  pointer-events: none
-}
-
 .experience .home-content a {
   pointer-events: auto
 }
@@ -110,10 +108,6 @@ html.experience body {
   justify-content: center;
   height: 60px;
   padding-bottom: 16px
-}
-
-#model-background {
-  pointer-events: none
 }
 
 .aircraft-expanded #model-background {
@@ -142,13 +136,11 @@ html.experience body {
 }
 
 @media(prefers-reduced-motion:reduce) {
-
   .home-main h1,
   .home-main .main-nav {
     transition: none
   }
 }
-
 
 /* Keep the small set of moving homepage text elements on stable layers. */
 .experience .intro-brand,

@@ -25,7 +25,7 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const events = new AbortController();
   const gaussian = () => Math.sqrt(-2 * Math.log(Math.max(.0001, random()))) * Math.cos(random() * Math.PI * 2);
-  const seeds = Array.from({ length: dots.count }, (_, i) => ({
+  const seeds = Array.from({ length: dots.count }, () => ({
     x: random(), y: random(), z: random(), phase: random() * Math.PI * 2,
     driftX: gaussian(), driftY: gaussian(), size: random(), spread: random(),
     color: 0
@@ -35,7 +35,7 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
       : i < mediumEnd ? dots.mediumMin + seed.size * (dots.mediumMax - dots.mediumMin)
       : dots.smallMin + seed.size ** dots.smallBias * (dots.smallMax - dots.smallMin);
     // Keep most dots crisp and opaque. Depth effects favor small dots;
-    // large soft dots are occasional accents, no longer two guaranteed giants.
+    // large soft dots are occasional accents.
     const small = seed.radius <= dots.smallThreshold;
     seed.soft = random() < (small ? dots.smallBlur : dots.largeBlur) / 100;
     // Both the chance and strength of transparency taper with size. Most
@@ -46,7 +46,8 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     const minOpacity = (dots.smallOpacityMin + (dots.largeOpacityMin - dots.smallOpacityMin) * sizeDepth) / 100;
     const maxOpacity = (dots.smallOpacityMax + (dots.largeOpacityMax - dots.smallOpacityMax) * sizeDepth) / 100;
     seed.opacity = translucent ? minOpacity + random() * (maxOpacity - minOpacity) : 1;
-    // Larger soft dots have a smaller solid core and a wider feathered edge.
+    // Soft dots keep a solid core (a share of the radius) that moves from the
+    // small-dot to the large-dot setting as size grows; the rest feathers out.
     seed.softCore = (dots.smallCore + (dots.largeCore - dots.smallCore) * clamp(seed.radius / dots.largeMax)) / 100;
   });
   // Light gray occupies the smallest dots; shuffle gray and ink across the rest.
@@ -105,7 +106,7 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     // Pixel values are tuned against the full desktop wordmark (150px). Scale
     // with the word, so smaller screens keep the same dot-to-word proportions.
     sizeScale = Math.min(1, fontSize / 150);
-    mask =document.createElement('canvas'); mask.width = Math.ceil(width); mask.height = Math.ceil(height);
+    mask = document.createElement('canvas'); mask.width = Math.ceil(width); mask.height = Math.ceil(height);
     const context = mask.getContext('2d');
     context.font = `${style.fontWeight} ${fontSize}px ${style.fontFamily}`;
     context.letterSpacing = style.letterSpacing;
@@ -143,7 +144,6 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     const wordScale = reduced.matches ? 1 : 1 + .04 * ease(referenceTime / burstAt);
     if (wordmark && !advanced) wordmark.style.transform = `scale(${wordScale})`;
     const breakup = ease((referenceTime - burstAt) / (breakupEnd - burstAt));
-    const inflated = breakup;
     const flightTime = dotsOnly ? Math.min(referenceTime, 1350 * 1.5) : referenceTime;
     // Release starts with breakup, rather than waiting for every dot to inflate.
     const flight = Math.max(0, (flightTime - burstAt) / (1350 - burstAt));
@@ -164,8 +164,8 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
       const x = letterX + (cloudX - letterX) * released + Math.sin(elapsed * .00045 * dots.driftSpeed + seed.phase) * dots.driftX * sizeScale * released;
       const y = letterY + (cloudY - letterY) * released + Math.cos(elapsed * .00035 * dots.driftSpeed + seed.phase) * dots.driftY * sizeScale * released - Math.sin(Math.min(1, released) * Math.PI) * (8 + seed.z * 24) * sizeScale;
       const base = seed.radius * sizeScale;
-      const size = base * (.2 + .8 * inflated) * (i < largeCount ? .4 + .6 * Math.min(1, released) : 1);
-      const alpha = inflated * seed.opacity;
+      const size = base * (.2 + .8 * breakup) * (i < largeCount ? .4 + .6 * Math.min(1, released) : 1);
+      const alpha = breakup * seed.opacity;
       bubbles.set([x / width * 2 - 1, 1 - y / height * 2, size * 2, alpha], i * 4);
       if (alpha <= 0 || (reduced.matches && !dotsOnly) || transferred) return;
       const color = colors[seed.color];
@@ -211,7 +211,6 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
       if (dotsOnly) { elapsed = timing.blank + timing.fade + timing.hold + timing.dissolve * 1.5; brand.style.visibility = 'hidden'; draw(0); }
       onDuration?.(createDissolveEntrance.duration(timing)); wake(); return performance.now();
     },
-    continueToModel: advance,
     waitBeforeForm(complete) {
       if (disposed || transferred || formationDelayAt !== null) return;
       formationDelayAt = elapsed;
@@ -231,7 +230,6 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
       transferred = true; release(); brand.style.removeProperty('opacity');
       return snapshot;
     },
-    get phase() { return advanced ? 'loading' : hovering ? 'hovering' : 'entrance'; },
     get elapsed() { return elapsed; },
     finish() { if (!started || disposed || transferred) return; elapsed = Math.max(elapsed, createDissolveEntrance.duration(timing)); draw(0); },
     dispose() { disposed = true; release(); brand.style.removeProperty('opacity'); }

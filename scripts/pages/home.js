@@ -1,17 +1,18 @@
 import { StudioMotion } from '../shared/motion.js';
 
 // `factory` creates the selected entrance; `dissolve` holds the Dissolve
-// entrance's model and timing options, or null for the other entrances.
+// entrance's model, settings and phase reporter, or null for the other entrances.
 export function startHome(factory, dissolve) {
   const M = StudioMotion;
   const root = document.documentElement;
-  root.classList.toggle('dissolve-entrance', !!dissolve);
+  root.classList.toggle("dissolve-entrance", !!dissolve);
   const stage = document.querySelector(".intro-stage");
   const brand = document.getElementById("introBrand");
   const content = document.getElementById("homeContent");
   const main = document.querySelector(".home-main");
   const line = document.getElementById("headerLine");
   const footer = document.querySelector(".site-footer");
+  const expandButton = document.getElementById("modelExpand"), modelLayer = document.getElementById("model-background");
   const items = [...document.querySelectorAll(".home-main h1 span, .main-nav a")];
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const logo = M.spring(0), legal = M.spring(0);
@@ -49,10 +50,10 @@ export function startHome(factory, dissolve) {
       background.setTextSettled(settled);
       if (dissolve && backgroundRevealed && formationReady && !background.dissolveStarted) {
         background.beginDissolve(entrance.takeBubbles(), dissolve.settings.form ?? factory.defaults.form, dissolve.settings.camera ?? factory.defaults.camera);
-        dissolve.report('forming', entrance.elapsed);
+        dissolve.report("forming", entrance.elapsed);
       }
       background.setVisible(active && backgroundRevealed && (!dissolve || background.dissolveStarted));
-      document.getElementById("modelExpand").hidden = !settled || !background.controlReady;
+      expandButton.hidden = !settled || !background.controlReady;
       return;
     }
     // Prepare in a worker during the opening pause/fade; reveal still waits for
@@ -60,17 +61,22 @@ export function startHome(factory, dissolve) {
     if (!active || backgroundLoading) return;
     backgroundLoading = true;
     import("../model/background.js")
-      .then(module => module.createModelBackground(document.getElementById("model-background"), document.getElementById("modelExpand"), setExpanded, syncBackground, dissolve ? { prepareDissolve: true, model: dissolve.model, onTextForeground: () => root.classList.add('dissolve-text-front'), onFormed: () => dissolve.report('pullback', entrance.elapsed), onSettled: () => dissolve.report('model', entrance.elapsed) } : {}))
+      .then(module => module.createModelBackground(modelLayer, expandButton, setExpanded, syncBackground, dissolve ? {
+        prepareDissolve: true, model: dissolve.model,
+        onTextForeground: () => root.classList.add("dissolve-text-front"),
+        onFormed: () => dissolve.report("pullback", entrance.elapsed),
+        onSettled: () => dissolve.report("model", entrance.elapsed)
+      } : {}))
       .then(controller => { background = controller; syncBackground(); })
       .catch(error => {
         backgroundFailed = true;
         if (dissolve) {
           entrance.dispose();
-          root.classList.add('dissolve-text-front');
+          root.classList.add("dissolve-text-front");
           if (active) go(1, true);
         }
-        document.getElementById("model-background").hidden = true;
-        document.getElementById("modelExpand").hidden = true;
+        modelLayer.hidden = true;
+        expandButton.hidden = true;
         console.warn("Aircraft background unavailable:", error);
         dissolve?.report(`Model unavailable: ${error.message}`, entrance.elapsed);
       });
@@ -100,7 +106,7 @@ export function startHome(factory, dissolve) {
   }
   const entrance = factory(brand, () => {
     syncBackground();
-    if (dissolve) { dissolve.report('hovering', entrance.elapsed); return; }
+    if (dissolve) { dissolve.report("hovering", entrance.elapsed); return; }
     if (autoAdvanceScheduled || autoAdvanceCancelled || !active || state !== 0) return;
     autoAdvanceScheduled = true;
     autoAdvanceTimer = setTimeout(() => {
@@ -131,20 +137,23 @@ export function startHome(factory, dissolve) {
     const startSize = Math.min(width * (mobile ? .16 : .1), mobile ? 88 : 150,
       Math.max(1, width - 40) / brandWidthPerPixel);
     // Keep glyph layout stable; move and shrink the rendered wordmark instead.
-    const scale = 1 + ((mobile ? 22 : 24) / startSize - 1) * move;
+    // Where the wordmark settles in the header, and its size there.
+    const headerY = mobile ? 36 : 43, headerSize = mobile ? 22 : 24;
+    const scale = 1 + (headerSize / startSize - 1) * move;
     brand.style.top = `${height / 2}px`;
     brand.style.fontSize = `${startSize}px`;
-    brand.style.transform = `translate(-50%, -50%) translateY(${((mobile ? 36 : 43) - height / 2) * move}px) scale(${scale})`;
+    brand.style.transform = `translate(-50%, -50%) translateY(${(headerY - height / 2) * move}px) scale(${scale})`;
     if (headerArrival && state > 0) {
-      brand.style.top = `${mobile ? 36 : 43}px`;
-      brand.style.fontSize = `${mobile ? 22 : 24}px`;
+      brand.style.top = `${headerY}px`;
+      brand.style.fontSize = `${headerSize}px`;
       brand.style.transform = `translate(-50%, -50%) translateY(${44 * (1 - logo.value)}px)`;
       brand.style.opacity = move;
-    } else if (dissolve && !headerArrival) brand.style.removeProperty('opacity');
-    // Keep the backdrop-filter group at full opacity. Animating the parent
-    // opacity creates an intermediate backdrop surface during the reveal.
+    } else if (dissolve && !headerArrival) brand.style.removeProperty("opacity");
+    // During Dissolve the backdrop-filter group stays at full opacity (hidden
+    // until the text arrives): animating the parent opacity creates an
+    // intermediate backdrop surface during the reveal.
     line.style.opacity = dissolve ? 1 : move;
-    line.style.visibility = dissolve && state === 0 ? 'hidden' : '';
+    line.style.visibility = dissolve && state === 0 ? "hidden" : "";
     main.style.transform = `translateY(${lift.value}px)`;
     M.paintEntrance(items, lines, true);
     M.paintFooter(footer, legal);
@@ -248,7 +257,7 @@ export function startHome(factory, dissolve) {
       if (event.key === "Escape") {
         event.preventDefault();
         background.setExpanded(false);
-        document.getElementById("modelExpand").focus({ preventScroll: true });
+        expandButton.focus({ preventScroll: true });
       }
       return;
     }

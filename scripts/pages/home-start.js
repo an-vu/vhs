@@ -1,8 +1,8 @@
 // Every motion module loads inside this try: a failed download must never
 // leave the static homepage hidden.
+const query = new URLSearchParams(location.search);
 try {
   // The lab and ordinary visits share the same Dissolve homepage path.
-  const query = new URLSearchParams(location.search);
   if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js');
   let config;
   if (query.has('motionPreview')) {
@@ -34,7 +34,7 @@ try {
   document.querySelectorAll('.dissolve-particles').forEach(element => element.remove());
   document.getElementById('model-background').hidden = true;
   document.getElementById('modelExpand').hidden = true;
-  if (new URLSearchParams(location.search).has('motionPreview')) {
+  if (query.has('motionPreview')) {
     parent.postMessage({ type: 'studio:motion-preview', phase: `Model unavailable: ${error.message}`, elapsed: 0 }, location.origin);
   }
 }
