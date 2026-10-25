@@ -107,12 +107,13 @@ import { createLogoStrip } from './logo-strip.js';
     const gap = phone.matches ? PHONE_GAP : GAP * dockSize();
     return { size, step: size + gap, first: glass + gap + size / 2 };
   }
-  let inset = -1;
+  let inset = -1, unit = 0;
   function paint() {
     const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
     // Where the text column starts, for the phone's edge fade (work.css).
     if (phone.matches && middle - half !== inset) flow.style.setProperty('--column-inset', `${(inset = middle - half)}px`);
     const { size, step, first } = spacing();
+    if (phone.matches && Math.abs(step - unit) > .5) { unit = step; scroller.style.setProperty('--slot', `${step}px`); syncScroller(); }
     const room = d => d >= 1 ? 1 : Math.sin(d * Math.PI / 2);
     const at = phone.matches
       ? t => t * step + Math.sign(t) * (first - step) * room(Math.abs(t))
@@ -166,17 +167,17 @@ import { createLogoStrip } from './logo-strip.js';
     motion = 0;
     const t = Math.min(1, (now - journey.start) / journey.duration);
     position = journey.from + (journey.to - journey.from) * journey.curve(t);
-    if (t >= 1) { position = journey.to; journey = null; }
+    if (t >= 1) { position = journey.to; journey = null; syncScroller(); }
     paint();
     if (journey) motion = requestAnimationFrame(travel);
   }
   function glide(to, duration = DURATION, curve = ease) {
     cancelAnimationFrame(motion);
-    if (reduced.matches) { journey = null; position = to; paint(); return; }
+    if (reduced.matches) { journey = null; position = to; paint(); syncScroller(); return; }
     journey = { from: position, to, start: performance.now(), duration, curve };
     motion = requestAnimationFrame(travel);
   }
-  function select(i, { focus = false, first = false, duration, curve } = {}) {
+  function select(i, { focus = false, first = false, settled = false, duration, curve } = {}) {
     if (i === current && !first) return;
     const previous = panels[current];
     current = i;
@@ -186,7 +187,7 @@ import { createLogoStrip } from './logo-strip.js';
       labels[j]?.classList.toggle('is-selected', j === i);
     });
     wake();
-    if (first) { position = i; paint(); }
+    if (first || settled) { position = i; paint(); syncScroller(); }
     else glide(i, duration, curve);
     panels.forEach((panel, j) => { panel.hidden = j !== i; });
     if (focus) tabs[i].focus();
@@ -217,7 +218,7 @@ import { createLogoStrip } from './logo-strip.js';
   const easeOut = t => 1 - (1 - t) ** 3;
   let drag = null;
   flow.addEventListener('pointerdown', event => {
-    if (!event.isPrimary || event.button !== 0) return;
+    if (!event.isPrimary || event.button !== 0 || (phone.matches && event.pointerType !== 'mouse')) return;
     suppressClick = false;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, from: position, moves: [] };
   });
@@ -266,6 +267,51 @@ import { createLogoStrip } from './logo-strip.js';
     if (drag?.horizontal) { drag.moves = []; release(event.timeStamp); }
     drag = null;
   });
+  // On a phone a finger moves the row through an invisible native scroller with
+  // one stopping point per project (work.css): the phone's own momentum and snap,
+  // as in its alarm wheels and lists. A small flick stops on the next project, a
+  // harder one carries further, and it brakes and settles into place itself; the
+  // row just follows where it is. A tap on it picks the logo under the finger.
+  const scroller = Object.assign(document.createElement('div'), { className: 'project-scroller' });
+  scroller.setAttribute('aria-hidden', 'true');
+  scroller.append(Object.assign(document.createElement('div'), { className: 'project-scroller-stops' }));
+  scroller.firstChild.append(...tabs.map(() => document.createElement('span')));
+  flow.append(scroller);
+  let ignoreScroll = 0, settleTimer = 0;
+  // Puts the scroller on the row's project without its scroll counting as a finger.
+  function syncScroller() {
+    if (!phone.matches || !unit || journey) return;
+    const left = Math.round(Math.max(0, Math.min(count - 1, Math.round(position))) * unit);
+    if (Math.abs(scroller.scrollLeft - left) < 1) return;
+    ignoreScroll = performance.now() + 150;
+    scroller.scrollLeft = left;
+  }
+  function settle() {
+    clearTimeout(settleTimer);
+    flow.classList.remove('is-dragging');
+    const i = clampIndex(Math.round(scroller.scrollLeft / unit));
+    if (i !== current) select(i, { settled: true });
+    else { position = i; paint(); }
+  }
+  scroller.addEventListener('scroll', () => {
+    if (!unit || performance.now() < ignoreScroll) return;
+    cancelAnimationFrame(motion); journey = null;
+    position = scroller.scrollLeft / unit;
+    paint();
+    wake();
+    flow.classList.add('is-dragging');
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settle, 140);
+  }, { passive: true });
+  scroller.addEventListener('scrollend', () => { if (performance.now() >= ignoreScroll) settle(); });
+  scroller.addEventListener('click', event => {
+    const hit = tabs.findIndex(tab => {
+      const box = tab.getBoundingClientRect();
+      return parseFloat(tab.style.getPropertyValue('--edge')) > .05 && event.clientX >= box.left && event.clientX <= box.right;
+    });
+    if (hit >= 0) select(hit);
+  });
+
   const linked = () => {
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { return -1; }

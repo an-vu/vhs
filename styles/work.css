@@ -136,6 +136,8 @@
   transition: opacity .3s cubic-bezier(0, 0, .5, 1);
 }
 .project-labels > .is-shown:not(.is-selected) { opacity: 1; }
+/* The phone's invisible scroller over the row (work.js); not on larger screens. */
+.project-scroller { display: none; }
 /* While the row is held and moving, every name shows (the one in the glass fades
    out, work.js); they fade away once it's let go. */
 .project-flow.is-dragging .project-labels > span { opacity: 1; transition-duration: .2s; }
@@ -287,6 +289,21 @@
       linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
     mask-composite: intersect;
   }
+  /* One stopping point per project, a step apart; the last one can reach the left edge. */
+  .project-scroller {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .project-scroller::-webkit-scrollbar { display: none; }
+  .project-scroller-stops { display: flex; width: max-content; height: 100%; padding-right: calc(100% - var(--slot, 66px)); }
+  .project-scroller-stops > span { flex: none; width: var(--slot, 66px); height: 100%; scroll-snap-align: start; }
   .project-labels {
     -webkit-mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
     mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
