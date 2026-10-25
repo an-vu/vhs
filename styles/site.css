@@ -53,13 +53,6 @@ button:focus-visible {
   outline-offset: 5px
 }
 
-.project-image,
-.project-image-placeholder {
-  border: var(--image-border);
-  border-radius: var(--image-radius);
-  overflow: hidden;
-}
-
 .wrap {
   width: min(100% - 40px, 1480px);
   margin: 0 auto

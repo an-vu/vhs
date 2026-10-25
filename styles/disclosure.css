@@ -1,0 +1,70 @@
+/* A section that opens and closes (<details class="disclosure">): its summary row
+   with the turning chevron, and the text inside. Legal's policies use it; so do
+   the labs' settings cards. */
+.disclosure {
+  scroll-margin-top: calc(var(--header-height) + 16px)
+}
+
+.disclosure[open] {
+  min-height: calc(100svh - var(--header-height) - 16px)
+}
+
+.disclosure summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.disclosure summary::-webkit-details-marker {
+  display: none
+}
+
+.disclosure summary::after {
+  content: "v";
+  flex-shrink: 0;
+  align-self: center;
+  display: block;
+  width: 1em;
+  margin-right: 4px;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--nav-fg);
+  transform: rotate(-90deg);
+  transition: color .2s ease, transform .2s ease;
+}
+
+.disclosure[open]>summary::after {
+  transform: rotate(0deg)
+}
+
+.disclosure summary:hover::after,
+.disclosure summary:focus-visible::after {
+  color: var(--fg)
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .disclosure summary::after {
+    transition: none
+  }
+}
+
+.disclosure-detail {
+  padding: 24px 0 36px;
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.55;
+  letter-spacing: normal;
+}
+
+.disclosure-detail p {
+  max-width: 65ch;
+  margin: 0
+}
+
+.disclosure-detail p+p {
+  margin-top: 1em
+}

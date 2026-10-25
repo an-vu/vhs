@@ -6,7 +6,7 @@ export function StudioContentList(content, { deepLinks = false } = {}) {
   const M = StudioMotion;
   StudioPageScroll(content);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const items = [...content.querySelectorAll(".work-year > h2, .work-year > ul > li")].map(element => ({
+  const items = [...content.querySelectorAll(".content-section > h2, .content-section > ul > li")].map(element => ({
     element,
     spring: null,
     shown: false
@@ -50,16 +50,16 @@ export function StudioContentList(content, { deepLinks = false } = {}) {
   configure();
   let alignFrame = 0;
   const linkedOpens = new WeakSet();
-  function alignProject(project, behavior) {
+  function alignDisclosure(disclosure, behavior) {
     // Also support browsers without native exclusive details groups.
-    content.querySelectorAll("details.project[open]").forEach(other => {
-      if (other !== project) other.open = false;
+    content.querySelectorAll("details.disclosure[open]").forEach(other => {
+      if (other !== disclosure) other.open = false;
     });
     cancelAnimationFrame(alignFrame);
     alignFrame = requestAnimationFrame(() => {
-      if (!project.open) return;
+      if (!disclosure.open) return;
       // Finish this row's entrance before measuring its final position.
-      const item = items.find(item => item.element === project.parentElement);
+      const item = items.find(item => item.element === disclosure.parentElement);
       if (item) {
         item.shown = true;
         observer.unobserve(item.element);
@@ -68,26 +68,26 @@ export function StudioContentList(content, { deepLinks = false } = {}) {
           M.paintEntrance([item.element], [item.spring]);
         }
       }
-      project.scrollIntoView({ block: "start", behavior });
+      disclosure.scrollIntoView({ block: "start", behavior });
     });
   }
   content.addEventListener("toggle", event => {
-    const project = event.target;
-    if (!project.matches("details.project")) return;
-    const linked = linkedOpens.delete(project);
-    if (!project.open) return;
-    alignProject(project, linked || reduced.matches ? "instant" : "smooth");
+    const disclosure = event.target;
+    if (!disclosure.matches("details.disclosure")) return;
+    const linked = linkedOpens.delete(disclosure);
+    if (!disclosure.open) return;
+    alignDisclosure(disclosure, linked || reduced.matches ? "instant" : "smooth");
   }, true);
   if (deepLinks) {
-    function openLinkedProject() {
+    function openLinked() {
       let id;
       try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
-      const project = document.getElementById(id);
-      if (!project?.matches("details.project") || !content.contains(project)) return;
-      if (project.open) alignProject(project, "instant");
-      else { linkedOpens.add(project); project.open = true; }
+      const disclosure = document.getElementById(id);
+      if (!disclosure?.matches("details.disclosure") || !content.contains(disclosure)) return;
+      if (disclosure.open) alignDisclosure(disclosure, "instant");
+      else { linkedOpens.add(disclosure); disclosure.open = true; }
     }
-    openLinkedProject();
-    addEventListener("hashchange", openLinkedProject);
+    openLinked();
+    addEventListener("hashchange", openLinked);
   }
 }

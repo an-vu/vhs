@@ -1,3 +1,30 @@
+/* The policy list: a heading, then sections that open one at a time
+   (styles/disclosure.css). */
+.content-section h2 {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.content-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+
+.content-section li {
+  font-size: clamp(34px, 4.6vw, 60px);
+  line-height: 1.1;
+  letter-spacing: -.045em;
+  overflow-wrap: break-word;
+}
+
+.content-section li+li {
+  margin-top: 8px
+}
+
 .legal-copy {
   max-width: 70ch;
 }
@@ -6,30 +33,4 @@
   margin: 2em 0 .65em;
   font-size: 1.15em;
   font-weight: 400;
-}
-
-.legal-copy h4 {
-  margin: 1.5em 0 .5em;
-  font-size: 1em;
-  font-weight: 400;
-}
-
-.legal-copy strong {
-  font-weight: 600;
-}
-
-.legal-page .legal-copy ul {
-  list-style: disc;
-  padding-left: 1.25em;
-  margin: .75em 0 1em;
-}
-
-.legal-page .legal-copy li {
-  font-size: inherit;
-  line-height: inherit;
-  letter-spacing: normal;
-}
-
-.legal-page .legal-copy li+li {
-  margin-top: .25em;
 }

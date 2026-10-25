@@ -1,3 +1,4 @@
 import { StudioContentList } from '../shared/content-list.js';
 
-StudioContentList(document.querySelector(".legal-content"));
+// A link to a section (legal.html#privacy, #cookies, #terms) opens it.
+StudioContentList(document.querySelector(".legal-content"), { deepLinks: true });

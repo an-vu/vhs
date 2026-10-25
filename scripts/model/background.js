@@ -43,7 +43,7 @@ export async function createModelBackground(container, button, onExpand, onContr
     expanded = value && active;
     controls.reset();
     button.setAttribute("aria-expanded", String(expanded));
-    button.setAttribute("aria-label", expanded ? "Close aircraft view" : "Explore aircraft");
+    button.setAttribute("aria-label", expanded ? "Close model view" : "Explore model");
     onExpand(expanded);
     if (expanded) {
       cancelAnimationFrame(measurement);
