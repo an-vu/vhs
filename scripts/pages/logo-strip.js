@@ -118,9 +118,10 @@ function copies(text, name) {
     return element;
   };
   const area = { x, y, width, height };
-  // Alpha × 3 − luminance × 3: white parts go clear, colors and dark parts stay solid.
+  // Alpha × 2 − luminance × 2: white parts go clear, dark parts stay solid, and the
+  // shades in between stay apart (jsDelivr's two-tone circle, TensorFlow's faces).
   const filter = make('filter', { id: `mono-${name}-filter`, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB', ...area });
-  filter.append(make('feColorMatrix', { type: 'matrix', values: '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -.6378 -2.1456 -.2166 3 0' }));
+  filter.append(make('feColorMatrix', { type: 'matrix', values: '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -.4252 -1.4304 -.1444 2 0' }));
   const mask = make('mask', { id: `mono-${name}-mask`, maskUnits: 'userSpaceOnUse', ...area });
   const group = make('g', { filter: `url(#mono-${name}-filter)` });
   group.append(...mono.childNodes);
