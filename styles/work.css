@@ -153,15 +153,13 @@
    copy, the Glass Lab) read it resolved, in px. */
 @property --circle { syntax: '<length>'; inherits: true; initial-value: 52px; }
 
-/* Work page: a row of project logos placed like apple.com/airpods' product row:
-   about 104 px apart, starting 45% of the header's height below it (Apple: 20 px
-   under its 44 px bar). The script places them around the selected one in the
-   middle and grades them by distance: ink, then grey and smaller, then light grey
-   and smallest. --a and --b carry the grade (ink to grey, then grey to light grey).
-   Both docks share one glass circle size (104 px, 34vw at most, times
-   --dock-scale, 1.3: 135 px); the projects stay 104 px apart and keep to the text
-   column, the logo strip is spaced like its circle. The circle sits on the selected logo, 2 px inside its row; a logo
-   pointed at shows its short name just under it, like Apple's product row.
+/* Work page: two docks under the Opus glass (scripts/glass). At the top, a row of
+   project logos like apple.com/airpods' product row, starting 45% of the header's
+   height below it (Apple: 20 px under its 44 px bar); the selected one sits in the
+   glass in the middle and shows its panel below. At the end, the logo strip drifts
+   through the same glass (logo-strip.js).
+   Both docks share one glass circle: 104 px (34vw at most), times --dock-scale
+   (1.3: 135 px), times --dock-size (smaller on phones, below).
    --logo is sized from the glass: the v's farthest point sits at half its box from
    the middle and reaches --mark-reach of the circle's radius, Opus's Icon size
    (iconScale in scripts/glass/opus.js); the other logos are sized to match it
@@ -170,22 +168,25 @@
 .work-page {
   overflow-x: clip;
   --mark-reach: .85;
-  /* Both docks' size, and the glass circle's radius: the lens both rows share. */
   --dock-scale: 1.3;
-  /* The project dock's own size on top of that: glass, logos and gaps (phones: below). */
   --dock-size: 1;
-  --logo-gap: 39px;
-  --title-air: 40px;
-}
-/* Worked out again on the project dock, so its --dock-size reaches them. */
-.work-page,
-.project-flow {
   --circle: calc(min(calc(var(--select-size, 104) * 1px), 34vw) / 2 * var(--dock-scale) * var(--dock-size));
   /* A row's middle line (the row is the circle plus 2 px each side). */
   --row-mid: calc(var(--circle) + 2px);
   --logo: calc(var(--circle) * 2 * var(--mark-reach) / 2 / .5);
+  /* The projects' logos outside the glass stay the size they were before the docks
+     grew (1/φ of the old 104 px row), so the row stays light. */
+  --outside-scale: calc(.618 / var(--dock-scale));
+  /* Inside the glass the logos sit a little smaller, in both docks: on Opus's rainbow
+     diagonal the edge folds anything past about two thirds of the radius into the
+     rim, and at .78 the icon that reaches farthest (the feather) stays inside that line. */
+  --inside-scale: .78;
+  --logo-gap: 39px;
+  --title-air: 40px;
 }
 .work-page .page-content { padding-top: 0; }
+
+/* The project row. */
 .project-flow {
   position: relative;
   height: calc(var(--row-mid) * 2);
@@ -195,13 +196,10 @@
   scroll-margin-top: var(--header-height);
 }
 .project-flow-track { position: absolute; inset: 0; }
-/* Outside the glass every project logo is one flat vHuman grey; inside it, ink. */
-.project-flow-track button { color: var(--nav-fg); }
-.client-slot {
-  --a: 0;
-  --b: 0;
-  color: color-mix(in srgb, color-mix(in srgb, var(--fg) calc(var(--a) * 100%), var(--nav-fg)) calc(var(--b) * 100%), var(--light-gray));
-}
+/* Each logo is a button, one flat vHuman grey outside the glass. Pointing at one
+   grows it 4% and turns it vHuman black, like the nav links (Apple's product row:
+   scale 104%, .3s cubic-bezier(0, 0, .5, 1)). Past the text column's edge a logo
+   fades out (--edge, a filter, so it doesn't wait on the resting fade). */
 .project-flow-track button {
   position: absolute;
   left: 0;
@@ -214,17 +212,30 @@
   border: 0;
   border-radius: 50%;
   background: none;
+  color: var(--nav-fg);
   font: inherit;
   cursor: pointer;
+  filter: opacity(var(--edge, 1));
+  transition: opacity .7s cubic-bezier(.4, 0, .2, 1), color .3s cubic-bezier(0, 0, .5, 1);
 }
-.project-flow-track button:focus-visible { outline-offset: -4px }
-/* The same lens as the logo strip: outside the glass circle every project logo is
-   small (1/φ) in vHuman grey (the buttons, cut to outside the circle), inside
-   it big in its own colour, --mark-color (a copy, cut to the circle), so a logo crossing the edge is half
-   one, half the other. No sizes in between. */
+.project-flow-track .project-mark {
+  transform: scale(var(--outside-scale));
+  transition: transform .3s cubic-bezier(0, 0, .5, 1);
+}
+.project-flow-track button:focus-visible { outline-offset: -4px; color: var(--fg); }
+.project-flow-track button:focus-visible .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
+/* Only where there's a real pointer: on a phone a tap would trigger them first. */
+@media (hover: hover) {
+  .project-flow-track button:hover { color: var(--fg); }
+  .project-flow-track button:hover .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
+}
+/* The same lens as the logo strip: outside the glass circle the logos are small
+   and grey (the buttons, cut away inside the circle), inside it a copy of each is
+   bigger and in its own colour, --mark-color (cut to the circle), so a logo
+   crossing the edge is half one, half the other. No sizes in between. */
 .project-lens { position: absolute; inset: 0; pointer-events: none; }
-.project-lens .project-mark { color: var(--mark-color, var(--fg)); }
 .project-lens > span { position: absolute; left: 0; top: 50%; display: grid; place-items: center; width: calc(88px * var(--dock-scale) * var(--dock-size)); height: calc(88px * var(--dock-scale) * var(--dock-size)); }
+.project-lens .project-mark { color: var(--mark-color, var(--fg)); transform: scale(var(--inside-scale)); }
 /* Short names just under the (small) logos outside the glass, like Apple's
    product row, shown only for the logo pointed at (or focused); the selected
    one has none, its title is right below. */
@@ -240,40 +251,29 @@
   color: var(--fg);
   opacity: 0;
   pointer-events: none;
+  filter: opacity(var(--edge, 1));
+  transition: opacity .3s cubic-bezier(0, 0, .5, 1);
 }
 .project-labels > .is-shown:not(.is-selected) { opacity: 1; }
 /* At rest the row hides everything but the selected logo in its glass; pointing
    at the row (or focusing it) brings it back: a gentle .7s fade in (soft start,
-   soft landing), a slower .9s fade away. */
-/* Pointing at a logo grows it 4% and turns it vHuman black, like the nav links
-   (Apple's product row: scale 104%, .3s cubic-bezier(0, 0, .5, 1)). */
-.project-flow-track button { transition: opacity .7s cubic-bezier(.4, 0, .2, 1), color .3s cubic-bezier(0, 0, .5, 1); }
-.project-flow-track button,
-.project-labels > span { filter: opacity(var(--edge, 1)); }
-.project-flow-track .project-mark { transition: transform .3s cubic-bezier(0, 0, .5, 1); }
-.project-flow-track button:focus-visible { color: var(--fg); }
-.project-flow-track button:focus-visible .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
-/* Only where there's a real pointer: on a phone a tap would trigger them first. */
-@media (hover: hover) {
-  .project-flow-track button:hover { color: var(--fg); }
-  .project-flow-track button:hover .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
-}
-.project-labels > span { transition: opacity .3s cubic-bezier(0, 0, .5, 1); }
-/* Hidden logos still take a tap: on a phone the finger leaves the row after
-   every tap, so a tap where a logo just was has to count. */
+   soft landing), a slower .9s fade away. Hidden logos still take a tap: on a phone
+   the finger leaves the row after every tap, so a tap where a logo just was has
+   to count. */
 .project-flow.is-resting .project-flow-track button[aria-selected="false"],
 .project-flow.is-resting .project-labels > span {
   opacity: 0;
   transition-duration: .9s;
 }
-/* Logos: one simple mark each in a 56 px box, drawn in the grade color, like
-   Apple Music's single note. */
+/* Each project's logo: one simple mark in a --logo box, like Apple Music's single note. */
 .project-mark {
   display: block;
   width: var(--logo);
   height: var(--logo);
 }
 .project-mark .logo { display: block; width: 100%; height: 100%; }
+
+/* The project's details under the row. */
 .project-panel {
   padding: var(--title-air, 8px) 0 36px;
   font-size: clamp(17px, 1.6vw, 20px);
@@ -317,10 +317,10 @@
 }
 
 /* The logo strip: placed by script each frame (logo-strip.js), the same size as
-   the projects' row. */
+   the project row. */
 .work-clients { position: relative; margin-top: clamp(24px, 3vw, 44px) }
 /* Where the glass sits (scripts/glass): over the selected project and over the
-   logo strip's middle circle, both the circle's size (narrower on a phone). */
+   logo strip's middle circle, both the circle's size. */
 .glass-spot {
   position: absolute;
   left: 50%;
@@ -340,6 +340,8 @@
   --logo-reach: var(--mark-reach);
   --logo-unit: calc(var(--circle) * 2 / .846 * var(--logo-reach));
 }
+/* A spot in the strip. Outside the glass its logo is graded by how far it is from
+   the middle (logo-strip.js sets --a and --b): ink, then vHuman grey, then light grey. */
 .client-slot {
   position: absolute;
   left: 0;
@@ -348,6 +350,9 @@
   place-items: center;
   width: calc(88px * var(--dock-scale, 1) * var(--dock-size, 1));
   height: 100%;
+  --a: 0;
+  --b: 0;
+  color: color-mix(in srgb, color-mix(in srgb, var(--fg) calc(var(--a) * 100%), var(--nav-fg)) calc(var(--b) * 100%), var(--light-gray));
 }
 /* The middle circle is a lens: inside it the logos are big and in color, outside
    small (1/φ) and flat in the grade color. Each layer is cut to its side. */
@@ -357,27 +362,21 @@
   inset: 0;
   pointer-events: none;
 }
+.client-flats .client-logo { transform: scale(.618); }
+.client-colors .client-logo { transform: scale(var(--inside-scale)); }
+/* Each logo on its own layer: its size changes every frame without repainting it. */
+.client-logo { position: relative; display: block; will-change: transform; }
+.client-logo > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+/* Both lenses: the outside layers are cut away inside the circle, the inside
+   layers cut to it. */
 .client-flats,
 .project-flow-track {
   -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px));
   mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px));
 }
-.client-flats .client-logo { transform: scale(.618); }
-/* The projects' logos outside the glass stay the size they were before the docks
-   grew (1/φ of the old 104 px row), so the row stays light. */
-.work-page { --outside-scale: calc(.618 / var(--dock-scale)); }
-.project-flow-track .project-mark { transform: scale(var(--outside-scale)); }
-/* Inside the glass the logos sit a little smaller, in both docks: on Opus's rainbow
-   diagonal the edge folds anything past about two thirds of the radius into the
-   rim, and at .78 the icon that reaches farthest (the feather) stays inside that line. */
-.work-page { --inside-scale: .78; }
-.project-lens .project-mark,
-.client-colors .client-logo { transform: scale(var(--inside-scale)); }
 .client-colors,
 .project-lens { clip-path: circle(var(--circle) at 50% 50%); }
-/* Each logo on its own layer: its size changes every frame without repainting it. */
-.client-logo { position: relative; display: block; will-change: transform; }
-.client-logo > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -389,11 +388,10 @@
 }
 
 @media(max-width:760px) {
-  .work-page { --logo-gap: 30px; --title-air: 32px }
-  /* On a phone both docks are the size they were before they grew
-     (1 / --dock-scale): a 104 px glass, logos and gaps a quarter smaller, so
-     two project logos show on each side. */
-  .work-page { --dock-size: .769 }
+  /* On a phone: less room above and below the project row, and both docks the
+     size they were before they grew (1 / --dock-scale): a 104 px glass, logos and
+     gaps a quarter smaller, so two project logos show on each side. */
+  .work-page { --logo-gap: 30px; --title-air: 32px; --dock-size: .769 }
   /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
      and the row's 2 px), a bit more than the project glass's 34 px to the title. */
   .work-clients { margin-top: 2px }

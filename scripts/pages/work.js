@@ -91,10 +91,9 @@ import { createLogoStrip } from './logo-strip.js';
   const labels = [...flow.querySelectorAll('.project-labels > span')];
   // One even 40 px gap (times --dock-size): from the glass's edge to the next
   // logo, and between the logos outside it; a slide moves a logo across the glass
-  // and on at that spacing. At most four logos show on each side (the fifth fades out as it
-  // arrives), and fewer where the text column is narrower: a logo past the
-  // column's edge fades out over half a step (--edge, a filter, so it doesn't
-  // wait on the resting fade's transition).
+  // and on at that spacing. At most four logos show on each side (the fifth fades
+  // out as it arrives), and fewer where the text column is narrower: a logo past
+  // the column's edge fades out over half a step (--edge, work.css).
   const GAP = 40, SIDE = 4;
   function spacing() {
     const size = tabs[0].firstElementChild.offsetWidth * .618 / dockScale();
@@ -185,7 +184,7 @@ import { createLogoStrip } from './logo-strip.js';
     if (flow.getBoundingClientRect().top < 0) flow.scrollIntoView({ block: 'start', behavior: reduced.matches ? 'instant' : 'smooth' });
   }
   let suppressClick = false;
-  for (const list of [tabs, labels]) list.forEach((item, i) => item.addEventListener('click', () => { if (!suppressClick) select(i); }));
+  tabs.forEach((tab, i) => tab.addEventListener('click', () => { if (!suppressClick) select(i); }));
   track.addEventListener('keydown', event => {
     const next = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: count - 1 }[event.key];
     if (next === undefined) return;
@@ -266,7 +265,8 @@ import { createLogoStrip } from './logo-strip.js';
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
 
   // The logo strip at the end of the page drifts right to left through seven
-  // spots, in a random order (see logo-strip.js), spaced like the projects. It's
+  // spots, in a random order (see logo-strip.js), its logos one glass apart (its
+  // circle's width), where the project row's first neighbours sit too. It's
   // outside the content, so the bottom bounce and the entrances leave it alone.
   // Resting the pointer on its glass (or a finger) eases it to a crawl, so the
   // logo there can be read and the glass looked at.
@@ -276,9 +276,9 @@ import { createLogoStrip } from './logo-strip.js';
   })), new URL('../../images/logos/', import.meta.url));
   const SPEED = .3, CRAWL = SPEED / 10; // spots per second
   let scroll = 0, speed = SPEED, last = 0, frame = 0, visible = true, held = false;
-  // Its logos sit one glass apart (its circle's width), where the project row's
-  // first neighbours sit too.
-  const place = () => logos.paint(scroll, 2 * (parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 67));
+  // The strip's glass circle radius (work.css).
+  const radius = () => parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 67;
+  const place = () => logos.paint(scroll, 2 * radius());
   function drift(now) {
     frame = 0;
     const dt = last ? Math.min((now - last) / 1000, .05) : 0;
@@ -288,15 +288,15 @@ import { createLogoStrip } from './logo-strip.js';
     place();
     run();
   }
-  // On the glass: inside the middle circle (--circle, its radius).
+  // On the glass: inside the middle circle.
   function onGlass(event) {
-    const box = strip.getBoundingClientRect(), r = parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 65;
-    return Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height / 2)) <= r;
+    const box = strip.getBoundingClientRect();
+    return Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height / 2)) <= radius();
   }
   strip.addEventListener('pointermove', event => { held = onGlass(event); });
   strip.addEventListener('pointerdown', event => { held = onGlass(event); });
   strip.addEventListener('pointerleave', () => { held = false; });
-  strip.addEventListener('pointerup', event => { if (event.pointerType !== 'mouse') held = false; });
+  strip.addEventListener('pointerup', event => { if (!mouse(event)) held = false; });
   function run() {
     if (frame) return;
     if (!visible || document.hidden || reduced.matches) { last = 0; return; }

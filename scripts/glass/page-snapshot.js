@@ -2,8 +2,9 @@
 // Two layers: `scroll` is everything that moves with the page, in page
 // coordinates, so scrolling only needs the strip that comes into view; `fixed`
 // is the header and footer, in viewport coordinates, drawn above the header and
-// footer glass; `live` is any fixed canvas (the rover), which redraws all the time. Each word is drawn at the position the browser gave
-// it, so line breaks and spacing match the real page. Units are CSS px.
+// footer glass; `live` is any fixed canvas (the rover), which redraws all the
+// time. Each word is drawn at the position the browser gave it, so line breaks
+// and spacing match the real page. Units are CSS px.
 export function createSnapshot(onIconLoad) {
   const ascents = new Map(), icons = new Map();
 

@@ -1,7 +1,7 @@
 // The logo strip at the end of the Work page (the Glass Lab's Icon tab uses it
 // too). Logos drift right to left through seven spots, five in view: one fades in
 // from the 7th spot to the 6th, passes the middle, and fades out from the 2nd to
-// the 1st, spaced like the projects.
+// the 1st, one glass apart (the spacing comes from the caller).
 //
 // The order is random, new on every load: each round shows every logo once in a
 // fresh shuffle, and a logo never comes back within fourteen in a row, across
