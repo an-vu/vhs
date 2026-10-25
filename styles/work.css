@@ -308,9 +308,10 @@
     -webkit-mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
     mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
   }
-  /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
-     and the row's 2 px), a bit more than the project glass's 34 px to the title. */
-  .work-clients { margin-top: 2px }
+  /* The logo strip's glass 48 px under the last line (the panel's 36 px, this,
+     and the row's 2 px): a separate section, so a bit more than the 34 px gaps
+     inside a project. */
+  .work-clients { margin-top: 10px }
   /* And as far above the footer's text as the project glass sits above its title
      (34 px): the footer's height plus 12 px of page below the strip, so the
      footer has its room and the glass sits 14 px above it. */
