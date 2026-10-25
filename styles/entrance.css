@@ -41,6 +41,12 @@
   pointer-events: none;
 }
 
+/* Text the intros draw for show (the typed letters, the dot's "i", a spacer):
+   drawn by the stylesheet, so it isn't page text a search engine would read. */
+.intro-drawn::before {
+  content: attr(data-text);
+}
+
 .experience .intro-brand.is-typing {
   opacity: 0;
   transition: none;

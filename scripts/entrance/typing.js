@@ -17,7 +17,10 @@ export function createTypingEntrance(brand, onComplete = () => { }, options = {}
     if (started) return;
     started = true;
     brand.classList.add('is-typing'); brand.setAttribute('aria-label', fullName);
+    // The typed letters are drawn by the stylesheet (intro-drawn), not page text,
+    // so a search engine reading the page mid-intro never sees half a name.
     const text = document.createElement('span'), cursor = document.createElement('span');
+    text.className = 'intro-drawn';
     text.setAttribute('aria-hidden', 'true'); cursor.setAttribute('aria-hidden', 'true');
     cursor.className = 'intro-cursor'; brand.replaceChildren(text, cursor);
     let time = t.blank;
@@ -31,12 +34,12 @@ export function createTypingEntrance(brand, onComplete = () => { }, options = {}
     }
     blink(t.before);
     for (let count = 1; count <= fullName.length; count++) {
-      timeline.at(time, () => { text.textContent = fullName.slice(0, count); });
+      timeline.at(time, () => { text.dataset.text = fullName.slice(0, count); });
       if (count < fullName.length) time += count === finalName.length ? t.wordPause : t.type;
     }
     blink(t.beforeDelete);
     for (let count = fullName.length - 1; count >= finalName.length; count--) {
-      timeline.at(time, () => { text.textContent = fullName.slice(0, count); });
+      timeline.at(time, () => { text.dataset.text = fullName.slice(0, count); });
       if (count > finalName.length) time += t.erase;
     }
     blink(t.afterDelete);
