@@ -83,10 +83,12 @@
             <span>made human.</span>
           </h1>
 
+          <!-- data-nosnippet keeps the menu and footer words out of Google's result text, so it
+               shows the page's description instead. Visitors see no difference. -->
           <nav class="main-nav">
-            <a href="work.html">Work</a>
-            <a href="about.html">About</a>
-            <a href="mailto:eve@vhumanstudios.com">Contact</a>
+            <a href="work.html"><span data-nosnippet>Work</span></a>
+            <a href="about.html"><span data-nosnippet>About</span></a>
+            <a href="mailto:eve@vhumanstudios.com"><span data-nosnippet>Contact</span></a>
           </nav>
         </main>
 
@@ -103,7 +105,7 @@
 
         <footer class="site-footer">
           <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
-          <div class="wrap footer-row">
+          <div class="wrap footer-row" data-nosnippet>
             <div>© 2026 vHuman LLC</div>
             <div class="legal">
               <a href="legal.html">Legal</a>
