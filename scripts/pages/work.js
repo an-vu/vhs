@@ -94,21 +94,24 @@ import { createLogoStrip } from './logo-strip.js';
   // and on at that spacing. At most four logos show on each side (the fifth fades
   // out as it arrives), and fewer where the text column is narrower: a logo past
   // the column's edge fades out over half a step (--edge, work.css).
-  // On a phone the row is tighter for room, so two things change there: the logo
-  // next to the glass eases into and out of the extra room the glass takes (a
-  // quarter sine), so the row slides as one piece with no sudden change of speed,
-  // and a logo fades out before its outer edge reaches the column's edge, which
-  // leaves one logo on each side of the glass.
-  const GAP = 40, SIDE = 4;
+  // On a phone the row is tighter for room, so three things change there: the
+  // gaps are 24 px, so two logos fit on each side; the row fades softly into the
+  // text column's edges instead (a mask, work.css: nothing shows past them); and
+  // the logo next to the glass eases into and out of the extra room the glass
+  // takes (a quarter sine), so the row slides as one piece.
+  const GAP = 40, PHONE_GAP = 24, SIDE = 4;
   const phone = matchMedia('(max-width: 760px)');
   function spacing() {
     const size = tabs[0].firstElementChild.offsetWidth * .618 / dockScale();
     const glass = parseFloat(getComputedStyle(flow).getPropertyValue('--circle')) || 67;
-    const gap = GAP * dockSize();
+    const gap = phone.matches ? PHONE_GAP : GAP * dockSize();
     return { size, step: size + gap, first: glass + gap + size / 2 };
   }
+  let inset = -1;
   function paint() {
     const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
+    // Where the text column starts, for the phone's edge fade (work.css).
+    if (phone.matches && middle - half !== inset) flow.style.setProperty('--column-inset', `${(inset = middle - half)}px`);
     const { size, step, first } = spacing();
     const room = d => d >= 1 ? 1 : Math.sin(d * Math.PI / 2);
     const at = phone.matches
@@ -117,7 +120,7 @@ import { createLogoStrip } from './logo-strip.js';
     tabs.forEach((tab, i) => {
       const offset = at(i - position), x = (middle + offset).toFixed(1);
       const edge = (phone.matches
-        ? Math.max(0, Math.min(1, (half - Math.abs(offset) - size / 2) / (step / 2)))
+        ? Math.abs(offset) - size / 2 < half ? 1 : 0
         : Math.max(0, Math.min(1, (half + step / 2 - Math.abs(offset)) / (step / 2), SIDE + 1 - Math.abs(i - position)))).toFixed(3);
       tab.style.transform = copies[i].style.transform = `translate(${x}px, -50%) translateX(-50%)`;
       tab.style.setProperty('--edge', edge);

@@ -276,6 +276,21 @@
      size they were before they grew (1 / --dock-scale): a 104 px glass, logos and
      gaps a quarter smaller, so two project logos show on each side. */
   .work-page { --logo-gap: 30px; --title-air: 32px; --dock-size: .769 }
+  /* The project row fades softly into the text column's edges (the last 36 px),
+     so its outer logos dissolve there instead of showing past them. Two masks:
+     the glass cut and this fade (--column-inset comes from work.js). */
+  .project-flow-track {
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px)),
+      linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
+    -webkit-mask-composite: source-in;
+    mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px)),
+      linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
+    mask-composite: intersect;
+  }
+  .project-labels {
+    -webkit-mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
+    mask: linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
+  }
   /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
      and the row's 2 px), a bit more than the project glass's 34 px to the title. */
   .work-clients { margin-top: 2px }
