@@ -161,6 +161,9 @@ export function createSnapshot(onIconLoad) {
       // The header and footer glass is drawn by the shader.
       if (element.classList.contains('header-blur') || element.classList.contains('footer-blur')) return;
       opacity *= parseFloat(style.opacity);
+      // A filter fade (the Work row fades names and logos this way) counts too.
+      const faded = style.filter.match(/opacity\(([\d.]+)(%?)\)/);
+      if (faded) opacity *= faded[2] ? faded[1] / 100 : +faded[1];
       if (opacity < .005) return;
       fixed ||= style.position === 'fixed' || style.position === 'sticky';
       if (style.position !== 'static' && style.zIndex !== 'auto') z = parseInt(style.zIndex, 10) || 0;

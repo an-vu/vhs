@@ -255,6 +255,9 @@
   transition: opacity .3s cubic-bezier(0, 0, .5, 1);
 }
 .project-labels > .is-shown:not(.is-selected) { opacity: 1; }
+/* While the row is held and moving, every name shows (the one in the glass fades
+   out, work.js); they fade away once it's let go. */
+.project-flow.is-dragging .project-labels > span { opacity: 1; transition-duration: .2s; }
 /* At rest the row hides everything but the selected logo in its glass; pointing
    at the row (or focusing it) brings it back: a gentle .7s fade in (soft start,
    soft landing), a slower .9s fade away. Hidden logos still take a tap: on a phone

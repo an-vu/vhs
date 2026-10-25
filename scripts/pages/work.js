@@ -110,7 +110,9 @@ import { createLogoStrip } from './logo-strip.js';
       const edge = Math.max(0, Math.min(1, (half + step / 2 - Math.abs(offset)) / (step / 2), SIDE + 1 - Math.abs(i - position))).toFixed(3);
       tab.style.transform = copies[i].style.transform = `translate(${x}px, -50%) translateX(-50%)`;
       tab.style.setProperty('--edge', edge);
-      if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', edge); }
+      // A name never shows in the glass: it fades out as its logo moves in.
+      const clear = Math.max(0, Math.min(1, (Math.abs(i - position) - .5) / .5));
+      if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', Math.min(edge, clear).toFixed(3)); }
     });
   }
   // A logo's name shows only while a mouse points at it (or it's focused), under it (work.css).
@@ -195,7 +197,9 @@ import { createLogoStrip } from './logo-strip.js';
   // ends), then coasts on at the swipe's speed and stops on the project nearest
   // to where a phone's list would stop (iOS's deceleration), so a fast swipe
   // crosses several projects and a slow one steps to the next. Taking hold
-  // stops a glide where it is.
+  // stops a glide where it is. While it's held and moving, every name shows
+  // (work.css); they fade once it lets go. Only once it moves, so a plain tap
+  // still shows nothing (see above).
   const easeOut = t => 1 - (1 - t) ** 3;
   let drag = null;
   flow.addEventListener('pointerdown', event => {
@@ -210,9 +214,10 @@ import { createLogoStrip } from './logo-strip.js';
       if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
       if (Math.abs(dx) <= 10 || Math.abs(dx) <= Math.abs(dy)) return;
       drag.horizontal = suppressClick = true;
-      flow.setPointerCapture(event.pointerId);
+      flow.classList.add('is-dragging');
       cancelAnimationFrame(motion); journey = null;
       Object.assign(drag, { x: event.clientX, from: position });
+      flow.setPointerCapture(event.pointerId);
     }
     let to = drag.from - (event.clientX - drag.x) / spacing().step;
     if (to < 0) to *= .35;
@@ -224,6 +229,7 @@ import { createLogoStrip } from './logo-strip.js';
     while (drag.moves.length > 2 && event.timeStamp - drag.moves[0][0] > 100) drag.moves.shift();
   });
   function release(time) {
+    flow.classList.remove('is-dragging');
     // Speed over the last tenth of a second (projects per ms); none if the finger stopped.
     const moves = drag.moves.filter(([t]) => time - t < 100);
     let speed = 0;
