@@ -10,8 +10,9 @@ import { opus } from './opus.js';
 // A glass grows in (the look's entrance) once it's fully in view, after its
 // element's data-glass-delay (seconds, 0 by default). While it grows, the
 // element gets a 'glassgrow' event each frame: detail.grow is the glass's size
-// (0 before it starts, a little over 1 as it bursts past full size, then 1), and
-// detail.done is true on the last one, once it's full size.
+// (0 before it starts, a little over 1 as it bursts past full size, then 1),
+// detail.time how far into its entrance it is (seconds, below 0 while it waits),
+// and detail.done is true on the last one, once it's full size.
 //
 //   createGlass (from this file, scripts/glass/glass.js):
 //   createGlass();                       // Opus, every [data-glass] on the page
@@ -78,7 +79,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     if (!grown.has(target)) {
       const done = t >= entranceGrown(look.entrance);
       if (done) grown.add(target);
-      target.dispatchEvent(new CustomEvent('glassgrow', { detail: { grow: shape.appear * shape.scale, done } }));
+      target.dispatchEvent(new CustomEvent('glassgrow', { detail: { grow: shape.appear * shape.scale, time: t, done } }));
     }
     return shape;
   }

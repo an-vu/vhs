@@ -35,13 +35,14 @@ import { createLogoStrip } from './logo-strip.js';
       moving = M.step(item.spring, dt) || moving;
       M.paintEntrance([item.element], [item.spring]);
     }
-    if (!shown && items.every(item => !item.spring || still(item.spring))) { shown = true; firstRest(); }
+    if (!shown && pending < 0 && items.every(item => item.seen && (!item.spring || still(item.spring)))) { shown = true; firstRest(); }
     return moving;
   }, () => !reduced.matches);
   let startDelay = M.entranceDelay(0);
   const observer = new IntersectionObserver(entries => {
     if (reduced.matches) return;
     const visible = new Set(entries.filter(entry => entry.isIntersecting).map(entry => entry.target));
+    for (const item of items) if (entries.some(entry => entry.target === item.element)) item.seen = true;
     let delay = Math.max(startDelay, ...items.map(item => item.spring ? item.spring.delay + .09 : 0));
     for (const item of items) {
       if (item.spring || !visible.has(item.element)) continue;
@@ -56,7 +57,7 @@ import { createLogoStrip } from './logo-strip.js';
     if (reduced.matches) return;
     for (const element of elements) {
       element.style.opacity = 0;
-      items.push({ element, spring: null });
+      items.push({ element, spring: null, seen: false });
       observer.observe(element);
     }
   }
@@ -140,6 +141,7 @@ import { createLogoStrip } from './logo-strip.js';
       const beside = phone.matches ? Math.max(0, Math.min(1, (1.6 - d) / .4)) : 1;
       if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', Math.min(edge, clear, beside).toFixed(3)); }
     });
+    arrive();
   }
   // A logo's name shows only while a mouse points at it (or it's focused), under it (work.css).
   // A touch shows nothing as the finger lands: on an iPhone, a tap that makes
@@ -154,14 +156,15 @@ import { createLogoStrip } from './logo-strip.js';
     tab.addEventListener('blur', () => show(false));
   });
 
-  // At rest (a second after a tap, .4 s after the mouse leaves) the row hides
+  // At rest (.7 s after a touch, .4 s after the mouse leaves, a second after the
+  // keyboard) the row hides
   // everything but the selected logo in its glass, so it doesn't distract from the
   // page; pointing at the row, touching it or tabbing into it brings it back
   // (work.css). The first rest waits for the page to rise in and the glass to
   // bubble in (it grows in with the row), then a tad more.
-  const REST = 1000, LEAVE = 400, FIRST_HOLD = 200;
-  let restTimer = 0, pointing = false, glassIn = false;
-  function wake(delay = REST) {
+  const REST = 1000, TOUCH = 700, LEAVE = 400, FIRST_HOLD = 200;
+  let restTimer = 0, pointing = false, glassIn = false, touch = false;
+  function wake(delay = touch ? TOUCH : REST) {
     flow.classList.remove('is-resting');
     clearTimeout(restTimer);
     restTimer = setTimeout(() => rest(delay), delay);
@@ -177,6 +180,7 @@ import { createLogoStrip } from './logo-strip.js';
     clearTimeout(restTimer);
     restTimer = setTimeout(() => rest(), FIRST_HOLD);
   }
+  flow.addEventListener('pointerdown', event => { touch = !mouse(event); }, true);
   flow.addEventListener('pointerenter', event => { if (mouse(event)) { pointing = true; wake(); } });
   flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(LEAVE); } });
   flow.addEventListener('pointerup', event => { if (!mouse(event)) wake(); });
@@ -196,9 +200,38 @@ import { createLogoStrip } from './logo-strip.js';
     journey = { from: position, to, start: performance.now(), duration, curve };
     motion = requestAnimationFrame(travel);
   }
+  // A project's text comes in once its logo is in the glass: the row has brought
+  // it within ENTER of the middle (paint() checks) and its glass is TEXT_AFTER
+  // seconds into its bubble (below): the text then lands on the bubble's pop, as it
+  // bursts out to full size, so the logo and the text land together. Switching,
+  // the text on show fades out quickly first; a far jump waits for its logo, and a
+  // swipe that has already brought it there shows it straight away. On the first
+  // load the row is already there, so the text waits for the bubble.
+  const ENTER = .5, TEXT_AFTER = .22, FADE_OUT = 200;
+  let pending = -1, glassTime = -Infinity;
+  function bring(i) {
+    const open = panels.find(panel => !panel.hidden);
+    pending = open === panels[i] ? -1 : i;
+    if (pending < 0) { open.style.removeProperty('opacity'); return; }
+    if (!reduced.matches) Object.assign(open.style, { transition: `opacity ${FADE_OUT}ms cubic-bezier(.4, 0, 1, 1)`, opacity: 0 });
+  }
+  function arrive() {
+    if (pending < 0 || Math.abs(position - pending) > ENTER || !(reduced.matches || glassTime >= TEXT_AFTER)) return;
+    const panel = panels[pending], opened = panel.hidden;
+    pending = -1;
+    panels.forEach(other => {
+      other.hidden = other !== panel;
+      other.style.removeProperty('opacity');
+      other.style.removeProperty('transition');
+    });
+    forget(panels.flatMap(other => [...other.children]));
+    queue([...panel.children], 0);
+    // The page got longer or shorter: the footer and the bottom bounce start over
+    // (page-scroll listens for toggles inside the content).
+    if (opened) panel.dispatchEvent(new Event('toggle'));
+  }
   function select(i, { focus = false, first = false, settled = false, duration, curve } = {}) {
     if (i === current && !first) return;
-    const previous = panels[current];
     current = i;
     tabs.forEach((tab, j) => {
       tab.setAttribute('aria-selected', String(j === i));
@@ -206,17 +239,19 @@ import { createLogoStrip } from './logo-strip.js';
       labels[j]?.classList.toggle('is-selected', j === i);
     });
     wake();
+    if (first) {
+      panels.forEach((panel, j) => { panel.hidden = j !== i; });
+      // Its text waits for the glass (arrive()), out of sight till then.
+      if (!reduced.matches) [...panels[i].children].forEach(child => { child.style.opacity = 0; });
+      pending = i;
+    } else {
+      history.replaceState(null, '', `${page}#${link(panels[i])}`);
+      bring(i);
+    }
     if (first || settled) { position = i; paint(); syncScroller(); }
     else glide(i, duration, curve);
-    panels.forEach((panel, j) => { panel.hidden = j !== i; });
     if (focus) tabs[i].focus();
     if (first) return;
-    history.replaceState(null, '', `${page}#${link(panels[i])}`);
-    forget([...previous.children]);
-    queue([...panels[i].children], .04);
-    // The page got longer or shorter: the footer and the bottom bounce start over
-    // (page-scroll listens for toggles inside the content).
-    panels[i].dispatchEvent(new Event('toggle'));
     if (flow.getBoundingClientRect().top < 0) flow.scrollIntoView({ block: 'start', behavior: reduced.matches ? 'instant' : 'smooth' });
   }
   let suppressClick = false;
@@ -341,7 +376,7 @@ import { createLogoStrip } from './logo-strip.js';
   if (location.pathname !== page) history.replaceState(null, '', page + location.search + location.hash);
   addEventListener('hashchange', () => { if (linked() >= 0) select(linked()); });
   new ResizeObserver(paint).observe(flow);
-  queue([flow, ...panels[current].children], M.entranceDelay(0));
+  queue([flow], M.entranceDelay(0));
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
 
   // The logo strip at the end of the page drifts right to left through seven
@@ -405,7 +440,10 @@ import { createLogoStrip } from './logo-strip.js';
     open(host, 0);
     host.querySelector('.glass-spot').addEventListener('glassgrow', ({ detail }) => {
       open(host, detail.grow);
-      if (detail.done && host === flow) glassDone();
+      if (host !== flow) return;
+      glassTime = detail.time;
+      arrive();
+      if (detail.done) glassDone();
     });
   });
   const GLASS_LAG = .05;
@@ -415,7 +453,7 @@ import { createLogoStrip } from './logo-strip.js';
     return createGlass();
   })
     .catch(error => { console.warn('Glass unavailable:', error); return null; })
-    .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassDone(); } });
+    .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); } });
 })();
 
 // Galleries upgrade to vFlow; without it they stay as plain images.
