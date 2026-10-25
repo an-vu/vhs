@@ -251,8 +251,13 @@
 .project-flow-track button,
 .project-labels > span { filter: opacity(var(--edge, 1)); }
 .project-flow-track .project-mark { transition: transform .3s cubic-bezier(0, 0, .5, 1); }
-.project-flow-track button:is(:hover, :focus-visible) { color: var(--fg); }
-.project-flow-track button:is(:hover, :focus-visible) .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
+.project-flow-track button:focus-visible { color: var(--fg); }
+.project-flow-track button:focus-visible .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
+/* Only where there's a real pointer: on a phone a tap would trigger them first. */
+@media (hover: hover) {
+  .project-flow-track button:hover { color: var(--fg); }
+  .project-flow-track button:hover .project-mark { transform: scale(calc(var(--outside-scale) * 1.04)); }
+}
 .project-labels > span { transition: opacity .3s cubic-bezier(0, 0, .5, 1); }
 /* Hidden logos still take a tap: on a phone the finger leaves the row after
    every tap, so a tap where a logo just was has to count. */

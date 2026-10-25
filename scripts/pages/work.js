@@ -114,10 +114,14 @@ import { createLogoStrip } from './logo-strip.js';
       if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', edge); }
     });
   }
-  // A logo's name shows only while it's pointed at (or focused), under it (work.css).
+  // A logo's name shows only while a mouse points at it (or it's focused), under it (work.css).
+  // A touch shows nothing as the finger lands: on an iPhone, a tap that makes
+  // something appear counts as a hover, and Safari holds its click back (a second
+  // tap was needed to pick a project). Touch wakes the row once the finger lifts.
+  const mouse = event => event.pointerType === 'mouse';
   tabs.forEach((tab, i) => {
     const show = on => labels[i]?.classList.toggle('is-shown', on);
-    tab.addEventListener('pointerenter', () => show(true));
+    tab.addEventListener('pointerenter', event => { if (mouse(event)) show(true); });
     tab.addEventListener('pointerleave', () => show(false));
     tab.addEventListener('focus', () => show(tab.matches(':focus-visible')));
     tab.addEventListener('blur', () => show(false));
@@ -138,8 +142,9 @@ import { createLogoStrip } from './logo-strip.js';
     if (pointing || journey || flow.querySelector(':focus-visible')) { restTimer = setTimeout(rest, REST); return; }
     flow.classList.add('is-resting');
   }
-  flow.addEventListener('pointerenter', () => { pointing = true; wake(); });
-  flow.addEventListener('pointerleave', () => { pointing = false; wake(); });
+  flow.addEventListener('pointerenter', event => { if (mouse(event)) { pointing = true; wake(); } });
+  flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(); } });
+  flow.addEventListener('pointerup', event => { if (!mouse(event)) wake(); });
   flow.addEventListener('focusin', wake);
   flow.addEventListener('focusout', wake);
   function travel(now) {
