@@ -398,5 +398,8 @@
   /* The logo strip's glass 40 px under the last line (the panel's 36 px, this,
      and the row's 2 px), a bit more than the project glass's 34 px to the title. */
   .work-clients { margin-top: 2px }
+  /* And as far above the footer's text as the project glass sits under the
+     header's (46 px): the footer's height plus 24 px of page below the strip. */
+  .page-motion .work-page .page-content { padding-bottom: calc(var(--page-footer-height, 57px) + 24px) }
   .project-panel .project-tagline { font-size: clamp(24px, 4vw, 28px) }
 }
