@@ -121,7 +121,8 @@ export function createSnapshot(onIconLoad) {
     const win = doc.defaultView, ops = [], scrollY = win.scrollY;
     const range = doc.createRange();
     // The logo strip's layers keep to their side of the middle circle
-    // ([data-glass-circle] inside or outside, radius --circle).
+    // ([data-glass-circle] inside or outside, radius --circle, times --lens-grow
+    // while its glass grows in).
     let fixed = false, circle = null;
     const hits = r => {
       const area = fixed ? areas.fixed : areas.scroll, shift = fixed ? 0 : scrollY;
@@ -174,7 +175,9 @@ export function createSnapshot(onIconLoad) {
       const side = element.dataset?.glassCircle;
       if (side) {
         const box = element.getBoundingClientRect();
-        const r = parseFloat(style.getPropertyValue('--circle')) || (parseFloat(style.getPropertyValue('--select-size')) || 104) / 2;
+        const grow = parseFloat(style.getPropertyValue('--lens-grow'));
+        const r = (parseFloat(style.getPropertyValue('--circle')) || (parseFloat(style.getPropertyValue('--select-size')) || 104) / 2)
+          * (Number.isNaN(grow) ? 1 : grow);
         circle = { x: box.left + box.width / 2, y: box.top + box.height / 2 + dy, r, inside: side === 'inside' };
       }
       const add = op => {

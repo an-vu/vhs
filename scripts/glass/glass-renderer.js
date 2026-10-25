@@ -26,12 +26,18 @@ const easeInOut = p => p < .5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2;
 // Overshoots past 1 before settling; a bigger kick overshoots more (1.7 is about 10%).
 const easeOutBack = (p, kick = 1.70158) => 1 + (kick + 1) * (p - 1) ** 3 + kick * (p - 1) ** 2;
 
-// A shape `t` seconds into its entrance. Bubble: a small drop, then a boom out
-// to the full shape (it bursts past full size, about 20%, settles, and becomes
-// the rounded rectangle on the way). Fade: a quick fade and a slight grow.
+// How long each entrance takes, in seconds (the bubble's burst of light ends at
+// 1.2 s), and when its shape is full size (the bubble's at .8 s).
+export const entranceLength = kind => ({ bubble: 1.2, fade: .6 })[kind] ?? 0;
+export const entranceGrown = kind => ({ bubble: .8, fade: .6 })[kind] ?? 0;
+
+// A shape `t` seconds into its entrance (before 0 it isn't there yet). Bubble: a
+// small drop, then a boom out to the full shape (it bursts past full size, about
+// 20%, settles, and becomes the rounded rectangle on the way). Fade: a quick fade
+// and a slight grow.
 export function entering(shape, kind, t) {
   let { hw, hh, radius, smooth } = shape, scale = 1, appear = 1, burst = 0;
-  if (kind === 'bubble' && t < 1.4) {
+  if (kind === 'bubble' && t < entranceLength(kind)) {
     const r0 = Math.min(hw, hh), hold = .4;
     const drop = .38 * (1 - (1 - clamp01(t / hold)) ** 3);
     const boom = easeOutBack(clamp01((t - hold) / .32), 2.4);
@@ -42,7 +48,7 @@ export function entering(shape, kind, t) {
     scale = Math.max(grow, .01);
     appear = clamp01(t / .06);
     burst = Math.sin(Math.PI * clamp01((t - hold) / .8));
-  } else if (kind === 'fade' && t < .6) {
+  } else if (kind === 'fade' && t < entranceLength(kind)) {
     const e = easeInOut(clamp01(t / .5));
     appear = e; scale = .96 + .04 * e;
     hw *= scale; hh *= scale; radius *= scale;

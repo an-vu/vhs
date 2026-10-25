@@ -258,14 +258,15 @@
 .client-logo > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
 /* Both lenses: the outside layers are cut away inside the circle, the inside
-   layers cut to it. */
+   layers cut to it. Each opens with its glass: --lens-grow (work.js) is how far
+   the glass has grown in, so the big, colored logos come in with the bubble. */
 .client-flats,
 .project-flow-track {
-  -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px));
-  mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px));
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px));
+  mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px));
 }
 .client-colors,
-.project-lens { clip-path: circle(var(--circle) at 50% 50%); }
+.project-lens { clip-path: circle(calc(var(--circle) * var(--lens-grow, 1)) at 50% 50%); }
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -285,10 +286,10 @@
      so its outer logos dissolve there instead of showing past them. Two masks:
      the glass cut and this fade (--column-inset comes from work.js). */
   .project-flow-track {
-    -webkit-mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px)),
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px)),
       linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
     -webkit-mask-composite: source-in;
-    mask: radial-gradient(circle at 50% 50%, transparent var(--circle), #000 calc(var(--circle) + .5px)),
+    mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px)),
       linear-gradient(to right, transparent var(--column-inset, 22px), #000 calc(var(--column-inset, 22px) + 36px), #000 calc(100% - var(--column-inset, 22px) - 36px), transparent calc(100% - var(--column-inset, 22px)));
     mask-composite: intersect;
   }

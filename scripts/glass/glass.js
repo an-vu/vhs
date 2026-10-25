@@ -1,4 +1,4 @@
-import { createGlassRenderer, entering } from './glass-renderer.js';
+import { createGlassRenderer, entering, entranceGrown } from './glass-renderer.js';
 import { opus } from './opus.js';
 
 // Glass on any page. Mark an element with data-glass and a glass sits on it,
@@ -6,6 +6,12 @@ import { opus } from './opus.js';
 // usual, and clicks go straight through. data-glass="circle" (the default) is a
 // circle as big as the element's short side; data-glass="rect" fits the
 // element's box with its own corner radius.
+//
+// A glass grows in (the look's entrance) once it's fully in view, after its
+// element's data-glass-delay (seconds, 0 by default). While it grows, the
+// element gets a 'glassgrow' event each frame: detail.grow is the glass's size
+// (0 before it starts, a little over 1 as it bursts past full size, then 1), and
+// detail.done is true on the last one, once it's full size.
 //
 //   createGlass (from this file, scripts/glass/glass.js):
 //   createGlass();                       // Opus, every [data-glass] on the page
@@ -33,12 +39,12 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   if (!renderer) { canvas.remove(); return null; }
   renderer.attach(window, document, { ignore: [canvas] });
 
-  // Each glass grows in (the look's entrance) the first time it comes into view.
-  const seen = new Map(), onScreen = new Set();
+  // Glasses near the view are drawn; each one's entrance starts once it's fully in view.
+  const starts = new Map(), grown = new Set(), onScreen = new Set();
   let targets = [], raf = 0, last = 0, clock = 0;
   const watcher = new IntersectionObserver(entries => {
     for (const entry of entries) {
-      if (entry.isIntersecting) { onScreen.add(entry.target); if (!seen.has(entry.target)) seen.set(entry.target, clock); }
+      if (entry.isIntersecting) onScreen.add(entry.target);
       else onScreen.delete(entry.target);
     }
     start();
@@ -63,8 +69,18 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
       hw = hh = radius = Math.min(box.width, box.height) / 2;
       smooth = 2;
     }
-    const shape = { x, y, hw, hh, radius, smooth, k: Math.min(hw, hh) / reference };
-    return entering(shape, look.entrance, clock - seen.get(target));
+    // Fully in view (or filling it, for a glass taller than the view).
+    if (!starts.has(target) && Math.min(box.bottom, innerHeight) - Math.max(box.top, 0) >= Math.min(box.height, innerHeight) - 1) {
+      starts.set(target, clock + (parseFloat(target.dataset.glassDelay) || 0));
+    }
+    const t = starts.has(target) ? clock - starts.get(target) : -1;
+    const shape = entering({ x, y, hw, hh, radius, smooth, k: Math.min(hw, hh) / reference }, look.entrance, t);
+    if (!grown.has(target)) {
+      const done = t >= entranceGrown(look.entrance);
+      if (done) grown.add(target);
+      target.dispatchEvent(new CustomEvent('glassgrow', { detail: { grow: shape.appear * shape.scale, done } }));
+    }
+    return shape;
   }
 
   // The view's size in CSS px, set on the canvas too: a phone's 100vh is the

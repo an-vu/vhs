@@ -15,12 +15,19 @@ import { createLogoStrip } from './logo-strip.js';
   const track = flow.querySelector('.project-flow-track');
   const tabs = [...track.querySelectorAll('[role="tab"]')];
   const panels = tabs.map(tab => document.getElementById(tab.getAttribute('aria-controls')));
+  // A project's link is its panel's id without "panel-" (#kobachi picks
+  // #panel-kobachi), so no element has it and the browser never jumps down to a
+  // panel. It goes on the page's clean address (/work, also when opened as /work.html).
+  const link = panel => panel.id.replace(/^panel-/, '');
+  const page = location.pathname.replace(/\.html$/, '');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   StudioPageScroll(content);
 
   // Entrance: queued elements fade and rise in with the site's spring, in DOM order,
-  // as each comes into view.
-  let items = [];
+  // as each comes into view. `shown` once the first view looks still (its springs'
+  // last fraction of a pixel aside).
+  let items = [], shown = reduced.matches;
+  const still = s => s.delay <= 0 && Math.abs(s.target - s.value) < .02 && Math.abs(s.velocity) < .5;
   const loop = M.createLoop(dt => {
     let moving = false;
     for (const item of items) {
@@ -28,6 +35,7 @@ import { createLogoStrip } from './logo-strip.js';
       moving = M.step(item.spring, dt) || moving;
       M.paintEntrance([item.element], [item.spring]);
     }
+    if (!shown && items.every(item => !item.spring || still(item.spring))) { shown = true; firstRest(); }
     return moving;
   }, () => !reduced.matches);
   let startDelay = M.entranceDelay(0);
@@ -146,26 +154,34 @@ import { createLogoStrip } from './logo-strip.js';
     tab.addEventListener('blur', () => show(false));
   });
 
-  // At rest (a second after the pointer leaves) the row hides everything but the
-  // selected logo in its glass, so it doesn't distract from the page; pointing at
-  // the row, touching it or tabbing into it brings it back (work.css).
-  const REST = 1000;
-  let restTimer = 0, pointing = false;
-  function wake() {
+  // At rest (a second after a tap, .4 s after the mouse leaves) the row hides
+  // everything but the selected logo in its glass, so it doesn't distract from the
+  // page; pointing at the row, touching it or tabbing into it brings it back
+  // (work.css). The first rest waits for the page to rise in and the glass to
+  // bubble in (it grows in with the row), then a tad more.
+  const REST = 1000, LEAVE = 400, FIRST_HOLD = 200;
+  let restTimer = 0, pointing = false, glassIn = false;
+  function wake(delay = REST) {
     flow.classList.remove('is-resting');
     clearTimeout(restTimer);
-    restTimer = setTimeout(rest, REST);
+    restTimer = setTimeout(() => rest(delay), delay);
   }
-  function rest() {
+  function rest(delay = REST) {
+    if (!glassIn || !shown) return;
     // Keyboard focus keeps it up; the focus a click leaves on a logo doesn't.
-    if (pointing || journey || flow.querySelector(':focus-visible')) { restTimer = setTimeout(rest, REST); return; }
+    if (pointing || journey || flow.querySelector(':focus-visible')) { restTimer = setTimeout(() => rest(delay), delay); return; }
     flow.classList.add('is-resting');
   }
+  function firstRest() {
+    if (!glassIn || !shown) return;
+    clearTimeout(restTimer);
+    restTimer = setTimeout(() => rest(), FIRST_HOLD);
+  }
   flow.addEventListener('pointerenter', event => { if (mouse(event)) { pointing = true; wake(); } });
-  flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(); } });
+  flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(LEAVE); } });
   flow.addEventListener('pointerup', event => { if (!mouse(event)) wake(); });
-  flow.addEventListener('focusin', wake);
-  flow.addEventListener('focusout', wake);
+  flow.addEventListener('focusin', () => wake());
+  flow.addEventListener('focusout', () => wake());
   function travel(now) {
     motion = 0;
     const t = Math.min(1, (now - journey.start) / journey.duration);
@@ -195,7 +211,7 @@ import { createLogoStrip } from './logo-strip.js';
     panels.forEach((panel, j) => { panel.hidden = j !== i; });
     if (focus) tabs[i].focus();
     if (first) return;
-    history.replaceState(null, '', `#${panels[i].id}`);
+    history.replaceState(null, '', `${page}#${link(panels[i])}`);
     forget([...previous.children]);
     queue([...panels[i].children], .04);
     // The page got longer or shorter: the footer and the bottom bounce start over
@@ -318,18 +334,12 @@ import { createLogoStrip } from './logo-strip.js';
   const linked = () => {
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { return -1; }
-    return panels.findIndex(panel => panel.id === id);
+    return panels.findIndex(panel => link(panel) === id);
   };
-  // A #project link picks that project but keeps the page at the top: the panel
-  // shares the project's id, so the browser would otherwise jump down to it.
-  const toTop = () => scrollTo({ top: 0, behavior: 'instant' });
-  if (linked() >= 0) {
-    toTop();
-    addEventListener('load', toTop, { once: true });
-  }
   select(linked() >= 0 ? linked() : current, { first: true });
   flow.classList.add('is-placed');
-  addEventListener('hashchange', () => { if (linked() >= 0) { toTop(); select(linked()); } });
+  if (location.pathname !== page) history.replaceState(null, '', page + location.search + location.hash);
+  addEventListener('hashchange', () => { if (linked() >= 0) select(linked()); });
   new ResizeObserver(paint).observe(flow);
   queue([flow, ...panels[current].children], M.entranceDelay(0));
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
@@ -378,12 +388,35 @@ import { createLogoStrip } from './logo-strip.js';
   reduced.addEventListener('change', run);
   place();
   run();
-})();
 
-// The glass over the selected project and the logo strip (scripts/glass): loaded
-// after the page, and only where WebGL works; without it the page stays as is.
-import('../glass/glass.js').then(({ createGlass }) => createGlass())
-  .catch(error => console.warn('Glass unavailable:', error));
+  // The glass over the selected project and the logo strip (scripts/glass): loaded
+  // after the page, and only where WebGL works; without it the page stays as is.
+  // The project glass bubbles in with the row, a hair after it starts rising in;
+  // the strip's waits a moment once in view (data-glass-delay, work.html). Each
+  // lens opens with its glass (--lens-grow, work.css): the big, colored logos
+  // inside the circle grow in with the bubble, not before it.
+  const hosts = [...document.querySelectorAll('.glass-spot[data-glass]')].map(spot => spot.parentElement);
+  const open = (host, grow) => {
+    const value = grow.toFixed(3);
+    if (host.style.getPropertyValue('--lens-grow') !== value) host.style.setProperty('--lens-grow', value);
+  };
+  const glassDone = () => { glassIn = true; firstRest(); };
+  hosts.forEach(host => {
+    open(host, 0);
+    host.querySelector('.glass-spot').addEventListener('glassgrow', ({ detail }) => {
+      open(host, detail.grow);
+      if (detail.done && host === flow) glassDone();
+    });
+  });
+  const GLASS_LAG = .05;
+  import('../glass/glass.js').then(({ createGlass }) => {
+    const row = items.find(item => item.element === flow)?.spring;
+    flow.querySelector('.glass-spot').dataset.glassDelay = (Math.max(0, row ? row.delay : startDelay) + GLASS_LAG).toFixed(2);
+    return createGlass();
+  })
+    .catch(error => { console.warn('Glass unavailable:', error); return null; })
+    .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassDone(); } });
+})();
 
 // Galleries upgrade to vFlow; without it they stay as plain images.
 const galleries = [...document.querySelectorAll('.work-content .project-gallery')];
