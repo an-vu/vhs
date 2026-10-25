@@ -134,8 +134,7 @@ export function createVFlow(images, title = "Project", options = {}) {
       announce();
       return;
     }
-    // Apple media gallery: 1s easeInOutQuad; dot widths follow the same position.
-    // Reference: /v/iphone/home/ck/built/scripts/overview/main.built.js
+    // Like Apple's media gallery: easeInOutQuad over settings.duration; dot widths follow the same position.
     const duration = settings.duration;
     const samples = Math.ceil(duration / 16);
     const handoffs = [{ offset: 0, at: start }];
@@ -246,16 +245,16 @@ export function createVFlow(images, title = "Project", options = {}) {
     if (frame) { stop(); show(target); }
     else paint();
   }
-  // Warm only galleries approaching the viewport, not every closed project.
+  // Warm only galleries approaching the viewport, not every gallery on the page.
   let prepared = false;
   const warmup = new IntersectionObserver(entries => {
     const visible = entries[entries.length - 1].isIntersecting;
     gallery.classList.toggle("is-nearby", visible);
     if (!visible || prepared) return;
     prepared = true;
-    gallery.querySelectorAll("img").forEach(picture => {
-      picture.loading = "eager";
-      if (picture.decode) picture.decode().catch(() => { });
+    gallery.querySelectorAll("img").forEach(img => {
+      img.loading = "eager";
+      if (img.decode) img.decode().catch(() => { });
     });
   }, { rootMargin: "300px" });
   warmup.observe(stage);

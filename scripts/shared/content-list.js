@@ -23,7 +23,7 @@ export function StudioContentList(content, { deepLinks = false } = {}) {
   const observer = new IntersectionObserver(entries => {
     if (reduced.matches) return;
     const visible = new Set(entries.filter(entry => entry.isIntersecting).map(entry => entry.target));
-    // DOM order gives one sequence across year boundaries. Only visible rows queue.
+    // DOM order gives one sequence across sections. Only visible rows queue.
     let delay = Math.max(M.entranceDelay(0), ...items.map(item => item.spring ? item.spring.delay + .09 : 0));
     for (const item of items) {
       if (item.shown || !visible.has(item.element)) continue;

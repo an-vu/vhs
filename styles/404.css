@@ -1,4 +1,7 @@
 .not-found {
+  width: 100%;
+  max-width: none;
+  --nav-align: center;
   justify-content: center;
   gap: clamp(40px, 8svh, 88px);
   padding: 32px 20px 48px;
@@ -10,21 +13,12 @@
 
 .not-found .main-nav {
   margin-top: 0;
+  align-items: center;
+  text-align: center;
 }
 
 @media (max-width: 760px) {
   .not-found {
     padding-inline: 10px;
   }
-}
-
-.not-found {
-  width: 100%;
-  max-width: none;
-  --nav-align: center;
-}
-
-.not-found .main-nav {
-  align-items: center;
-  text-align: center;
 }

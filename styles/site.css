@@ -264,10 +264,6 @@ html.page-motion {
 }
 
 @media(prefers-reduced-motion:reduce) {
-  html {
-    scroll-behavior: auto
-  }
-
   .main-nav a {
     transition: none
   }

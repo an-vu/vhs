@@ -2,7 +2,7 @@
   --gallery-height: clamp(250px, 50vw, 600px);
   position: relative;
   width: 100%;
-  margin: 18px 0 18px
+  margin: 18px 0
 }
 
 .vflow-stage {
@@ -39,16 +39,13 @@
   border: var(--image-border, 1px solid rgba(48, 48, 46, .15));
   border-radius: inherit;
   background: var(--bg, #f9f8f6);
+  box-shadow: 0 4px 10px rgba(48, 48, 46, .18);
   pointer-events: none;
 }
 
 /* Prepare only nearby galleries; release layers when they leave the viewport. */
 .vflow.is-nearby .vflow-card {
   will-change: transform, opacity;
-}
-
-.vflow-surface {
-  box-shadow: 0 4px 10px rgba(48, 48, 46, .18)
 }
 
 .vflow-shade {
@@ -98,8 +95,6 @@
   width: max-content;
   margin: 0 auto;
   padding: 0 12px;
-  border-radius: 28px;
-  background: color-mix(in srgb, var(--nav-fg, #62625e) 0%, transparent);
 }
 
 .vflow-controls[hidden] {
@@ -166,11 +161,6 @@
 }
 
 @media(prefers-reduced-motion:reduce) {
-
-  .vflow-card,
-  .vflow-card img,
-  .vflow-placeholder,
-  .vflow-controls button,
   .vflow-controls button::before {
     transition: none
   }

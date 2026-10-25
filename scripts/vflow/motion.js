@@ -19,14 +19,15 @@ export function createMotion(count, settings) {
     const offset = cardOffset(i, at);
     const distance = Math.abs(offset);
     const side = Math.sign(offset);
-    // Only the departing/arriving page unfolds; passing pages stay folded.
+    // Within one step the departing card folds away early (by retreatFraction);
+    // the arriving card unfolds over the whole step.
     let fold = Math.min(1, distance);
     if (distance < 1 && state.direction) {
       fold = offset * state.direction < 0
         ? ease(Math.min(1, distance / settings.retreatFraction))
         : 1 - ease(1 - distance);
     }
-    // Passing pages stay folded. Only the departure and destination open.
+    // Passing cards stay folded. Only the departure and destination open.
     const passing = state.journey && Math.abs(state.journey.to - state.journey.from) > settings.longJumpThreshold
       && i !== wrap(Math.round(state.journey.from)) && i !== wrap(state.journey.to);
     if (passing) fold = 1;
@@ -44,7 +45,7 @@ export function createMotion(count, settings) {
     const projectedHalf = scale * Math.cos(radians) / 2
       / (1 - state.cardWidth * scale * Math.sin(radians) / (perspective * 2));
     const shift = (edge / state.centerFraction - projectedHalf) * fold * 100;
-    // Passing pages travel across the center, turning edge-on there.
+    // Passing cards travel across the center, turning edge-on there.
     // The two faces meet at 90 degrees rather than opening toward the viewer.
     if (passing && distance < 1) {
       const passAngle = 90 - (90 - nearAngle) * distance;
@@ -66,7 +67,7 @@ export function createMotion(count, settings) {
     };
   }
   function stackRank(i, at) {
-    // Let the outgoing page fold before bringing the next page forward.
+    // Let the outgoing card fold before bringing the next card forward.
     const front = state.direction > 0 ? Math.floor(at + 1 - handoffAt)
       : state.direction < 0 ? Math.ceil(at - 1 + handoffAt) : Math.round(at);
     return count - Math.abs(cardOffset(i, front));
