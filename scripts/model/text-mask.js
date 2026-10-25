@@ -1,4 +1,4 @@
-// Letter-shaped exclusion shared by Home and About. Repaint only when layout changes.
+// Letter-shaped exclusion behind the Home text. Repaint only when layout changes.
 export function createTextMask(container, text, onPaint) {
   const mask = document.createElement("canvas");
   const ctx = mask.getContext("2d");
@@ -34,7 +34,7 @@ export function createTextMask(container, text, onPaint) {
   }
   function paintTextMask() {
     const bounds = container.getBoundingClientRect();
-    const rows = (typeof text === 'function' ? text() : text).map(element => ({ element, rect: element.getBoundingClientRect(), css: getComputedStyle(element) }));
+    const rows = text.map(element => ({ element, rect: element.getBoundingClientRect(), css: getComputedStyle(element) }));
     const key = JSON.stringify([bounds.x, bounds.y, bounds.width, bounds.height, ...rows.map(({ element, rect, css }) =>
       [element.textContent, rect.x, rect.y, rect.width, rect.height, css.fontSize, css.fontFamily,
       css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform])]);

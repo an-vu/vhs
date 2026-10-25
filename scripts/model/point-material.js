@@ -3,7 +3,7 @@ import { POINT_SIZE, POINT_OPACITY } from "./config.js";
 
 import { paletteColors, watchModelPalette } from './effects/model-palette.js';
 
-// Shared palette and text dissolve for the PLY vertex shader.
+// Shared uniforms and fragment shader (palette, text mask) around a PLY vertex shader.
 export function createPointMaterial(renderer, settings = {}, vertexShader) {
   const colors = paletteColors();
   const material = new THREE.ShaderMaterial({

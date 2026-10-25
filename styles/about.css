@@ -36,9 +36,6 @@
   opacity: 0;
 }
 #about-rover.is-ready { opacity: 1; }
-@media (max-width: 699px) {
-  #about-rover { transition: opacity .5s ease-out; }
-}
 #about-rover canvas {
   display: block;
   width: 100%;
@@ -57,6 +54,7 @@
 #about-model-expand { margin-top: 12px; }
 .about-model-placeholder { display: block; width: 44px; height: 44px; margin-top: 12px; }
 @media (max-width: 699px) {
+  #about-rover { transition: opacity .5s ease-out; }
   .about-page .about {
     padding-top: max(40px, calc(50svh - var(--header-height) - 14px - var(--about-block-lift)));
   }

@@ -95,7 +95,7 @@ function draw(now) {
   scene.updateMatrixWorld(true);
   // Match Lab dimensions to the About model's smaller desktop framing.
   const detailScale = viewportWidth < 700 ? 1 : .8 * camera.zoom;
-  // Use the same dot scale for the entrance and roverView.expanded view.
+  // Use the same dot scale for the entrance and the expanded view.
   const dotScale = .8 * camera.zoom * (viewportWidth < 700 ? .95 : .75);
   const revealing = useSpectral && !roverView.expanded && revealedAt === null;
   spectral?.setEnabled(Boolean(useSpectral && (roverView.expanded || revealing)));
@@ -270,6 +270,5 @@ addEventListener('pageshow', () => { last = null; wake(); }, { signal: events.si
 const textReady = document.documentElement.dataset.aboutReady ? Promise.resolve() : new Promise(resolve => {
   addEventListener('about-ready', resolve, { once: true, signal: events.signal });
 });
-start();
-
 addEventListener(MODEL_THEME_EVENT, wake, { signal: events.signal });
+start();

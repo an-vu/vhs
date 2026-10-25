@@ -8,7 +8,7 @@ export default {
     // Source-space size before uniform normalization to the shared framing.
     POINT_SIZE: 0.002,
     POINT_OPACITY: 0.88,
-    // The file already holds 35% of the source points; see lab/reduce-points.py.
+    // The file already holds 35% of the source points; see dev/tools/reduce-points.py.
     VISIBLE_FRACTION: 1,
     TWINKLE_CHANCE: 0.93,
     TWINKLE_SPEED: 1.4

@@ -93,6 +93,7 @@ export function createTwinkleMaterial(renderer, settings) {
     }
   `);
   material.uniforms.uTwinkleSpeed = { value: settings.TWINKLE_SPEED ?? 1 };
+  material.uniforms.uTwinkleMaxSize = { value: settings.TWINKLE_MAX_SIZE ?? 2.6 };
   material.uniforms.uFormation = { value: 1 };
   material.uniforms.uPixelRatio = { value: renderer.getPixelRatio() };
   material.defaultAttributeValues.aDissolve = [0, 0, 0, 0];
@@ -110,6 +111,5 @@ export function createTwinkleMaterial(renderer, settings) {
       finalColor = mix(vDissolveColor, finalColor, uFormation);
       float textAlpha = 1.0;`)
       .replace('uOpacity *', '');
-  material.uniforms.uTwinkleMaxSize = { value: settings.TWINKLE_MAX_SIZE ?? 2.6 };
   return material;
 }

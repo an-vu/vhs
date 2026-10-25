@@ -84,13 +84,15 @@ uniform float opacity,dash,gap;
 uniform bool dashed, hiddenPass;
 varying float visibleEdge,along,edgeOpacity,lineCoverage; varying vec3 scanPosition;
 ${scanBandGLSL}
-void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.))); #include <colorspace_fragment>
-}`.replace('; #include', ';\n#include');
+void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.)));
+#include <colorspace_fragment>
+}`;
 export function createModelLines(meshes, scene, entrance = null, { followTheme = false } = {}) {
   const root = new THREE.Group(); scene.add(root); root.visible = false;
   const options = { ...lineDefaults }, resources = new Set(), copies = [];
   const uniforms = { ...scanUniforms(), pixelRatio: { value: 1 }, resolution: { value: new THREE.Vector2() }, color: { value: new THREE.Color(options.color) } };
-  for (const key of ['width', 'triangleOpacity', 'creaseOpacity', 'silhouetteWeight', 'threshold', 'creases', 'silhouettes', 'boundaries', 'triangles', 'dash', 'gap']) uniforms[key] = { value: options[key] };
+  const optionUniforms = ['width', 'triangleOpacity', 'creaseOpacity', 'silhouetteWeight', 'threshold', 'creases', 'silhouettes', 'boundaries', 'triangles', 'dash', 'gap'];
+  for (const key of optionUniforms) uniforms[key] = { value: options[key] };
   const material = hidden => {
     const mat = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: { ...uniforms, opacity: { value: hidden ? .12 : 1 }, dashed: { value: hidden }, hiddenPass: { value: hidden } }, transparent: true, depthWrite: false, depthFunc: hidden ? THREE.GreaterDepth : THREE.LessEqualDepth, side: THREE.DoubleSide });
     if (entrance) {
@@ -105,8 +107,8 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
   // Unlit surfaces should match their CSS/palette color without filmic remapping.
   const flat = new THREE.MeshBasicMaterial({ color: options.surfaceColor, transparent: true, depthWrite: false, toneMapped: false }); resources.add(flat);
   const lit = new THREE.MeshStandardMaterial({ color: options.surfaceColor, transparent: true, depthWrite: false, roughness: .8 }); resources.add(lit);
-  // Keep the complete depth surface, as in expanded mode, so the reveal does not
-  // expose particles from the far side of the rover through the scan band.
+  // Clip only the visible surface during the reveal. The depth pass stays
+  // complete, as in expanded mode, so far-side particles never show through the scan band.
   if (entrance) for (const mat of [flat, lit]) {
     mat.onBeforeCompile = shader => {
       shader.uniforms.entrance = entrance;
@@ -139,7 +141,7 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
       else uniforms.worldToScan.value.identity();
       for (const key of ['scanVolume', 'scanTime', 'scanUneven', 'scanHeight', 'scanWidth', 'scanDirection', 'scanStrength', 'edgeInteraction', 'lineResponse', 'scanPalette']) uniforms[key].value = scan?.[key].value ?? (key === 'scanWidth' ? .1 : key === 'scanDirection' ? 1 : 0);
       renderer.getSize(uniforms.resolution.value);
-      for (const key of ['width', 'triangleOpacity', 'creaseOpacity', 'silhouetteWeight', 'threshold', 'creases', 'silhouettes', 'boundaries', 'triangles', 'dash', 'gap']) uniforms[key].value = options[key];
+      for (const key of optionUniforms) uniforms[key].value = options[key];
       // Match particle scaling: CSS-pixel dimensions at a 600px reference viewport.
       const scale = Math.max(1, Math.min(uniforms.resolution.value.x, uniforms.resolution.value.y)) / 600 * modelScale;
       for (const key of ['width', 'dash', 'gap']) uniforms[key].value = options[key] * scale;

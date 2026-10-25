@@ -174,7 +174,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
       state.revealComplete = false; camera.position.copy(C.CAMERA_START);
       handedOff?.();
     },
-    aircraft, state, rotateView, element: renderer.domElement,
+    state, rotateView, element: renderer.domElement,
     setTextMask(canvas, enabled) {
       if (!textTexture) {
         textTexture = new THREE.CanvasTexture(canvas);

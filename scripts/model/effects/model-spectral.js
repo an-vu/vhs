@@ -21,7 +21,7 @@ export function createSpectral(meshes, { deferPreparation = false, scanRoot = nu
   function* prepareSurfaces() {
     surfaces.length = 0; totalArea = 0;
     for (const mesh of meshes) {
-      // This preview supports rigid component animation, as used by the baked rover.
+      // Only rigid component animation is supported, as used by the baked rover.
       if (mesh.isSkinnedMesh || mesh.geometry.morphAttributes.position?.length) continue;
       mesh.updateWorldMatrix(true, false);
       const geometry = mesh.geometry, position = geometry.getAttribute('position'), index = geometry.index;
