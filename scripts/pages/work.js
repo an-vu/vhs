@@ -94,20 +94,31 @@ import { createLogoStrip } from './logo-strip.js';
   // and on at that spacing. At most four logos show on each side (the fifth fades
   // out as it arrives), and fewer where the text column is narrower: a logo past
   // the column's edge fades out over half a step (--edge, work.css).
+  // On a phone the row is tighter for room, so two things change there: the logo
+  // next to the glass eases into and out of the extra room the glass takes (a
+  // quarter sine), so the row slides as one piece with no sudden change of speed,
+  // and a logo fades out before its outer edge reaches the column's edge, which
+  // leaves one logo on each side of the glass.
   const GAP = 40, SIDE = 4;
+  const phone = matchMedia('(max-width: 760px)');
   function spacing() {
     const size = tabs[0].firstElementChild.offsetWidth * .618 / dockScale();
     const glass = parseFloat(getComputedStyle(flow).getPropertyValue('--circle')) || 67;
     const gap = GAP * dockSize();
-    return { step: size + gap, first: glass + gap + size / 2 };
+    return { size, step: size + gap, first: glass + gap + size / 2 };
   }
   function paint() {
     const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
-    const { step, first } = spacing();
-    const at = t => Math.sign(t) * (Math.abs(t) <= 1 ? Math.abs(t) * first : first + (Math.abs(t) - 1) * step);
+    const { size, step, first } = spacing();
+    const room = d => d >= 1 ? 1 : Math.sin(d * Math.PI / 2);
+    const at = phone.matches
+      ? t => t * step + Math.sign(t) * (first - step) * room(Math.abs(t))
+      : t => Math.sign(t) * (Math.abs(t) <= 1 ? Math.abs(t) * first : first + (Math.abs(t) - 1) * step);
     tabs.forEach((tab, i) => {
       const offset = at(i - position), x = (middle + offset).toFixed(1);
-      const edge = Math.max(0, Math.min(1, (half + step / 2 - Math.abs(offset)) / (step / 2), SIDE + 1 - Math.abs(i - position))).toFixed(3);
+      const edge = (phone.matches
+        ? Math.max(0, Math.min(1, (half - Math.abs(offset) - size / 2) / (step / 2)))
+        : Math.max(0, Math.min(1, (half + step / 2 - Math.abs(offset)) / (step / 2), SIDE + 1 - Math.abs(i - position)))).toFixed(3);
       tab.style.transform = copies[i].style.transform = `translate(${x}px, -50%) translateX(-50%)`;
       tab.style.setProperty('--edge', edge);
       // A name never shows in the glass: it fades out as its logo moves in.
