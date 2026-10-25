@@ -328,6 +328,7 @@ import { createLogoStrip } from './logo-strip.js';
     addEventListener('load', toTop, { once: true });
   }
   select(linked() >= 0 ? linked() : current, { first: true });
+  flow.classList.add('is-placed');
   addEventListener('hashchange', () => { if (linked() >= 0) { toTop(); select(linked()); } });
   new ResizeObserver(paint).observe(flow);
   queue([flow, ...panels[current].children], M.entranceDelay(0));

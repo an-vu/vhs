@@ -36,13 +36,15 @@ export function createDotEntrance(brand, onComplete = () => { }, options = {}, o
     stem.append(baseline);
     const dot = document.createElement("span");
     // The dot's copy of the "i" is drawn by the stylesheet (intro-drawn), so the
-    // page text still reads "vHuman Studios" for search engines.
+    // page text never reads a doubled "i".
     dot.className = "intro-i-dot intro-drawn";
     dot.dataset.text = "i";
     letter.append(stem, dot);
-    brand.setAttribute("aria-label", "vHuman Studios");
+    brand.setAttribute("aria-label", "vHuman");
     const stage = document.createElement("span");
     stage.className = "intro-dot-stage";
+    // Its words are page text, so Google's result text never quotes them mid-intro.
+    stage.setAttribute("data-nosnippet", "");
     const human = document.createElement("span");
     human.className = "intro-dot-word";
     human.textContent = "vHuman";

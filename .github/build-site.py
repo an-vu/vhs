@@ -17,7 +17,8 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 PAGES = {"index.html", "about.html", "work.html", "legal.html", "404.html"}
-SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME"}
+SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME",
+         "images/share.png"}  # The link preview card, named only in meta tags.
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
               ".glb", ".gltf", ".bin", ".ply", ".woff", ".woff2", ".mp4", ".webm"}
@@ -71,6 +72,10 @@ def local_path(url, parent):
         return None
     base = ROOT if parts.path.startswith("/") else (ROOT / parent).parent
     candidate = base / unquote(parts.path).lstrip("/")
+    # A clean page URL (/work) is its page (work.html), as GitHub Pages serves it.
+    page = candidate.with_name(candidate.name + ".html")
+    if not candidate.exists() and page.is_file():
+        candidate = page
     if candidate.is_symlink():
         raise ValueError(f"Symlink dependency: {url} in {parent}")
     resolved = candidate.resolve()

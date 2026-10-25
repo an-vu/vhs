@@ -16,7 +16,7 @@ export function createTypingEntrance(brand, onComplete = () => { }, options = {}
   function start() {
     if (started) return;
     started = true;
-    brand.classList.add('is-typing'); brand.setAttribute('aria-label', fullName);
+    brand.classList.add('is-typing'); brand.setAttribute('aria-label', finalName);
     // The typed letters are drawn by the stylesheet (intro-drawn), not page text,
     // so a search engine reading the page mid-intro never sees half a name.
     const text = document.createElement('span'), cursor = document.createElement('span');

@@ -77,6 +77,9 @@
   scroll-margin-top: var(--header-height);
 }
 .project-flow-track { position: absolute; inset: 0; }
+/* Until work.js first places them, every logo sits at the row's left edge: hidden
+   till then, so a slow first load doesn't flash them piled up there. */
+.project-flow:not(.is-placed) .project-flow-track { visibility: hidden; }
 /* Each logo is a button, one flat vHuman grey outside the glass. Pointing at one
    grows it 4% and turns it vHuman black, like the nav links (Apple's product row:
    scale 104%, .3s cubic-bezier(0, 0, .5, 1)). Past the text column's edge a logo

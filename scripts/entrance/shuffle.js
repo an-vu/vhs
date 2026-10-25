@@ -39,7 +39,9 @@ export function createShuffleEntrance(brand, onComplete = () => { }, options = {
     const stage = document.createElement("span");
     stage.className = "intro-shuffle";
     stage.setAttribute("aria-hidden", "true");
-    brand.setAttribute("aria-label", name);
+    // The letters are page text, so Google's result text never quotes them mid-intro.
+    stage.setAttribute("data-nosnippet", "");
+    brand.setAttribute("aria-label", "vHuman");
     brand.classList.add("is-shuffling");
     brand.replaceChildren(stage);
 
