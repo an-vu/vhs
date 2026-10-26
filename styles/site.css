@@ -70,6 +70,13 @@ button:focus-visible {
   padding: 40px 0 100px
 }
 
+/* Hidden until the page's script starts (it removes page-loading, which the head
+   adds): on a slow first load the text showed for an instant, then hid and rose
+   in. If the script never comes, it shows after 3 s anyway. */
+.page-loading .page-content {
+  visibility: hidden
+}
+
 html.page-motion {
   overscroll-behavior-y: none
 }

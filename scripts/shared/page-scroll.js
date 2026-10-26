@@ -3,6 +3,9 @@ import { StudioMotion } from './motion.js';
 export function StudioPageScroll(content) {
   const M = StudioMotion;
   const root = document.documentElement;
+  // The page's script is running, and its entrance hides what rises in within this
+  // same step, so the content can show (.page-loading, site.css).
+  root.classList.remove("page-loading");
   const footer = document.querySelector(".site-footer");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   if (!content || !footer) return;
