@@ -19,12 +19,15 @@ const screenRight = new THREE.Vector3(), screenUp = new THREE.Vector3(), turn = 
 let pitch = 0, zoom = state.targetCameraZ;
 let renderer, controls, model, mixer, lines, spectral, observer;
 let frame = 0, last = null, disposed = false;
-let playbackStarted = false, entranceStarted = false, entranceElapsed = 0, revealedAt = null;
+let playbackStarted = false, entranceStarted = false, entranceElapsed = 0, revealedAt = null, hold = 0;
 const entrance = { value: -1000 };
 const dotBuildDuration = .5;
 const sweepDuration = 3;
 const animationDelay = .5;
-const animationSpeed = 1.5;
+const animationSpeed = 1.3;
+// The rover's moving parts play out and back; back at the start they rest this
+// long (seconds) before playing out again.
+const restartHold = 1;
 const worldUp = new THREE.Vector3(0, 1, 0);
 const frameClock = createFrameClock();
 let spectralPreparation, preparingSpectral;
@@ -82,7 +85,10 @@ function draw(now) {
   const useSpectral = spectral && !reduced.matches;
   if (!useSpectral && revealedAt === null) finishReveal();
   roverView.advance(dt);
-  if (playbackStarted && !roverView.expanded && !roverView.transitioning && !reduced.matches) mixer?.update(dt);
+  if (playbackStarted && !roverView.expanded && !roverView.transitioning && !reduced.matches) {
+    if (hold > 0) hold -= dt;
+    else mixer?.update(dt);
+  }
   const frames = dt * 60;
   zoom = THREE.MathUtils.lerp(zoom, state.targetCameraZ, reduced.matches ? 1 : 1 - (1 - ZOOM_SMOOTHING) ** frames);
   camera.position.copy(view).normalize().multiplyScalar(zoom * Math.max(1, .85 / camera.aspect));
@@ -241,6 +247,9 @@ async function start() {
     mixer = new THREE.AnimationMixer(model);
     mixer.timeScale = animationSpeed;
     if (gltf.animations[0]) mixer.clipAction(gltf.animations[0]).setLoop(THREE.LoopPingPong, Infinity).play();
+    // It turns around at the far end, then back at the start: every second turn.
+    let turns = 0;
+    mixer.addEventListener('loop', () => { if (++turns % 2 === 0) hold = restartHold; });
     observer = new ResizeObserver(resize); observer.observe(host);
     mixer.update(0);
     scene.updateMatrixWorld(true);
