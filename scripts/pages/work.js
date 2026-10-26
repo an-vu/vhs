@@ -241,11 +241,13 @@ import { createLogoStrip } from './logo-strip.js';
   // it within ENTER of the middle (paint() checks) and its glass is TEXT_AFTER
   // seconds into its bubble (below): the text then lands on the bubble's pop, as it
   // bursts out to full size, so the logo and the text land together. Switching,
-  // the text on show fades out quickly first; a far jump waits for its logo, and a
-  // swipe that has already brought it there shows it straight away. On the first
-  // load the row is already there, so the text waits for the bubble.
+  // the text on show fades out quickly first; a far jump waits for its logo. On a
+  // phone a swipe leaves the text alone while it moves (on an iPhone, changing it
+  // under a moving finger made the swipe stutter), and once the row stops on
+  // another project the same fade and rise follow. On the first load the row is
+  // already there, so the text waits for the bubble.
   const ENTER = .5, TEXT_AFTER = .22, FADE_OUT = 200;
-  let pending = -1, glassTime = -Infinity, left = false;
+  let pending = -1, glassTime = -Infinity, holdUntil = 0, left = false, swiping = false;
   // Fades the text on show out (or back in).
   function fade(panel, out) {
     if (!out) { if (panel.style.opacity) panel.style.removeProperty('opacity'); return; }
@@ -257,17 +259,18 @@ import { createLogoStrip } from './logo-strip.js';
     pending = open === panels[i] ? -1 : i;
     fade(open, pending >= 0);
   }
-  // Dragged or swiped, the row hasn't picked a project yet (it does once it stops),
-  // so the text on show fades once its logo is halfway out of the glass, and stays
-  // out, even if the row passes back over it, until the row lands (`left`): then
-  // the project it lands on brings its text in, the same one too.
+  // Dragged with a mouse, the row hasn't picked a project yet (it does once it's
+  // let go), so the text on show fades once its logo is halfway out of the glass,
+  // and stays out, even if the row passes back over it, until the row lands
+  // (`left`): then the project it lands on brings its text in, the same one too.
+  // Not for a phone's swipe (`swiping`, see above).
   function leave() {
-    if (pending >= 0 || left) return;
+    if (pending >= 0 || left || swiping) return;
     const open = panels.find(panel => !panel.hidden);
     if (open && Math.abs(position - panels.indexOf(open)) > ENTER) { fade(open, true); left = true; }
   }
   function arrive() {
-    if (pending < 0 || Math.abs(position - pending) > ENTER || !(reduced.matches || glassTime >= TEXT_AFTER)) return;
+    if (pending < 0 || Math.abs(position - pending) > ENTER || performance.now() < holdUntil || !(reduced.matches || glassTime >= TEXT_AFTER)) return;
     const panel = panels[pending], opened = panel.hidden;
     pending = -1;
     left = false;
@@ -299,6 +302,8 @@ import { createLogoStrip } from './logo-strip.js';
     } else {
       history.replaceState(null, '', `${page}#${link(panels[i])}`);
       bring(i);
+      // The row is already there (a swipe stopped on it): the old text fades out first.
+      if (settled && pending >= 0 && !reduced.matches) { holdUntil = performance.now() + FADE_OUT; setTimeout(arrive, FADE_OUT); }
     }
     if (first || settled) { position = i; paint(); syncScroller(); }
     else glide(i, duration, curve);
@@ -397,13 +402,15 @@ import { createLogoStrip } from './logo-strip.js';
     flow.classList.remove('is-dragging');
     const i = clampIndex(Math.round(scroller.scrollLeft / unit));
     if (i !== current) select(i, { settled: true });
-    else { position = i; if (left) pending = i; paint(); }
+    else { position = i; paint(); }
   }
   scroller.addEventListener('scroll', () => {
     if (!unit || performance.now() < ignoreScroll) return;
     cancelAnimationFrame(motion); journey = null;
     position = scroller.scrollLeft / unit;
+    swiping = true;
     paint();
+    swiping = false;
     wake();
     flow.classList.add('is-dragging');
     clearTimeout(settleTimer);
