@@ -39,18 +39,23 @@ import { createLogoStrip } from './logo-strip.js';
     return moving;
   }, () => !reduced.matches);
   let startDelay = M.entranceDelay(0);
-  const observer = new IntersectionObserver(entries => {
-    if (reduced.matches) return;
-    const visible = new Set(entries.filter(entry => entry.isIntersecting).map(entry => entry.target));
-    for (const item of items) if (entries.some(entry => entry.target === item.element)) item.seen = true;
+  // Starts the queued elements in `visible` rising, each .09 s after the last.
+  function begin(visible) {
     let delay = Math.max(startDelay, ...items.map(item => item.spring ? item.spring.delay + .09 : 0));
     for (const item of items) {
-      if (item.spring || !visible.has(item.element)) continue;
+      if (!visible.has(item.element)) continue;
+      item.seen = true;
+      if (item.spring) continue;
       item.spring = M.spring(0, 1, delay);
       delay += .09;
       observer.unobserve(item.element);
     }
     loop.wake();
+  }
+  const observer = new IntersectionObserver(entries => {
+    if (reduced.matches) return;
+    for (const item of items) if (entries.some(entry => entry.target === item.element)) item.seen = true;
+    begin(new Set(entries.filter(entry => entry.isIntersecting).map(entry => entry.target)));
   });
   function queue(elements, delay) {
     startDelay = delay;
@@ -60,6 +65,14 @@ import { createLogoStrip } from './logo-strip.js';
       items.push({ element, spring: null, seen: false });
       observer.observe(element);
     }
+    // What's on screen already starts now, without waiting for the browser to say
+    // so: after a swipe an iPhone can be late, and the text stayed blank till then.
+    // The rest rises as it scrolls in.
+    const onScreen = new Set(elements.filter(element => {
+      const box = element.getBoundingClientRect();
+      return box.height > 0 && box.bottom > 0 && box.top < innerHeight;
+    }));
+    if (onScreen.size) begin(onScreen);
   }
   function forget(elements) {
     items = items.filter(item => {
@@ -98,6 +111,29 @@ import { createLogoStrip } from './logo-strip.js';
   let current = Math.max(0, panels.findIndex(panel => !panel.hidden));
   let position = current, journey = null, motion = 0;
   const labels = [...flow.querySelectorAll('.project-labels > span')];
+  // At the very end of each project, the ones either side of it by name
+  // ("‹ Reality Check", "Kobachi ›"), so the next one is a click away from the
+  // bottom of the page. Picking one works like its logo in the row; the keyboard
+  // lands on that logo.
+  panels.forEach((panel, i) => {
+    const steps = Object.assign(document.createElement('nav'), { className: 'project-steps' });
+    steps.setAttribute('aria-label', 'More projects');
+    for (const [j, side] of [[i - 1, 'previous'], [i + 1, 'next']]) {
+      if (!panels[j]) continue;
+      const step = Object.assign(document.createElement('a'), { className: `project-step is-${side}`, href: `#${link(panels[j])}` });
+      const arrow = Object.assign(document.createElement('span'), { textContent: side === 'previous' ? '‹\u00a0' : '\u00a0›' });
+      arrow.setAttribute('aria-hidden', 'true');
+      step.append(labels[j].textContent);
+      if (side === 'previous') step.prepend(arrow); else step.append(arrow);
+      step.addEventListener('click', event => {
+        event.preventDefault();
+        select(j);
+        tabs[j].focus({ preventScroll: true });
+      });
+      steps.append(step);
+    }
+    panel.append(steps);
+  });
   // One even 40 px gap (times --dock-size): from the glass's edge to the next
   // logo, and between the logos outside it; a slide moves a logo across the glass
   // and on at that spacing. At most four logos show on each side (the fifth fades
@@ -141,6 +177,7 @@ import { createLogoStrip } from './logo-strip.js';
       const beside = phone.matches ? Math.max(0, Math.min(1, (1.6 - d) / .4)) : 1;
       if (labels[i]) { labels[i].style.transform = `translateX(${x}px) translateX(-50%)`; labels[i].style.setProperty('--edge', Math.min(edge, clear, beside).toFixed(3)); }
     });
+    leave();
     arrive();
   }
   // A logo's name shows only while a mouse points at it (or it's focused), under it (work.css).
@@ -208,17 +245,32 @@ import { createLogoStrip } from './logo-strip.js';
   // swipe that has already brought it there shows it straight away. On the first
   // load the row is already there, so the text waits for the bubble.
   const ENTER = .5, TEXT_AFTER = .22, FADE_OUT = 200;
-  let pending = -1, glassTime = -Infinity;
+  let pending = -1, glassTime = -Infinity, left = false;
+  // Fades the text on show out (or back in).
+  function fade(panel, out) {
+    if (!out) { if (panel.style.opacity) panel.style.removeProperty('opacity'); return; }
+    if (reduced.matches || panel.style.opacity === '0') return;
+    Object.assign(panel.style, { transition: `opacity ${FADE_OUT}ms cubic-bezier(.4, 0, 1, 1)`, opacity: 0 });
+  }
   function bring(i) {
     const open = panels.find(panel => !panel.hidden);
     pending = open === panels[i] ? -1 : i;
-    if (pending < 0) { open.style.removeProperty('opacity'); return; }
-    if (!reduced.matches) Object.assign(open.style, { transition: `opacity ${FADE_OUT}ms cubic-bezier(.4, 0, 1, 1)`, opacity: 0 });
+    fade(open, pending >= 0);
+  }
+  // Dragged or swiped, the row hasn't picked a project yet (it does once it stops),
+  // so the text on show fades once its logo is halfway out of the glass, and stays
+  // out, even if the row passes back over it, until the row lands (`left`): then
+  // the project it lands on brings its text in, the same one too.
+  function leave() {
+    if (pending >= 0 || left) return;
+    const open = panels.find(panel => !panel.hidden);
+    if (open && Math.abs(position - panels.indexOf(open)) > ENTER) { fade(open, true); left = true; }
   }
   function arrive() {
     if (pending < 0 || Math.abs(position - pending) > ENTER || !(reduced.matches || glassTime >= TEXT_AFTER)) return;
     const panel = panels[pending], opened = panel.hidden;
     pending = -1;
+    left = false;
     panels.forEach(other => {
       other.hidden = other !== panel;
       other.style.removeProperty('opacity');
@@ -309,7 +361,7 @@ import { createLogoStrip } from './logo-strip.js';
     const duration = Math.sign(speed) === Math.sign(target - position) && Math.abs(speed) > 1e-4
       ? Math.min(1200, Math.max(300, 3 * distance / Math.abs(speed)))
       : Math.min(600, 300 + 200 * distance);
-    if (target === current) glide(current, duration, easeOut);
+    if (target === current) { if (left) pending = current; glide(current, duration, easeOut); }
     else select(target, { duration, curve: easeOut });
   }
   flow.addEventListener('pointerup', event => {
@@ -345,7 +397,7 @@ import { createLogoStrip } from './logo-strip.js';
     flow.classList.remove('is-dragging');
     const i = clampIndex(Math.round(scroller.scrollLeft / unit));
     if (i !== current) select(i, { settled: true });
-    else { position = i; paint(); }
+    else { position = i; if (left) pending = i; paint(); }
   }
   scroller.addEventListener('scroll', () => {
     if (!unit || performance.now() < ignoreScroll) return;
@@ -378,6 +430,23 @@ import { createLogoStrip } from './logo-strip.js';
   new ResizeObserver(paint).observe(flow);
   queue([flow], M.entranceDelay(0));
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
+
+  // The line under each project's text asks about it: an email to the studio with
+  // the subject filled in. Clicking also copies the address and shows it in the
+  // link's place, for a computer with no mail app set up (the email opens nothing
+  // there). Year Five's asks to see what's new, and answers; the answer stays.
+  for (const link of content.querySelectorAll('.project-link a[href^="mailto:"]')) {
+    link.addEventListener('click', () => {
+      const address = decodeURIComponent(link.getAttribute('href').slice(7).split('?')[0]);
+      navigator.clipboard?.writeText(address).catch(() => {});
+      link.textContent = address;
+    });
+  }
+  const egg = content.querySelector('.project-egg');
+  egg?.addEventListener('click', () => {
+    egg.textContent = egg.dataset.answer;
+    egg.classList.add('is-answered');
+  }, { once: true });
 
   // The logo strip at the end of the page drifts right to left through seven
   // spots, in a random order (see logo-strip.js), its logos one glass apart (its

@@ -195,6 +195,40 @@
 }
 .project-panel > p:not(.project-tagline)+p { margin-top: 1em }
 .project-panel > .project-tagline + p { margin-top: 32px }
+/* The line under a project's text: a link in the menus' grey that darkens when
+   pointed at (an email to the studio), or Year Five's button, whose answer stays
+   in the text's own color. */
+.project-link a,
+.project-link button,
+.project-step {
+  color: var(--nav-fg);
+  transition: color .2s ease;
+}
+.project-link button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.project-link a:hover,
+.project-link a:focus-visible,
+.project-link button:hover,
+.project-link button:focus-visible,
+.project-step:hover,
+.project-step:focus-visible { color: var(--fg); }
+.project-link .is-answered { color: var(--fg); cursor: default; }
+/* At the very end, the projects either side by name: the one before on the left,
+   the one after on the right (work.js). */
+.project-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 65ch;
+  margin: 2em auto 0;
+}
+.project-steps .is-next { margin-left: auto; text-align: right; }
 /* A project made of parts (Wind Tunnel): a small heading over each part's text. */
 .project-panel > h3 {
   max-width: calc(65ch / 1.2); /* the text's 65ch column, at this size */
@@ -207,7 +241,7 @@
 
 /* The logo strip: placed by script each frame (logo-strip.js), the same size as
    the project row. */
-.work-clients { position: relative; margin-top: clamp(24px, 3vw, 44px) }
+.work-clients { position: relative; margin-top: clamp(12px, 2vw, 28px) }
 /* Where the glass sits (scripts/glass): over the selected project and over the
    logo strip's middle circle, both the circle's size. */
 .glass-spot {
