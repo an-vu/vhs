@@ -16,9 +16,9 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
+DOMAIN = (ROOT / "CNAME").read_text().strip()  # Full addresses on this domain are local files too.
 PAGES = {"index.html", "about.html", "work.html", "legal.html", "404.html"}
-SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt",
-         "images/share.png"}  # The link preview card, named only in meta tags.
+SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt"}
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
               ".glb", ".gltf", ".bin", ".ply", ".woff", ".woff2", ".mp4", ".webm"}
@@ -33,6 +33,10 @@ class Links(HTMLParser):
         self.urls = []
 
     def handle_starttag(self, tag, attrs):
+        # The link preview picture: versioned like any file, so apps and Google fetch
+        # a new card instead of keeping the one they saved.
+        if tag == "meta" and dict(attrs).get("property") == "og:image" and dict(attrs).get("content"):
+            self.urls.append(dict(attrs)["content"])
         for name, value in attrs:
             if not value:
                 continue
@@ -68,7 +72,8 @@ def dependencies(path):
 
 def local_path(url, parent):
     parts = urlsplit(url)
-    if parts.scheme or parts.netloc or not parts.path:
+    own = parts.scheme == "https" and parts.netloc == DOMAIN
+    if (parts.scheme or parts.netloc) and not own or not parts.path:
         return None
     base = ROOT if parts.path.startswith("/") else (ROOT / parent).parent
     candidate = base / unquote(parts.path).lstrip("/")
