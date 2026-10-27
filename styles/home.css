@@ -153,6 +153,10 @@ html.experience body {
   .home-main {
     padding: 24px 10px 12px
   }
+
+  .home-main h1 {
+    line-height: .95
+  }
 }
 
 @media(max-height:600px) {

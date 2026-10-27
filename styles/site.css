@@ -260,7 +260,9 @@ html.page-motion {
   :root {
     --header-height: 72px;
     --brand-size: 22px;
-    --display-size: min(clamp(58px, 17vw, 92px), 12svh)
+    /* 15vw, not edge to edge: at 17vw "made human." ran to 14 px from the
+       sides and the page felt cramped on a phone (60 px on an iPhone 16 Pro). */
+    --display-size: min(clamp(52px, 15vw, 92px), 12svh)
   }
 
   .wrap {

@@ -53,6 +53,12 @@
 }
 #about-model-expand { margin-top: 12px; }
 .about-model-placeholder { display: block; width: 44px; height: 44px; margin-top: 12px; }
+/* On a phone the intro is smaller and a little looser: at the desktop's 34 px
+   floor and tight spacing it ran 10+ lines and felt bunched up. */
+@media (max-width: 760px) {
+  .about { --headline-size: 29px; }
+  .about-intro { line-height: 1.2; letter-spacing: -.03em; }
+}
 @media (max-width: 699px) {
   #about-rover { transition: opacity .5s ease-out; }
   .about-page .about {

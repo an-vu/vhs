@@ -355,4 +355,8 @@
      footer has its room and the glass sits 14 px above it. */
   .page-motion .work-page .page-content { padding-bottom: calc(var(--page-footer-height, 57px) + 12px) }
   .project-panel .project-tagline { font-size: clamp(24px, 4vw, 28px) }
+  /* Less tight on a narrow screen: the title's letters and the text's lines get a
+     little more room. */
+  .project-panel { line-height: 1.65 }
+  .project-panel .project-title { letter-spacing: -.03em }
 }

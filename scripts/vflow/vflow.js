@@ -233,7 +233,7 @@ export function createVFlow(images, title = "Project", options = {}) {
     frame = requestAnimationFrame(tick);
   }
   function announce() {
-    status.textContent = `${current + 1} / ${images.length}${images[current].caption ? ` — ${images[current].caption}` : ""}`;
+    status.textContent = `${current + 1} / ${images.length}${images[current].caption ? `: ${images[current].caption}` : ""}`;
   }
   function measure() {
     const width = stage.clientWidth;
