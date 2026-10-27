@@ -4,7 +4,7 @@
 
 vHuman began in 3D virtual-human and asset design for VR, AR, gaming, and entertainment, and has since grown into software, interfaces, and experimental technology. Design and engineering are treated as one system: the studio designs what it builds and builds what it designs.
 
-vHuman is the studio at vhumanstudios.com, separate from other companies and research groups named vHuman or virtual human.
+vHuman is the studio at vhumanstudios.com, separate from other companies and research groups named vHuman or virtual human, and from the Variant Human (V-Human) of Dungeons & Dragons.
 
 - Industry: Creative technology studio
 - Legal name: vHuman LLC

@@ -102,6 +102,19 @@ html.page-motion {
   font-weight: 400;
 }
 
+/* On About, Work and Legal the header's "vHuman / Page" is the page's heading. The
+   heading takes the link's own size and spacing, so the header looks the same. */
+.page-heading {
+  margin: 0;
+  font-size: var(--brand-size);
+  line-height: 1;
+  font-weight: 400;
+}
+
+.page-heading .brand {
+  display: block;
+}
+
 .site-header {
   position: sticky;
   top: 0;
