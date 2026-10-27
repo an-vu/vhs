@@ -17,7 +17,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 PAGES = {"index.html", "about.html", "work.html", "legal.html", "404.html"}
-SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME",
+SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt",
          "images/share.png"}  # The link preview card, named only in meta tags.
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
