@@ -1,6 +1,11 @@
 // Every motion module loads inside this try: a failed download must never
 // leave the static homepage hidden.
 const query = new URLSearchParams(location.search);
+// Contact also copies the address and shows it in its place, with or without the
+// motion below.
+import('../shared/copy-address.js').then(({ copyAddressOnClick }) => {
+  copyAddressOnClick(document.querySelectorAll('.home-main .main-nav a[href^="mailto:"]'));
+}).catch(() => {});
 try {
   // The lab and ordinary visits share the same Dissolve homepage path.
   if (query.has('motionDiagnostics')) await import('../motion-diagnostics.js');

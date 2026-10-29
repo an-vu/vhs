@@ -17,7 +17,8 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 9;
-  margin: 20px 0 24px;
+  /* Apple Newsroom's room around a picture, the same as the galleries' (vflow.css). */
+  margin: 44px 0;
   background: rgba(48, 48, 46, .05);
   color: var(--muted);
   font-size: 14px;
@@ -185,12 +186,33 @@
   line-height: 1.1;
   letter-spacing: -.035em;
 }
-.project-panel .project-gallery,
-.project-panel .project-image-placeholder {
-  margin-top: 32px;
+/* The gallery brings its own room (vflow.css); its captions line up with the text. */
+.project-panel .project-gallery { margin-top: 0; }
+.project-panel .vflow-captions { max-width: 58ch; }
+/* Pictures wider than the text, like Apple Newsroom's, at Apple's 3:2. Apple's are
+   1.5 times its 653 px column; ours is a little wider (58ch), so 1.4 times gives
+   about Apple's own 980 px on a 1440 px screen. The card is 88% of the stage's width and
+   94% of its height (vflow.css), so the stage is sized from the picture and
+   centred on the text; the side cards fill the room either side. On a phone the
+   stage spans the screen: the picture comes out about as wide as the text, and
+   the side cards sit in the margins. */
+.project-panel .vflow {
+  --picture-width: min(58ch * 1.4, (100vw - 20px) * .88);
+  --gallery-height: calc(var(--picture-width) / 1.5 / .94);
+  width: calc(var(--picture-width) / .88);
+  margin-left: calc(50% - var(--picture-width) / .88 / 2);
 }
+@media (max-width: 760px) {
+  .project-panel .vflow { --picture-width: calc(100vw * .88); }
+  /* The gallery spans the screen here, and the text sits 22 px in from each side
+     (the page's 14 px margin and 8 px padding), so the captions do too. */
+  .project-panel .vflow-captions { max-width: calc(100% - 44px); }
+}
+@media (max-width: 1068px) { .project-image-placeholder { margin: 36px 0; } }
+@media (max-width: 760px) { .project-image-placeholder { margin: 32px 0; } }
+/* About 75 characters a line, like Apple Newsroom's articles (58ch of Georgia). */
 .project-panel > p:not(.project-tagline) {
-  max-width: 65ch;
+  max-width: 58ch;
   margin: 0 auto;
 }
 .project-panel > p:not(.project-tagline)+p { margin-top: 1em }
@@ -225,13 +247,13 @@
   display: flex;
   justify-content: space-between;
   gap: 24px;
-  max-width: 65ch;
+  max-width: 58ch;
   margin: 2em auto 0;
 }
 .project-steps .is-next { margin-left: auto; text-align: right; }
 /* A project made of parts (Wind Tunnel): a small heading over each part's text. */
 .project-panel > h3 {
-  max-width: calc(65ch / 1.2); /* the text's 65ch column, at this size */
+  max-width: calc(58ch / 1.2); /* the text's 58ch column, at this size */
   margin: 2em auto .35em;
   font-size: 1.2em;
   font-weight: 400;
@@ -242,6 +264,19 @@
 /* The logo strip: placed by script each frame (logo-strip.js), the same size as
    the project row. */
 .work-clients { position: relative; margin-top: clamp(12px, 2vw, 28px) }
+/* Over the strip, set like the footer's words (.footer-row): the brands appear in
+   the work, without calling them clients. Real text, so Google reads the logos in
+   context. */
+.work-clients-label {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: normal;
+  text-align: center;
+}
+/* The strip's glass sits on the strip's middle, below the label. */
+.work-clients .glass-spot { top: calc(100% - var(--row-mid)) }
 /* Where the glass sits (scripts/glass): over the selected project and over the
    logo strip's middle circle, both the circle's size. */
 .glass-spot {
@@ -253,8 +288,13 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
+/* As wide as the project text's column (58ch at its size), so the logos fade out
+   at the text's edges (logo-strip.js fades them before the strip's edge). */
 .work-clients-strip {
   position: relative;
+  max-width: 58ch;
+  margin: 0 auto;
+  font-size: clamp(17px, 1.6vw, 20px);
   height: calc(var(--row-mid) * 2);
   overflow: hidden;
   /* How far a logo's farthest point reaches into the circle (share of its

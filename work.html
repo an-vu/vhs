@@ -145,7 +145,12 @@
   <header class="site-header">
     <div class="header-blur" aria-hidden="true"><span class="blur-layer"></span></div>
     <div class="wrap header-inner">
-      <h1 class="page-heading"><a class="brand" href="/" aria-label="vHuman / Work, home">vHuman / Work</a></h1>
+      <h1 class="page-heading"><a class="brand" href="/" aria-label="vHuman, home">vHuman</a> / <button class="page-menu-toggle" type="button" aria-expanded="false" aria-controls="page-menu">Work</button></h1>
+      <!-- The page name opens this menu of the other pages (page-menu.js). -->
+      <nav class="page-menu" id="page-menu" aria-label="Pages" data-nosnippet>
+        <a href="/about">About</a>
+        <a href="mailto:eve@vhumanstudios.com">Contact</a>
+      </nav>
     </div>
   </header>
 
@@ -209,23 +214,24 @@
         <p class="project-tagline">Home improvement.</p>
         <div class="project-gallery">
           <figure><picture><source type="image/avif" srcset="images/projects/year-five/gallery/1-1200.avif 1200w, images/projects/year-five/gallery/1-1800.avif 1800w"
-              sizes="(max-width: 500px) 353px, (max-width: 1200px) 71vw, 846px"><img class="project-image" src="images/projects/year-five/gallery/1.jpg"
+              sizes="(max-width: 760px) 88vw, (max-width: 1200px) 85vw, 1000px"><img class="project-image" src="images/projects/year-five/gallery/1.jpg"
               alt="vHuman, Year Five, preview 1" loading="lazy" decoding="async"></picture>
+            <figcaption>Snow-covered peaks under a pink evening sky.</figcaption>
           </figure>
           <figure><picture><source type="image/avif" srcset="images/projects/year-five/gallery/2-1200.avif 1200w, images/projects/year-five/gallery/2-1800.avif 1800w"
-              sizes="(max-width: 500px) 353px, (max-width: 1200px) 71vw, 846px"><img class="project-image" src="images/projects/year-five/gallery/2.jpg"
+              sizes="(max-width: 760px) 88vw, (max-width: 1200px) 85vw, 1000px"><img class="project-image" src="images/projects/year-five/gallery/2.jpg"
               alt="vHuman, Year Five, preview 2" loading="lazy" decoding="async"></picture>
           </figure>
           <figure><picture><source type="image/avif" srcset="images/projects/year-five/gallery/3-1200.avif 1200w, images/projects/year-five/gallery/3-1800.avif 1800w"
-              sizes="(max-width: 500px) 353px, (max-width: 1200px) 71vw, 846px"><img class="project-image" src="images/projects/year-five/gallery/3.jpg"
+              sizes="(max-width: 760px) 88vw, (max-width: 1200px) 85vw, 1000px"><img class="project-image" src="images/projects/year-five/gallery/3.jpg"
               alt="vHuman, Year Five, preview 3" loading="lazy" decoding="async"></picture>
           </figure>
           <figure><picture><source type="image/avif" srcset="images/projects/year-five/gallery/4-1200.avif 1200w, images/projects/year-five/gallery/4-1800.avif 1800w"
-              sizes="(max-width: 500px) 353px, (max-width: 1200px) 71vw, 846px"><img class="project-image" src="images/projects/year-five/gallery/4.jpg"
+              sizes="(max-width: 760px) 88vw, (max-width: 1200px) 85vw, 1000px"><img class="project-image" src="images/projects/year-five/gallery/4.jpg"
               alt="vHuman, Year Five, preview 4" loading="lazy" decoding="async"></picture>
           </figure>
           <figure><picture><source type="image/avif" srcset="images/projects/year-five/gallery/5-1200.avif 1200w, images/projects/year-five/gallery/5-1800.avif 1800w"
-              sizes="(max-width: 500px) 353px, (max-width: 1200px) 71vw, 846px"><img class="project-image" src="images/projects/year-five/gallery/5.jpg"
+              sizes="(max-width: 760px) 88vw, (max-width: 1200px) 85vw, 1000px"><img class="project-image" src="images/projects/year-five/gallery/5.jpg"
               alt="vHuman, Year Five, preview 5" loading="lazy" decoding="async"></picture>
           </figure>
         </div>
@@ -406,7 +412,8 @@
     <!-- The logo strip, at the end of the page and outside the content, so it holds
          still while the content lifts and settles at the bottom. data-fit: each logo's
          box in --logo-unit (work.css), measured from its drawing. -->
-    <section class="work-clients">
+    <section class="work-clients" aria-labelledby="work-clients-label">
+      <h2 class="work-clients-label" id="work-clients-label">Featured in our work</h2>
       <ul class="work-clients-list visually-hidden">
         <li data-logo="lockheed-martin" data-fit="0.842 0.371">Lockheed Martin</li>
         <li data-logo="northrop-grumman" data-fit="0.73 0.427">Northrop Grumman</li>

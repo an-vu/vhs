@@ -1,5 +1,7 @@
 import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
+import { copyAddressOnClick } from '../shared/copy-address.js';
+import { createPageMenu } from '../shared/page-menu.js';
 
 (() => {
   const M = StudioMotion;
@@ -10,6 +12,9 @@ import { StudioPageScroll } from '../shared/page-scroll.js';
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   if (!paragraph || !content) return;
   StudioPageScroll(content);
+  createPageMenu();
+  // Contact also copies the address and shows it in its place (copy-address.js).
+  copyAddressOnClick(links.filter(link => link.href.startsWith('mailto:')));
   let lines = [], entrance = [], layout = "", entered = false, visibleLineCount = 0;
   const loop = M.createLoop(dt => {
     let moving = false;

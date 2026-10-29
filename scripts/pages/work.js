@@ -1,6 +1,8 @@
 import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
 import { createLogoStrip } from './logo-strip.js';
+import { copyAddressOnClick } from '../shared/copy-address.js';
+import { createPageMenu } from '../shared/page-menu.js';
 
 // The Work page: a row of project logos as tabs. Picking one slides the row
 // (vFlow's motion) so it sits in the middle, under the glass, names each one, and
@@ -22,6 +24,7 @@ import { createLogoStrip } from './logo-strip.js';
   const page = location.pathname.replace(/\.html$/, '');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   StudioPageScroll(content);
+  createPageMenu();
 
   // Entrance: queued elements fade and rise in with the site's spring, in DOM order,
   // as each comes into view. `shown` once the first view looks still (its springs'
@@ -439,16 +442,9 @@ import { createLogoStrip } from './logo-strip.js';
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
 
   // The line under each project's text asks about it: an email to the studio with
-  // the subject filled in. Clicking also copies the address and shows it in the
-  // link's place, for a computer with no mail app set up (the email opens nothing
-  // there). Year Five's asks to see what's new, and answers; the answer stays.
-  for (const link of content.querySelectorAll('.project-link a[href^="mailto:"]')) {
-    link.addEventListener('click', () => {
-      const address = decodeURIComponent(link.getAttribute('href').slice(7).split('?')[0]);
-      navigator.clipboard?.writeText(address).catch(() => {});
-      link.textContent = address;
-    });
-  }
+  // the subject filled in, which also copies the address (copy-address.js). Year
+  // Five's asks to see what's new, and answers; the answer stays.
+  copyAddressOnClick(content.querySelectorAll('.project-link a[href^="mailto:"]'));
   const egg = content.querySelector('.project-egg');
   egg?.addEventListener('click', () => {
     egg.textContent = egg.dataset.answer;

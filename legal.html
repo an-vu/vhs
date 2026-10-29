@@ -64,7 +64,13 @@
     <header class="site-header">
         <div class="header-blur" aria-hidden="true"><span class="blur-layer"></span></div>
         <div class="wrap header-inner">
-            <h1 class="page-heading"><a class="brand" href="/" aria-label="vHuman / Legal, home">vHuman / Legal</a></h1>
+            <h1 class="page-heading"><a class="brand" href="/" aria-label="vHuman, home">vHuman</a> / <button class="page-menu-toggle" type="button" aria-expanded="false" aria-controls="page-menu">Legal</button></h1>
+            <!-- The page name opens this menu of the other pages (page-menu.js). -->
+            <nav class="page-menu" id="page-menu" aria-label="Pages" data-nosnippet>
+              <a href="/work">Work</a>
+              <a href="/about">About</a>
+              <a href="mailto:eve@vhumanstudios.com">Contact</a>
+            </nav>
         </div>
     </header>
     <main class="page-content wrap" aria-label="Legal notices">

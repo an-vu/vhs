@@ -45,6 +45,12 @@ The default motion is one second with an ease-in/out quadratic curve.
 The timeline's inverse calculations depend on that curve; changing the curve also
 requires updating those calculations. Dot and image motion share one timeline.
 
-Optional CSS variables: `--bg`, `--fg`, `--nav-fg`, `--muted`,
+Optional CSS variables: `--bg`, `--fg`, `--nav-fg`, `--muted`, `--light-gray`,
 `--image-border`, and `--image-radius`. Each has a fallback.
 Override `--gallery-height` on your gallery to change its height.
+
+A `caption` shows under the cards, 12 px, one at a time; the block keeps
+the tallest caption's height so the dots never move. Give `.vflow-captions` a
+`max-width` to line it up with the page's text. Spacing follows Apple Newsroom's
+article galleries: `--gallery-air` (text to picture, and dots to text plus 4 px),
+`--caption-gap` and `--dots-gap`, all measured from the picture itself.

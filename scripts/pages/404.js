@@ -1,9 +1,11 @@
 import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
+import { createPageMenu } from '../shared/page-menu.js';
 
 (() => {
   const M = StudioMotion;
   StudioPageScroll(document.querySelector(".not-found"));
+  createPageMenu();
   const elements = [...document.querySelectorAll(".not-found h1 span, .not-found-mark, .not-found .main-nav a")];
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const springs = elements.map((_, i) => M.spring(reduced.matches ? 1 : 0, 1, M.entranceDelay(i)));

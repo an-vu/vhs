@@ -72,6 +72,18 @@ export function createVFlow(images, title = "Project", options = {}) {
     stage.append(card);
     return card;
   });
+  // The current picture's caption under the cards, like Apple Newsroom's. All the
+  // captions share one grid cell, so the block keeps the tallest one's height and
+  // the dots never jump. Screen readers hear it through the status line instead.
+  const captions = document.createElement("div");
+  captions.className = "vflow-captions";
+  captions.setAttribute("aria-hidden", "true");
+  const captionLines = images.map(image => {
+    const line = document.createElement("p");
+    line.textContent = image.src ? image.caption || "" : "";
+    captions.append(line);
+    return line;
+  });
   const controls = document.createElement("div");
   controls.className = "vflow-controls";
   controls.setAttribute("role", "group");
@@ -95,6 +107,7 @@ export function createVFlow(images, title = "Project", options = {}) {
     lastCurrent = current;
     indicators.forEach((button, i) => button.setAttribute("aria-current", String(i === current)));
     cards.forEach((card, i) => card.setAttribute("aria-current", String(i === current)));
+    captionLines.forEach((line, i) => line.classList.toggle("is-current", i === current));
   }
   function paint() {
     cards.forEach((card, i) => {
@@ -288,7 +301,7 @@ export function createVFlow(images, title = "Project", options = {}) {
     drag = null;
   });
   stage.addEventListener("pointercancel", () => { drag = null; });
-  gallery.append(stage, controls, status);
+  gallery.append(stage, ...captionLines.some(line => line.textContent) ? [captions] : [], controls, status);
   if (images.length === 1) gallery.classList.add("vflow-single");
   paint();
   const resize = new ResizeObserver(measure);

@@ -1,8 +1,18 @@
+/* Spacing and captions from Apple Newsroom's article galleries (measured Oct 29,
+   2026): text to picture 44 px, picture to caption 16 px, caption to dots 17 px,
+   dots to text 48 px; 36 / 12 / 17 / 40 on a tablet and 32 / 12 / 17 / 36 on a
+   phone (below). Each gap is measured from the picture itself: the card is 94% of
+   the stage's height, so the stage runs --card-inset past it above and below. The
+   dots sit 18 px down a 44 px button, so their gaps take that away too. */
 .vflow {
   --gallery-height: clamp(250px, 50vw, 600px);
+  --gallery-air: 44px;
+  --caption-gap: 16px;
+  --dots-gap: 17px;
+  --card-inset: calc(var(--gallery-height) * .03);
   position: relative;
   width: 100%;
-  margin: 18px 0
+  margin: calc(var(--gallery-air) - var(--card-inset)) 0 calc(var(--gallery-air) + 4px - 18px)
 }
 
 .vflow-stage {
@@ -10,6 +20,15 @@
   height: var(--gallery-height);
   overflow: hidden;
   touch-action: pan-y pinch-zoom;
+}
+
+/* Trim the sides only, so the cards' shadow is never cut off below them (on a
+   phone the stage leaves just 7 px under the card, the shadow needs 14). */
+@supports (overflow: clip) {
+  .vflow-stage {
+    overflow: visible;
+    overflow-x: clip;
+  }
 }
 
 .vflow-card {
@@ -21,7 +40,7 @@
   padding: 0;
   background: none;
   border: 0;
-  border-radius: var(--image-radius, 10px);
+  border-radius: var(--image-radius, 14px);
   overflow: visible;
   color: var(--muted, #62625e);
   font: inherit;
@@ -88,13 +107,41 @@
   letter-spacing: normal;
 }
 
+/* The current picture's caption, left on the text above it (set the width per
+   page): 12 px grey, like Apple's. Apple's is semibold in its sans; Georgia has no
+   semibold and its bold reads heavy at 12 px, so regular. */
+.vflow-captions {
+  display: grid;
+  margin: calc(var(--caption-gap) - var(--card-inset)) auto 0;
+}
+
+.vflow-captions p {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--muted, #62625e);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: -.01em;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity .25s linear;
+}
+
+.vflow-captions p.is-current {
+  opacity: 1
+}
+
 .vflow-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   width: max-content;
-  margin: 0 auto;
+  margin: calc(var(--dots-gap) - 18px - var(--card-inset)) auto 0;
   padding: 0 12px;
+}
+
+.vflow-captions + .vflow-controls {
+  margin-top: calc(var(--dots-gap) - 18px)
 }
 
 .vflow-controls[hidden] {
@@ -121,15 +168,14 @@
   right: 8px;
   height: 8px;
   border-radius: 10px;
-  background: var(--nav-fg, #62625e);
-  opacity: .55;
-  transition: background-color .25s linear, opacity .25s linear;
+  /* Apple's dots: light grey, the current one ink. */
+  background: var(--light-gray, #c7c6c4);
+  transition: background-color .25s linear;
 }
 
 .vflow-controls button:hover::before,
 .vflow-controls button[aria-current="true"]::before {
   background: var(--fg, #30302e);
-  opacity: 1;
 }
 
 .vflow-status {
@@ -154,14 +200,23 @@
   cursor: default
 }
 
+@media(max-width:1068px) {
+  .vflow {
+    --gallery-air: 36px;
+    --caption-gap: 12px;
+  }
+}
+
 @media(max-width:760px) {
   .vflow {
     --gallery-height: clamp(250px, 50vw, 520px);
+    --gallery-air: 32px;
   }
 }
 
 @media(prefers-reduced-motion:reduce) {
-  .vflow-controls button::before {
+  .vflow-controls button::before,
+  .vflow-captions p {
     transition: none
   }
 }

@@ -31,7 +31,13 @@
   <header class="site-header">
     <div class="header-blur" aria-hidden="true"><span class="blur-layer"></span></div>
     <div class="wrap header-inner">
-      <a class="brand" href="/" aria-label="vHuman / 404, home">vHuman / 404</a>
+      <div class="page-heading"><a class="brand" href="/" aria-label="vHuman, home">vHuman</a> / <button class="page-menu-toggle" type="button" aria-expanded="false" aria-controls="page-menu">404</button></div>
+      <!-- The page name opens this menu of the other pages (page-menu.js). -->
+      <nav class="page-menu" id="page-menu" aria-label="Pages" data-nosnippet>
+        <a href="/work">Work</a>
+        <a href="/about">About</a>
+        <a href="mailto:eve@vhumanstudios.com">Contact</a>
+      </nav>
     </div>
   </header>
   <main class="page-content home-main not-found" aria-label="Page not found">
