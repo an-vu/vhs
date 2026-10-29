@@ -5,7 +5,8 @@
   --light-gray: #C7C6C4;
   --muted: var(--nav-fg);
   --image-border: .5px solid rgba(98, 98, 94, .3);
-  --image-radius: clamp(12px, 2vw, 18px);
+  /* Apple Newsroom's image corner: a flat 10 px at every width. */
+  --image-radius: 10px;
   --header-height: 86px;
   --brand-size: 24px;
   --blur-reach: 22px;

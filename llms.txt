@@ -1,6 +1,6 @@
 # vHuman
 
-> vHuman is an American creative technology studio. We design and build software, interfaces, and 3D and spatial experiences for brands, product teams, aerospace programs, sports organizations, and game studios worldwide.
+> vHuman is an American creative technology studio specializing in software, interfaces, 3D, and spatial computing. We design and build software, interfaces, and 3D and spatial experiences for brands, product teams, aerospace programs, sports organizations, and game studios worldwide.
 
 vHuman began in 3D virtual-human and asset design for VR, AR, gaming, and entertainment, and has since grown into software, interfaces, and experimental technology. Design and engineering are treated as one system: the studio designs what it builds and builds what it designs.
 
@@ -56,7 +56,7 @@ The studio's in-house toolset, shared with partners and clients as part of worki
 ## Pages
 
 - [Home](https://vhumanstudios.com/): Technology, made human.
-- [About](https://vhumanstudios.com/about): how the studio works and what clients get
+- [About](https://vhumanstudios.com/about): what the studio does, how it works, and what it believes
 - [Work](https://vhumanstudios.com/work): our projects
 - [Legal](https://vhumanstudios.com/legal): privacy notice, cookie policy, and terms
 

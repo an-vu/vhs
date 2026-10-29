@@ -21,7 +21,7 @@
   padding: 0;
   background: none;
   border: 0;
-  border-radius: var(--image-radius, 12px);
+  border-radius: var(--image-radius, 10px);
   overflow: visible;
   color: var(--muted, #62625e);
   font: inherit;
