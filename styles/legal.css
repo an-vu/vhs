@@ -1,5 +1,5 @@
-/* The policy list: a heading, then sections that open one at a time
-   (styles/disclosure.css). */
+/* Legal's policies and the FAQ's questions: a heading, then rows that open one at a
+   time (styles/disclosure.css). */
 .content-section h2 {
   margin: 0 0 16px;
   color: var(--muted);

@@ -277,6 +277,9 @@
 }
 /* The strip's glass sits on the strip's middle, below the label. */
 .work-clients .glass-spot { top: calc(100% - var(--row-mid)) }
+/* The header stays over the glass (its layer is 4, scripts/glass), so a scrolling
+   glass passes under the header's blur instead of over "vHuman / Work". */
+.site-header { z-index: 5; }
 /* Where the glass sits (scripts/glass): over the selected project and over the
    logo strip's middle circle, both the circle's size. */
 .glass-spot {

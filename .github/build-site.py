@@ -17,9 +17,9 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 DOMAIN = (ROOT / "CNAME").read_text().strip()  # Full addresses on this domain are local files too.
-PAGES = {"index.html", "about.html", "work.html", "legal.html", "404.html"}
-SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt"}
-EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".xml",
+PAGES = {"index.html", "about.html", "work.html", "faq.html", "legal.html", "404.html"}
+SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt", "agents.md"}
+EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".md", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
               ".glb", ".gltf", ".bin", ".ply", ".woff", ".woff2", ".mp4", ".webm"}
 JS_URLS = re.compile(r"(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*|\bnew\s+URL\s*\(\s*)(['\"])(.*?)\1")

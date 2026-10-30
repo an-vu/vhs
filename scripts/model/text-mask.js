@@ -23,6 +23,9 @@ export function createTextMask(container, text, onPaint) {
         range.setStart(node, i); range.setEnd(node, i + 1);
         const r = range.getBoundingClientRect();
         glyphs.push({
+          // Its own layer, when it has one (Contact's cross-fading words,
+          // copy-address.js), whose fade the room in the dots follows.
+          layer: node.parentElement === element ? null : node.parentElement,
           letter: node.textContent[i], x: (r.left - rect.left) / scale,
           y: (r.top - rect.top + r.height / 2) / scale + (ascent - descent) / 2
         });
@@ -34,10 +37,11 @@ export function createTextMask(container, text, onPaint) {
   }
   function paintTextMask() {
     const bounds = container.getBoundingClientRect();
-    const rows = text.map(element => ({ element, rect: element.getBoundingClientRect(), css: getComputedStyle(element) }));
-    const key = JSON.stringify([bounds.x, bounds.y, bounds.width, bounds.height, ...rows.map(({ element, rect, css }) =>
+    const rows = text.map(element => ({ element, rect: element.getBoundingClientRect(), css: getComputedStyle(element),
+      layers: [...element.querySelectorAll(":scope > span")].map(layer => getComputedStyle(layer).opacity) }));
+    const key = JSON.stringify([bounds.x, bounds.y, bounds.width, bounds.height, ...rows.map(({ element, rect, css, layers }) =>
       [element.textContent, rect.x, rect.y, rect.width, rect.height, css.fontSize, css.fontFamily,
-      css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform])]);
+      css.fontWeight, css.fontStyle, css.letterSpacing, css.opacity, css.transform, layers])]);
     if (key === maskKey) return;
     const painted = window.StudioDiagnostics?.start('Readability mask layout and paint');
     maskKey = key;
@@ -59,7 +63,11 @@ export function createTextMask(container, text, onPaint) {
       if (scale === 0) continue;
       const { glyphs } = getGlyphs(element, rect, css, scale);
       ctx.font = `${css.fontStyle} ${css.fontWeight} ${parseFloat(css.fontSize) * scale}px ${css.fontFamily}`;
-      for (const { letter, x, y } of glyphs) {
+      const rowAlpha = ctx.globalAlpha, layerAlpha = new Map();
+      for (const { layer, letter, x, y } of glyphs) {
+        if (layer && !layerAlpha.has(layer)) layerAlpha.set(layer, Number(getComputedStyle(layer).opacity));
+        ctx.globalAlpha = rowAlpha * (layer ? layerAlpha.get(layer) : 1);
+        if (ctx.globalAlpha === 0) continue;
         const left = rect.left - bounds.left + x * scale;
         const baseline = rect.top - bounds.top + y * scale;
         ctx.strokeText(letter, left, baseline);

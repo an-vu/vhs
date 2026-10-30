@@ -1,4 +1,20 @@
+# Search engines and AI search and answer tools (OAI-SearchBot, ChatGPT-User,
+# Claude-SearchBot, Claude-User, PerplexityBot) may read every page.
+# Content-Signal (Cloudflare's content signals): search and AI answers yes,
+# training AI models no.
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
+
+# No training AI models on vHuman's pages (An, Oct 29, 2026): the crawlers that
+# collect pages for training are kept out.
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: meta-externalagent
+User-agent: Bytespider
+Disallow: /
 
 Sitemap: https://vhumanstudios.com/sitemap.xml

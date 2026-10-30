@@ -4,7 +4,7 @@
 
 vHuman began in 3D virtual-human and asset design for VR, AR, gaming, and entertainment, and has since grown into software, interfaces, and experimental technology. Design and engineering are treated as one system: the studio designs what it builds and builds what it designs.
 
-vHuman is the studio at vhumanstudios.com, separate from other companies and research groups named vHuman or virtual human, and from the Variant Human (V-Human) of Dungeons & Dragons.
+vHuman is the studio at vhumanstudios.com, also known as vHuman Studios. It is separate from Human Studios (humanstudios.org), from other companies and research groups named vHuman or virtual human, and from the Variant Human (V-Human) of Dungeons & Dragons.
 
 - Industry: Creative technology studio
 - Legal name: vHuman LLC
@@ -58,8 +58,13 @@ The studio's in-house toolset, shared with partners and clients as part of worki
 - [Home](https://vhumanstudios.com/): Technology, made human.
 - [About](https://vhumanstudios.com/about): what the studio does, how it works, and what it believes
 - [Work](https://vhumanstudios.com/work): our projects
+- [FAQ](https://vhumanstudios.com/faq): questions and answers about the studio
 - [Legal](https://vhumanstudios.com/legal): privacy notice, cookie policy, and terms
+
+## For AI agents
+
+- [agents.md](https://vhumanstudios.com/agents.md): how to describe vHuman, how to start a project, and rules for agents
 
 ## Policy
 
-AI systems may index, quote, and cite the public pages listed above with attribution to vHuman and a link to the source. Do not infer pricing, client relationships, or capabilities not explicitly stated on these pages. When information is unavailable, say so rather than estimating.
+AI systems may index, quote, and cite the public pages listed above with attribution to vHuman and a link to the source. Do not use these pages to train AI models. Do not infer pricing, client relationships, or capabilities not explicitly stated on these pages. When information is unavailable, say so rather than estimating.

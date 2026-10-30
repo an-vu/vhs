@@ -38,6 +38,13 @@ export async function createModelBackground(container, button, onExpand, onContr
   document.fonts.addEventListener("loadingdone", () => {
     textMask.invalidate(); updateTextExclusion();
   });
+  // Contact's words cross-fading (copy-address.js): the room in the dots follows each
+  // word's fade, so it's redrawn every frame until the cross-fade is over.
+  addEventListener("studio:text-change", () => {
+    textMask.invalidate();
+    trackUntil = Math.max(trackUntil, performance.now() + 600);
+    updateTextExclusion();
+  });
   const controls = setupModelControls({ ...scene, isEnabled: () => active && expanded });
   function setExpanded(value) {
     expanded = value && active;

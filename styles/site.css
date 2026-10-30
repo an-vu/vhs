@@ -205,12 +205,6 @@ html.page-motion {
   translate: 0 0;
 }
 
-/* Contact shows the address once clicked (copy-address.js), shrunk if needed to
-   fit between the page name and the screen's edge (--menu-room, page-menu.js). */
-.page-menu .is-address {
-  font-size: min(1em, calc(var(--menu-room, 100vw) / 10.6));
-}
-
 .is-menu-open .page-menu a:nth-child(2) { transition-delay: 0s, .04s, .04s; }
 .is-menu-open .page-menu a:nth-child(3) { transition-delay: 0s, .08s, .08s; }
 
@@ -218,8 +212,11 @@ html.page-motion {
   transition: height .25s ease;
 }
 
+/* Open, the blur keeps the closed bar's fade (--fade-span, its own height there),
+   moved down to end as far under the last page as the bar ends under "vHuman". */
 .is-menu-open .header-blur {
   height: calc(var(--header-height) + var(--menu-height, 0px));
+  --fade-span: calc(var(--header-height) + var(--blur-reach));
 }
 
 .site-header {
@@ -246,6 +243,7 @@ html.page-motion {
   left: 0;
   right: 0;
   pointer-events: none;
+  --fade-span: 100%;
   --fade-direction: to bottom;
   --blur-inset: 0 0 calc(-1 * var(--blur-reach));
 }
@@ -299,14 +297,14 @@ html.page-motion {
 
   :is(.header-blur, .footer-blur)::before {
     z-index: 1;
-    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) 55%, transparent 95%);
+    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) calc(100% - var(--fade-span) * .45), transparent calc(100% - var(--fade-span) * .05));
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
   }
 
   :is(.header-blur, .footer-blur)::after {
     z-index: 2;
-    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) 40%, transparent 80%);
+    --progressive-mask: linear-gradient(var(--fade-direction), var(--fg) calc(100% - var(--fade-span) * .6), transparent calc(100% - var(--fade-span) * .2));
     -webkit-backdrop-filter: blur(9px);
     backdrop-filter: blur(9px);
   }
@@ -361,6 +359,17 @@ html.page-motion {
 .main-nav a:hover,
 .main-nav a:focus-visible {
   color: var(--fg)
+}
+
+/* Home's Contact with a mouse (copy-address.js): the word, the address and
+   "Copied" share one spot and cross-fade, centred in the menu's column. */
+.main-nav a.is-swap {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.main-nav a.is-swap > span {
+  grid-area: 1 / 1;
 }
 
 /* Contact once clicked shows the address (copy-address.js), at the menu's size

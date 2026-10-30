@@ -1,10 +1,13 @@
 // Every motion module loads inside this try: a failed download must never
 // leave the static homepage hidden.
 const query = new URLSearchParams(location.search);
-// Contact also copies the address and shows it in its place, with or without the
-// motion below.
-import('../shared/copy-address.js').then(({ copyAddressOnClick }) => {
-  copyAddressOnClick(document.querySelectorAll('.home-main .main-nav a[href^="mailto:"]'));
+// Contact also copies the address, with or without the motion below: with a mouse,
+// pointing at it shows the address and a click says "Copied"; on a touch screen a
+// tap shows the address in its place.
+import('../shared/copy-address.js').then(({ copyAddressOnClick, revealAddressOnHover }) => {
+  const links = document.querySelectorAll('.home-main .main-nav a[href^="mailto:"]');
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) links.forEach(revealAddressOnHover);
+  else copyAddressOnClick(links);
 }).catch(() => {});
 try {
   // The lab and ordinary visits share the same Dissolve homepage path.

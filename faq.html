@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <script src="/scripts/shared/focus-input.js"></script>
+    <script src="/scripts/shared/reload-top.js"></script>
+    <script>document.documentElement.classList.add("page-loading"); setTimeout(() => document.documentElement.classList.remove("page-loading"), 3000);</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>FAQ - vHuman</title>
+    <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/images/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/images/icons/favicon-48.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/images/icons/favicon-96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/favicon-192.png">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="/images/icons/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#F9F8F6">
+    <link rel="stylesheet" href="styles/site.css">
+    <link rel="stylesheet" href="styles/disclosure.css">
+    <link rel="stylesheet" href="styles/legal.css">
+
+    <meta name="description" content="Questions and answers about vHuman, also known as vHuman Studios, an American creative technology studio.">
+    <link rel="canonical" href="https://vhumanstudios.com/faq">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="vHuman">
+    <meta property="og:title" content="FAQ - vHuman">
+    <meta property="og:description" content="Questions and answers about vHuman, also known as vHuman Studios, an American creative technology studio.">
+    <meta property="og:url" content="https://vhumanstudios.com/faq">
+    <meta property="og:image" content="https://vhumanstudios.com/images/share.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="vHuman: Technology, made human.">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- The questions for Google too: every answer here word for word as on the page. -->
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      "@id": "https://vhumanstudios.com/faq#webpage",
+      "url": "https://vhumanstudios.com/faq",
+      "name": "FAQ - vHuman",
+      "isPartOf": { "@id": "https://vhumanstudios.com/#website" },
+      "about": { "@id": "https://vhumanstudios.com/#organization" },
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is vHuman the same as vHuman Studios?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. vHuman, also known as vHuman Studios, is the creative technology studio at vhumanstudios.com, separate from Human Studios and other studios with similar names."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://vhumanstudios.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "FAQ",
+          "item": "https://vhumanstudios.com/faq"
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+
+<body class="content-page">
+    <header class="site-header">
+        <div class="header-blur" aria-hidden="true"><span class="blur-layer"></span></div>
+        <div class="wrap header-inner">
+            <h1 class="page-heading"><a class="brand" href="/" aria-label="vHuman, home">vHuman</a> / <button class="page-menu-toggle" type="button" aria-expanded="false" aria-controls="page-menu">FAQ</button></h1>
+            <!-- The page name opens this menu of the other pages (page-menu.js). -->
+            <nav class="page-menu" id="page-menu" aria-label="Pages" data-nosnippet>
+              <a href="/work">Work</a>
+              <a href="/about">About</a>
+              <a href="mailto:eve@vhumanstudios.com">Contact</a>
+            </nav>
+        </div>
+    </header>
+    <main class="page-content wrap" aria-label="Questions and answers">
+        <!-- Each question opens to its answer, like Legal's sections; /faq#id opens one. -->
+        <div class="faq-content">
+            <section class="content-section" aria-labelledby="faq-heading">
+                <h2 id="faq-heading">Questions</h2>
+                <ul>
+                    <li>
+                        <details class="disclosure" name="faq" id="vhuman-studios" open>
+                            <summary>Is vHuman the same as vHuman Studios?</summary>
+                            <div class="disclosure-detail legal-copy">
+                                <p>Yes. vHuman, also known as vHuman Studios, is the creative technology studio at vhumanstudios.com, separate from Human Studios and other studios with similar names.</p>
+                            </div>
+                        </details>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
+        <div class="wrap footer-row" data-nosnippet>
+            <div>© 2026 vHuman LLC · vHuman Studios</div>
+            <div class="legal"><a href="/faq">FAQ</a><a href="/legal">Legal</a></div>
+        </div>
+    </footer>
+    <script type="module" src="scripts/pages/faq.js"></script>
+</body>
+
+</html>
