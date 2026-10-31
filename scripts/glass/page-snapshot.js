@@ -126,7 +126,9 @@ export function createSnapshot(onIconLoad) {
     // The logo strip's layers keep to their side of the middle circle
     // ([data-glass-circle] inside or outside, radius --circle, times --lens-grow
     // while its glass grows in).
-    let fixed = false, circle = null;
+    // `stack`: the stacking order of the outermost layer an element sits in (the
+    // header's, for its text), what decides whether it's over the glass.
+    let fixed = false, circle = null, stack = null;
     const hits = r => {
       const area = fixed ? areas.fixed : areas.scroll, shift = fixed ? 0 : scrollY;
       return area && r.right > area.x && r.left < area.x + area.w && r.bottom + shift > area.y && r.top + shift < area.y + area.h;
@@ -148,8 +150,8 @@ export function createSnapshot(onIconLoad) {
     }
 
     function visit(element, opacity, z, tilt = null) {
-      const wasFixed = fixed, wasCircle = circle;
-      try { paintElement(element, opacity, z, tilt); } finally { fixed = wasFixed; circle = wasCircle; }
+      const wasFixed = fixed, wasCircle = circle, wasStack = stack;
+      try { paintElement(element, opacity, z, tilt); } finally { fixed = wasFixed; circle = wasCircle; stack = wasStack; }
     }
     function paintElement(element, opacity, z, tilt) {
       // The glass's own canvas (and anything else marked) stays out of the copy.
@@ -170,7 +172,10 @@ export function createSnapshot(onIconLoad) {
       if (faded) opacity *= faded[2] ? faded[1] / 100 : +faded[1];
       if (opacity < .005) return;
       fixed ||= style.position === 'fixed' || style.position === 'sticky';
-      if (style.position !== 'static' && style.zIndex !== 'auto') z = parseInt(style.zIndex, 10) || 0;
+      if (style.position !== 'static' && style.zIndex !== 'auto') {
+        z = parseInt(style.zIndex, 10) || 0;
+        stack ??= z;
+      }
       // Scrolling ops are stored in page coordinates.
       const layer = fixed ? 'fixed' : 'scroll', dy = fixed ? 0 : scrollY;
       // A 3D-turned element (vFlow's side cards): images inside are drawn into its projected corners.
@@ -189,7 +194,7 @@ export function createSnapshot(onIconLoad) {
         if (op.quad) op.quad = op.quad.map(([x, y]) => [x, y + dy]);
         if (op.top !== undefined) op.top += dy;
         if (op.kind === 'glyph') op.y += dy;
-        ops.push(Object.assign(op, { opacity, layer, z }));
+        ops.push(Object.assign(op, { opacity, layer, z, stack }));
       };
       const rect = element.getBoundingClientRect();
       const tag = element.tagName;
@@ -447,11 +452,12 @@ export function createSnapshot(onIconLoad) {
     },
     overlay,
     // Paints the fixed layer (header, footer) or its live canvases for a viewport
-    // block, see-through elsewhere. Returns null if nothing was drawn, otherwise
-    // the highest stacking order drawn (the rover's z-index).
-    fixed(canvas, doc, block, dpr, live = false) {
+    // block, see-through elsewhere, leaving out what's stacked above `below` (the
+    // glass's own z-index). Returns null if nothing was drawn, otherwise the
+    // highest stacking order drawn (the rover's z-index).
+    fixed(canvas, doc, block, dpr, live = false, below = Infinity) {
       const ops = collect(doc, { scroll: null, fixed: { x: block.x / dpr, y: block.y / dpr, w: block.w / dpr, h: block.h / dpr } })
-        .filter(op => op.layer === 'fixed' && !op.live === !live);
+        .filter(op => op.layer === 'fixed' && !op.live === !live && (op.stack ?? 0) <= below);
       paint(canvas, ops, block, dpr, null);
       return ops.length ? Math.max(...ops.map(op => op.z)) : null;
     }

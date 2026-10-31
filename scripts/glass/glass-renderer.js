@@ -100,7 +100,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   let stale = [], clip = null;
   // The live layer (the rover) is copied at CSS resolution: it redraws every
   // frame, and a full Retina copy would cost several ms each time.
-  let fixedBlock = null, fixedDirty = true, liveDirty = true, liveOn = 0, fixedShown = false;
+  let fixedBlock = null, fixedDirty = true, liveDirty = true, liveOn = 0, fixedShown = false, wasOver = false;
   // The logo strip: its box (page device px, its own clip), whether its logos
   // moved, the page under them (`under`, a region of the ring as painted without
   // them), and this frame's logos (null until asked for). `fast` turns off for
@@ -239,17 +239,24 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     // only while the copy reaches them: elsewhere it would be empty, and copying it
     // again each time the glass scrolled 64 px made scrolling stutter.
     const inView = { ...block, y: block.y + Math.round(offset * dpr) };
+    // What's stacked over the glass's own canvas (Work's header, work.css) the
+    // browser draws over the glass, blur and all, so the copy leaves it out: bent
+    // in the lens too, "vHuman / Work" showed twice and the header read as under
+    // the glass. A canvas outside the page (the Glass Lab's) is over all of it.
+    const glassZ = canvas.ownerDocument === doc ? parseInt(win.getComputedStyle(canvas).zIndex, 10) || 0 : Infinity;
     const headerElement = doc.querySelector('.site-header'), footerElement = doc.querySelector('.site-footer');
+    const headerOver = !!headerElement && (parseInt(win.getComputedStyle(headerElement).zIndex, 10) || 0) > glassZ;
+    if (headerOver !== wasOver) { wasOver = headerOver; fixedDirty = true; }
     const reach = (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22) * dpr;
-    const header = headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
+    const header = headerOver ? null : headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
     const footerOpacity = footerElement ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
     // The header's blur stretches down behind its open menu.
-    const headerBottom = Math.max(header?.bottom ?? -Infinity, headerElement?.querySelector('.header-blur')?.getBoundingClientRect().bottom ?? -Infinity);
+    const headerBottom = header ? Math.max(header.bottom, headerElement.querySelector('.header-blur')?.getBoundingClientRect().bottom ?? -Infinity) : -Infinity;
     const reaches = (top, bottom) => inView.y < bottom * dpr + reach && inView.y + inView.h > top * dpr - reach;
     const bars = (header && reaches(header.top, headerBottom)) || (footer && footerOpacity > 0 && reaches(footer.top, footer.bottom));
     if (fixedDirty && bars) {
       fixedDirty = false; fixedShown = true;
-      snapshot.fixed(fixedCanvas, doc, inView, dpr);
+      snapshot.fixed(fixedCanvas, doc, inView, dpr, false, glassZ);
       fixedTexture.image(fixedCanvas, false);
     } else if (!bars && fixedShown) {
       fixedShown = false; fixedDirty = true;

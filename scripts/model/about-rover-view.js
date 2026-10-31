@@ -12,12 +12,16 @@ export function createAboutRoverView({
   let savedView, viewTransition;
   let viewMix = 0, expanded = false;
   let viewportWidth = 1, viewportHeight = 1, blockLift = 0;
+  // The rover sits at the top of the page and scrolls with it (about.css). Opened,
+  // it covers the view (.about-rover-fixed) and starts from where it sat, scrolled
+  // up by `scrollShift`; closed, it goes back there before rejoining the page.
+  let scrollShift = 0;
+  const root = document.documentElement;
   let backgroundLayer = null;
   const layerFades = [];
   const layerTargets = [
     [document.querySelector('.site-header .header-blur'), 0],
-    [document.querySelector('.site-header .header-inner'), .85],
-    [document.querySelector('.about-intro'), .9]
+    [document.querySelector('.site-header .header-inner'), .85]
   ];
   function cancelLayerFades() {
     layerFades.forEach(animation => animation.cancel());
@@ -37,7 +41,7 @@ export function createAboutRoverView({
     const width = viewportWidth, height = viewportHeight;
     const offset = 1 - viewMix;
     camera.setViewOffset(width, height, -width * (width < 700 ? .10 : .17) * offset,
-      (height * (width < 700 ? .22 : .19) + blockLift) * offset, width, height);
+      (height * (width < 700 ? .22 : .19) + blockLift + scrollShift) * offset, width, height);
   }
   function advanceView(dt) {
     if (!viewTransition) return;
@@ -51,7 +55,12 @@ export function createAboutRoverView({
     updateProjection();
     if (t === 1) {
       viewTransition = null;
-      if (!expanded) savedView = null;
+      if (!expanded) {
+        savedView = null;
+        scrollShift = 0;
+        root.classList.remove('about-rover-fixed');
+        updateProjection();
+      }
     }
   }
   function setExpanded(value, restoreFocus = false) {
@@ -59,6 +68,8 @@ export function createAboutRoverView({
     cancelLayerFades();
     if (value) {
       savedView ??= { quaternion: rotation.quaternion.clone(), pitch: getPitch(), target: state.targetCameraZ };
+      if (!root.classList.contains('about-rover-fixed')) scrollShift = scrollY;
+      root.classList.add('about-rover-fixed');
       button.before(buttonPlaceholder);
       document.body.append(button);
     } else {
@@ -108,6 +119,11 @@ export function createAboutRoverView({
     if (event.key === 'Escape') { event.preventDefault(); setExpanded(false, true); }
   }, { signal });
   reduced.addEventListener('change', cancelLayerFades, { signal });
+  // Pulled past the page's end, the text lifts (page-scroll.js), and the rover
+  // with it, as part of the page.
+  const content = document.querySelector('.about-content');
+  const lift = new MutationObserver(() => { host.style.transform = content.style.transform; });
+  if (content) lift.observe(content, { attributes: true, attributeFilter: ['style'] });
   return {
     get expanded() { return expanded; },
     get transitioning() { return Boolean(viewTransition); },
@@ -115,6 +131,8 @@ export function createAboutRoverView({
     advance: advanceView,
     dispose() {
       if (expanded) setExpanded(false);
+      lift.disconnect();
+      root.classList.remove('about-rover-fixed');
       cancelLayerFades();
     }
   };

@@ -24,7 +24,10 @@ import { opus } from './opus.js';
 // nothing inside a frame marked data-glass-host (a tool drawing its own glass).
 // The glass's shader builds in the background (glass-renderer.js): entrances wait
 // for it, and if it can't build, each element gets a last 'glassgrow' (grow 1,
-// done) and the glass goes away, as if there were no WebGL.
+// done) and the glass goes away, as if there were no WebGL. On a device that
+// can't keep up it draws softer (resize() below), and the document gets a
+// 'glassquality' event each time it steps down (detail.step, 0 then 1), or once
+// if the page turned that off (lighten(false), detail.lighter false).
 export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4, reference = 200 } = {}) {
   // A page shown inside a glass tool (the Glass Lab's frame, data-glass-host)
   // already has glass drawn over it.
@@ -94,17 +97,44 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   function resize() {
     width = document.documentElement.clientWidth; height = innerHeight;
     Object.assign(canvas.style, { width: `${width}px`, height: `${height}px` });
-    renderer.resize(width, height, Math.min(devicePixelRatio || 1, 2));
+    renderer.resize(width, height, Math.min(devicePixelRatio || 1, 2, STEPS[step]?.ratio ?? 2));
     start();
+  }
+  // A device that can't keep up (a warm phone, an old one) draws the glass softer
+  // for the rest of the visit: each step lowers its resolution, which also shrinks
+  // what's copied of the page, and the last leaves out its shadow. Missed frames
+  // are judged against the screen's own rate (its quickest frames), so Low Power
+  // Mode's steady 30 a second isn't slow. It never steps back up by itself, so the
+  // glass doesn't flicker between the two. The page can turn this off (lighten()):
+  // full detail, and a slow device is still reported, once.
+  const STEPS = [{ ratio: 1.5, look: {} }, { ratio: 1.25, look: { shadow: 0 } }];
+  const WINDOW = 60, SLOW = 1 / 3;
+  let step = -1, gaps = [], shown = look, lighter = true, slow = false;
+  function setStep(next) {
+    step = next;
+    shown = step < 0 ? look : { ...look, ...STEPS[step].look };
+    resize();
+  }
+  function judge(gap) {
+    gaps.push(gap);
+    if (gaps.length < WINDOW) return;
+    const screen = [...gaps].sort((a, b) => a - b)[Math.floor(WINDOW * .1)];
+    const missed = gaps.filter(value => value > screen * 1.5).length / WINDOW;
+    gaps = [];
+    if (missed <= SLOW || (lighter ? step === STEPS.length - 1 : slow)) return;
+    slow = true;
+    if (lighter) setStep(step + 1);
+    document.dispatchEvent(new CustomEvent('glassquality', { detail: { step, lighter } }));
   }
   // Every frame while anything moves. Once nothing does but the glass's slow
   // corner sway (the page still, the glasses grown in, nothing new to copy), at
   // most IDLE_RATE times a second: a 120 Hz screen drew the same glass 120 times.
   const IDLE_RATE = 30;
-  let drawn = 0, lastKey = '';
+  let drawn = 0, lastKey = '', drewLast = false;
   function frame(now) {
     raf = 0;
-    const dt = last ? Math.min((now - last) / 1000, .05) : 1 / 60;
+    const gap = last ? now - last : 0;
+    const dt = last ? Math.min(gap / 1000, .05) : 1 / 60;
     last = now; clock += dt;
     if (renderer.failed()) { fail(); return; }
     if (innerHeight !== height || document.documentElement.clientWidth !== width) resize();
@@ -116,10 +146,14 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     const key = `${scrollX} ${top} ${shapes.map(shape => [shape.x, shape.y, shape.hw, shape.hh, shape.appear, shape.scale, shape.burst].map(v => v.toFixed(2)).join()).join(' ')}`;
     const still = ready && key === lastKey && shapes.every(shape => shape.appear === 1 && shape.scale === 1 && !shape.burst) && !renderer.busy();
     lastKey = key;
-    if (!still || now - drawn >= 1000 / IDLE_RATE - 2) {
+    // Only back-to-back drawn frames count: a still glass skips some on purpose.
+    const draws = !still || now - drawn >= 1000 / IDLE_RATE - 2;
+    if (draws && drewLast && gap && ready && shapes.length) judge(gap);
+    drewLast = draws;
+    if (draws) {
       drawn = now;
       canvas.style.transform = `translate(${scrollX}px, ${top}px)`;
-      renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), look, clock, offset);
+      renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), shown, clock, offset);
     }
     start();
   }
@@ -150,6 +184,12 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   return {
     // Looks for [data-glass] elements again (after adding or removing some).
     refresh: scan,
+    // Whether the glass may draw lighter on a slow device (on by default). Off, it
+    // goes back to full detail; on again after a slow spell, it starts one step down.
+    lighten(on) {
+      lighter = on; gaps = [];
+      setStep(on ? (slow ? Math.max(step, 0) : -1) : -1);
+    },
     destroy
   };
 }

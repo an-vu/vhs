@@ -74,14 +74,28 @@ function resize() {
   renderer.setSize(width, height, false);
   wake();
 }
+// The rover scrolls with the page (about.css) and holds still while it does:
+// nothing is drawn until the scrolling stops, then it carries on from there.
+// While its dots are still building it, they keep bubbling and only their sweep
+// up the rover holds (`held` in draw()).
+let scrolling = false, scrollRest = 0;
+addEventListener('scroll', () => {
+  if (roverView.expanded) return;
+  scrolling = true;
+  clearTimeout(scrollRest);
+  scrollRest = setTimeout(() => { scrolling = false; last = null; wake(); }, 150);
+}, { passive: true, signal: events.signal });
 function draw(now) {
   frame = 0;
   if (disposed || document.hidden || !lines || !entranceStarted) return;
+  const held = scrolling && !roverView.expanded && !roverView.transitioning;
+  if (held && !(spectral && !reduced.matches && revealedAt === null)) { last = null; return; }
   if (last === null) frameClock.reset();
   const dt = frameClock.tick(now, reduced.matches);
   last = now;
   if (dt === null) { wake(); return; }
-  if (!playbackStarted) entranceElapsed += dt;
+  // Held, the dots still fill in, but their sweep up the rover waits.
+  if (!playbackStarted && !(held && entranceElapsed >= dotBuildDuration)) entranceElapsed += dt;
   const useSpectral = spectral && !reduced.matches;
   if (!useSpectral && revealedAt === null) finishReveal();
   roverView.advance(dt);
@@ -109,7 +123,7 @@ function draw(now) {
     // Keep Spectral's scan field; increase only its travel rate through this first pass.
     spectral.update(dt, renderer, true, true, true, dotScale,
       revealing ? THREE.MathUtils.lerp(.05, 1, Math.min(1, entranceElapsed / dotBuildDuration)) : 1,
-      revealing ? entranceElapsed < dotBuildDuration ? 0 : 1 / (2 * curiositySettings.spectral.scanSpeed * sweepDuration) : 1);
+      revealing ? entranceElapsed < dotBuildDuration || held ? 0 : 1 / (2 * curiositySettings.spectral.scanSpeed * sweepDuration) : 1);
     if (revealing) {
       // Carry the band and its halo past the top before removing the effect.
       const progress = spectral.upwardProgress;

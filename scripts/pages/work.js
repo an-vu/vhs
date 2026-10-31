@@ -518,6 +518,24 @@ import { createPageMenu } from '../shared/page-menu.js';
       if (detail.done) glassDone();
     });
   });
+  // On a device that can't keep up the glass draws lighter (glass.js); a note
+  // under the logo strip says so (a device that keeps up never sees it). Tapping
+  // it (or pointing at it, work.css) shows why, with a switch to full detail and
+  // back. Turned off, the choice stays in the browser for later visits (Legal's
+  // Cookie Policy says so); turned on again, it's removed.
+  const note = document.querySelector('.quality-note'), KEPT = 'vhuman:efficiency';
+  let glassControl = null;
+  if (note) {
+    try { if (localStorage.getItem(KEPT) === 'off') note.classList.add('is-off'); } catch {}
+    document.addEventListener('glassquality', () => { note.hidden = false; }, { once: true });
+    const toggle = note.querySelector('.quality-note-toggle');
+    toggle.addEventListener('click', () => toggle.setAttribute('aria-expanded', String(toggle.getAttribute('aria-expanded') !== 'true')));
+    note.querySelector('.quality-note-switch').addEventListener('click', () => {
+      const off = note.classList.toggle('is-off');
+      try { off ? localStorage.setItem(KEPT, 'off') : localStorage.removeItem(KEPT); } catch {}
+      glassControl?.lighten(!off);
+    });
+  }
   const GLASS_LAG = .05;
   import('../glass/glass.js').then(({ createGlass }) => {
     const row = items.find(item => item.element === flow)?.spring;
@@ -525,7 +543,11 @@ import { createPageMenu } from '../shared/page-menu.js';
     return createGlass();
   })
     .catch(error => { console.warn('Glass unavailable:', error); return null; })
-    .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); } });
+    .then(glass => {
+      glassControl = glass;
+      if (glass && note?.classList.contains('is-off')) glass.lighten(false);
+      if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); }
+    });
 })();
 
 // Galleries upgrade to vFlow; without it they stay as plain images.

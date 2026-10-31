@@ -26,16 +26,23 @@
   white-space: nowrap
 }
 
-/* Foreground preview; the canvas lets clicks pass through to the page. */
+/* Foreground preview at the top of the page, a view tall: it scrolls away with
+   the text (and holds still while it does, about-rover.js). The canvas lets
+   clicks pass through to the page. Opened, it covers the view. A height in svh
+   keeps a phone's toolbar from shifting its projection. */
 #about-rover {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100svh;
   z-index: 4;
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
 }
 #about-rover.is-ready { opacity: 1; }
+.about-rover-fixed #about-rover { position: fixed; transform: none !important; }
 #about-rover canvas {
   display: block;
   width: 100%;
@@ -66,7 +73,9 @@
   }
 }
 .about-model-expanded { overflow: hidden; }
-.about-rover-background #about-rover { z-index: 0; }
+/* Scrolled, it stays over the text (it moves with it) but passes under the
+   header's blur (z-index 3) instead of over "vHuman / About". */
+.about-rover-background #about-rover { z-index: 2; }
 .about-model-expanded #about-rover { pointer-events: auto; z-index: 4; }
 .about-model-expanded #about-model-expand {
   position: fixed;
@@ -84,12 +93,4 @@
 .about-model-expanded .site-footer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   #about-rover, .about-intro, .about .main-nav { transition: none; }
-}
-
-/* A stable canvas prevents browser toolbar changes from shifting the projection. */
-@media (hover: none) and (pointer: coarse) {
-  #about-rover {
-    bottom: auto;
-    height: 100svh;
-  }
 }
