@@ -3,18 +3,36 @@ export const FULLSCREEN_VS = 'attribute vec2 a; void main() { gl_Position = vec4
 export const PRECISION = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n';
 
 export function createProgram(gl, fragmentSource) {
-  const compile = (type, source) => {
+  return startProgram(gl, fragmentSource).finish();
+}
+
+// The same, built in the background where the browser can (KHR_parallel_shader_compile):
+// asking whether a shader built makes the page wait until it has, a long freeze
+// for a big shader on a slow graphics chip (0.2 to 0.4 s on a 2016 MacBook Pro).
+// ready() says whether finish() would still wait; without the extension it's
+// always true, and finish() builds it then, as createProgram does.
+export function startProgram(gl, fragmentSource) {
+  const parallel = gl.getExtension('KHR_parallel_shader_compile');
+  const shaders = [[gl.VERTEX_SHADER, FULLSCREEN_VS], [gl.FRAGMENT_SHADER, PRECISION + fragmentSource]].map(([type, source]) => {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
     return shader;
-  };
+  });
   const program = gl.createProgram();
-  gl.attachShader(program, compile(gl.VERTEX_SHADER, FULLSCREEN_VS));
-  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, PRECISION + fragmentSource));
+  shaders.forEach(shader => gl.attachShader(program, shader));
   gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+  return {
+    ready: () => !parallel || gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR),
+    finish: () => finishProgram(gl, program, shaders)
+  };
+}
+
+function finishProgram(gl, program, shaders) {
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const failed = shaders.find(shader => !gl.getShaderParameter(shader, gl.COMPILE_STATUS));
+    throw new Error(failed ? gl.getShaderInfoLog(failed) : gl.getProgramInfoLog(program));
+  }
   gl.useProgram(program);
   // One triangle that covers the whole viewport.
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());

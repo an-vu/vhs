@@ -1,5 +1,5 @@
-import { createProgram, createTexture } from './gl.js';
-import { glassShader } from './glass-shader.js';
+import { startProgram, createTexture } from './gl.js';
+import { glassShader, pageShader } from './glass-shader.js';
 import { createSnapshot } from './page-snapshot.js';
 
 // Draws glass over a live page. A see-through canvas sits on top of the page and
@@ -9,6 +9,17 @@ import { createSnapshot } from './page-snapshot.js';
 // only paints and uploads the strip that comes into view, and anything that
 // changes (a spring, a fade, a drifting logo) only repaints its own rows, and
 // only as wide as the glasses can see.
+//
+// A logo strip ([data-glass-marquee]) moves every frame. Its logos are pictures
+// (page-snapshot.js), so the copy keeps the page under them once and lays the
+// logos over it in memory each frame (marquee() below): reading a fresh copy back
+// every frame cost a 2016 MacBook Pro half its processor time.
+//
+// Each frame the page as the glasses see it (the copy, the header and footer
+// glass, what sits in those bars) is drawn once into a texture for the area they
+// can show (pageShader()), so the glass's many samples per pixel are one lookup
+// each. Its shaders are built in the background where the browser can (gl.js):
+// ready() says when it can draw, and draw() draws nothing until then.
 //
 // The caller owns the loop and the shapes. attach() points it at a page (the
 // same one, or a page in a frame), resize() at the canvas's size, and draw()
@@ -59,11 +70,24 @@ export function entering(shape, kind, t) {
 export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true });
   if (!gl) return null;
-  const { U } = createProgram(gl, glassShader(extra));
-  const ringTexture = createTexture(gl, 0), fixedTexture = createTexture(gl, 1), liveTexture = createTexture(gl, 2);
-  gl.uniform1i(U.uScrollTex, 0);
-  gl.uniform1i(U.uFixedTex, 1);
-  gl.uniform1i(U.uLiveTex, 2);
+  const builds = [startProgram(gl, pageShader()), startProgram(gl, glassShader(extra))];
+  let U = null, P = null, pageProgram = null, glassProgram = null, failed = false;
+  const ringTexture = createTexture(gl, 0), fixedTexture = createTexture(gl, 1), liveTexture = createTexture(gl, 2), pageTexture = createTexture(gl, 3);
+  const pageTarget = gl.createFramebuffer();
+  let pageSize = '';
+  function ready() {
+    if (U || failed) return !!U;
+    if (!builds.every(build => build.ready())) return false;
+    try {
+      ({ program: pageProgram, U: P } = builds[0].finish());
+      gl.uniform1i(P.uScrollTex, 0);
+      gl.uniform1i(P.uFixedTex, 1);
+      gl.uniform1i(P.uLiveTex, 2);
+      ({ program: glassProgram, U } = builds[1].finish());
+      gl.uniform1i(U.uPageTex, 3);
+    } catch (error) { failed = true; U = null; console.warn('Glass shader unavailable:', error); return false; }
+    return true;
+  }
   const snapshot = createSnapshot(() => { dirty = true; });
   const strip = document.createElement('canvas'), part = document.createElement('canvas'), fixedCanvas = document.createElement('canvas'), liveCanvas = document.createElement('canvas');
   // The page copies are drawn in memory, not on the GPU, and go up as raw pixels:
@@ -76,7 +100,12 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   let stale = [], clip = null;
   // The live layer (the rover) is copied at CSS resolution: it redraws every
   // frame, and a full Retina copy would cost several ms each time.
-  let fixedBlock = null, fixedDirty = true, liveDirty = true, liveOn = 0;
+  let fixedBlock = null, fixedDirty = true, liveDirty = true, liveOn = 0, fixedShown = false;
+  // The logo strip: its box (page device px, its own clip), whether its logos
+  // moved, the page under them (`under`, a region of the ring as painted without
+  // them), and this frame's logos (null until asked for). `fast` turns off for
+  // good if the strip holds anything that isn't a logo picture.
+  const band = { element: null, box: null, moved: false, under: null, ops: null, fast: true, checked: false };
 
   // Style changes (springs, fades) only repaint the rows of the elements that
   // changed; anything else (a project opening, an image loading) repaints it all.
@@ -95,6 +124,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     unhook();
     win = nextWin; doc = nextDoc; ignored = ignore; dirty = true;
     changed.clear(); animating.clear(); lastRects = new WeakMap(); fixedParents = new WeakMap();
+    Object.assign(band, { element: null, box: null, moved: false, under: null, ops: null, fast: true, checked: false });
     const proto = win.HTMLCanvasElement.prototype, getContext = proto.getContext;
     proto.getContext = function (type, options) {
       const context = getContext.call(this, type, /webgl/.test(type) && this !== canvas ? { ...options, preserveDrawingBuffer: true } : options);
@@ -128,6 +158,8 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
       for (const record of records) {
         const target = record.target.nodeType === 1 ? record.target : record.target.parentElement;
         if (!target || ignored.some(element => element === target || element.contains(target)) || skip?.(record)) continue;
+        // A logo coming into the strip is laid over like its moves (marquee()).
+        if (band.element && band.element !== target && band.element.contains(target)) { band.moved = true; continue; }
         if (record.type === 'attributes' && record.attributeName === 'style' && target !== doc.documentElement) changed.add(target);
         else dirty = true;
       }
@@ -160,22 +192,38 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     shapes = shapes.filter(item => item.appear > 0);
-    if (!doc?.body || !shapes.length) return;
+    if (!doc?.body || !shapes.length || !ready()) return;
     const cssH = canvas.height / dpr;
     offset = viewOffset; canvasTop = win.scrollY + offset;
 
-    // Copy only the area the glasses can show (device px), on a 64px grid so small moves reuse it.
+    // Copy only the area the glasses can show (device px), on a 64px grid so small
+    // moves reuse it. The shadow around a glass tints the page without bending it,
+    // so it needs no copy: only the glass's own box and how far its edge reaches.
     const snap = (v, up) => (up ? Math.ceil : Math.floor)(v / 64) * 64;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    const padOf = item => (40 + look.wall * 2 * Math.max(item.k, 1) + (look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0) + (look.shadow > 0 ? 110 : 0)) * dpr;
+    // The edge's reach grows with a big glass (the Glass Lab's), and a lens that
+    // shrinks the page (zoom below 1) looks a little past its own edge.
+    const reachOf = item => ((40 + look.wall * 2) * Math.max(item.k, 1) + Math.max(item.hw, item.hh) * Math.max(0, 1 / look.zoom - 1)
+      + (look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0)) * dpr;
+    const padOf = item => reachOf(item) + (look.shadow > 0 ? 110 * dpr : 0);
     for (const item of shapes) {
-      const pad = padOf(item);
+      const pad = reachOf(item);
       x0 = Math.min(x0, snap((item.x - item.hw) * dpr - pad)); y0 = Math.min(y0, snap((item.y - item.hh) * dpr - pad));
       x1 = Math.max(x1, snap((item.x + item.hw) * dpr + pad, true)); y1 = Math.max(y1, snap((item.y + item.hh) * dpr + pad, true));
     }
     x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(canvas.width, x1); y1 = Math.min(canvas.height, y1);
     if (x1 <= x0 || y1 <= y0) return;
-    if (dirty) { dirty = false; ring.v1 = ring.v0; fixedDirty = liveDirty = true; changed.clear(); stale = []; clip = null; }
+    if (dirty) {
+      dirty = false; ring.v1 = ring.v0; fixedDirty = liveDirty = true; changed.clear(); stale = []; clip = null;
+      band.element = band.fast ? doc.querySelector('[data-glass-marquee]') : null;
+      band.under = null; band.checked = false;
+    }
+    band.ops = null;
+    band.box = band.element?.isConnected ? boxOf(band.element) : null;
+    if (band.box && !band.checked) {
+      band.checked = true;
+      if (!logos()) { band.fast = false; band.element = band.box = null; dirty = true; }
+    }
     // A glass that moved sideways can reach columns the ring skipped: fill them in.
     if (clip && ring.v1 > ring.v0) {
       if (x0 < clip[0]) paintRows(ring.v0, ring.v1, x0, clip[0]);
@@ -184,14 +232,28 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     }
     updateRing(x0, y0, x1, y1);
     refreshChanged(x0, y0, x1, y1);
+    if (band.moved) { band.moved = false; marquee(x0, x1); }
     const block = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, offset };
     if (!fixedBlock || ['x', 'y', 'w', 'h', 'offset'].some(key => fixedBlock[key] !== block[key])) { fixedBlock = block; fixedDirty = liveDirty = true; }
-    // The fixed layer is copied where it sits in the view.
+    // The fixed layer (the header and footer) is copied where it sits in the view,
+    // only while the copy reaches them: elsewhere it would be empty, and copying it
+    // again each time the glass scrolled 64 px made scrolling stutter.
     const inView = { ...block, y: block.y + Math.round(offset * dpr) };
-    if (fixedDirty) {
-      fixedDirty = false;
+    const headerElement = doc.querySelector('.site-header'), footerElement = doc.querySelector('.site-footer');
+    const reach = (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22) * dpr;
+    const header = headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
+    const footerOpacity = footerElement ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
+    // The header's blur stretches down behind its open menu.
+    const headerBottom = Math.max(header?.bottom ?? -Infinity, headerElement?.querySelector('.header-blur')?.getBoundingClientRect().bottom ?? -Infinity);
+    const reaches = (top, bottom) => inView.y < bottom * dpr + reach && inView.y + inView.h > top * dpr - reach;
+    const bars = (header && reaches(header.top, headerBottom)) || (footer && footerOpacity > 0 && reaches(footer.top, footer.bottom));
+    if (fixedDirty && bars) {
+      fixedDirty = false; fixedShown = true;
       snapshot.fixed(fixedCanvas, doc, inView, dpr);
       fixedTexture.image(fixedCanvas, false);
+    } else if (!bars && fixedShown) {
+      fixedShown = false; fixedDirty = true;
+      fixedTexture.data(1, 1, new Uint8Array(4), true);
     }
     if (liveDirty) {
       liveDirty = false;
@@ -207,21 +269,39 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     const fill = /rgba?\([^)]*,\s*0\)$/.test(bodyStyle.backgroundColor) ? win.getComputedStyle(doc.documentElement).backgroundColor : bodyStyle.backgroundColor;
     const bg = (fill.match(/[\d.]+/g) ?? [249, 248, 246]).slice(0, 3).map(v => v / 255);
     const lum = bg[0] * .299 + bg[1] * .587 + bg[2] * .114;
+    // The page under the glasses, into pageTexture (pageShader()).
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, pageTexture.texture);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, pageTarget);
+    if (pageSize !== `${block.w}x${block.h}`) {
+      pageSize = `${block.w}x${block.h}`;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, block.w, block.h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pageTexture.texture, 0);
+    }
+    gl.viewport(0, 0, block.w, block.h);
+    gl.disable(gl.BLEND);
+    gl.useProgram(pageProgram);
+    gl.uniform2f(P.uRes, canvas.width, canvas.height);
+    gl.uniform4f(P.uBlock, block.x, block.y, block.w, block.h);
+    gl.uniform4f(P.uRing, ring.w, ring.rows, Math.round(canvasTop * dpr), 0);
+    gl.uniform4f(P.uFixed, fixedBlock.x, fixedBlock.y, fixedBlock.w, fixedBlock.h);
+    gl.uniform1f(P.uLiveOn, liveOn);
+    // The site's header and footer bars blur what's under them; the copy does too.
+    gl.uniform4f(P.uHeader, header ? (header.top - offset) * dpr : 0, header ? header.height * dpr : 0, reach, 0);
+    gl.uniform4f(P.uFooter, footer ? (footer.top - offset) * dpr : 0, footer ? (footer.bottom - offset) * dpr : 0, reach, footerOpacity);
+    gl.uniform3fv(P.uBg, bg);
+    gl.uniform1f(P.uDpr, dpr);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    gl.useProgram(glassProgram);
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
-    gl.uniform4f(U.uRing, ring.w, ring.rows, Math.round(canvasTop * dpr), 0);
-    gl.uniform4f(U.uFixed, fixedBlock.x, fixedBlock.y, fixedBlock.w, fixedBlock.h);
-    gl.uniform1f(U.uLiveOn, liveOn);
+    gl.uniform4f(U.uBlock, block.x, block.y, block.w, block.h);
     gl.uniform1f(U.uEdgePow, look.edgePower ?? 2.4);
     gl.uniform1f(U.uRimBand, look.rimBand ?? 0);
     gl.uniform1f(U.uBulgeRing, look.bulgeRing ? 1 : 0);
     gl.uniform1f(U.uBulgeSoft, look.bulgeSoft ?? 1);
-    // The site's header and footer bars blur what's under them; the copy does too.
-    const headerElement = doc.querySelector('.site-header'), footerElement = doc.querySelector('.site-footer');
-    const reach = (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22) * dpr;
-    const header = headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
-    const footerOpacity = footerElement ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
-    gl.uniform4f(U.uHeader, header ? (header.top - offset) * dpr : 0, header ? header.height * dpr : 0, reach, 0);
-    gl.uniform4f(U.uFooter, footer ? (footer.top - offset) * dpr : 0, footer ? (footer.bottom - offset) * dpr : 0, reach, footerOpacity);
     gl.uniform3fv(U.uBg, bg);
     gl.uniform1f(U.uDark, 1 - Math.min(Math.max((lum - .3) / .3, 0), 1));
     gl.uniform1f(U.uDpr, dpr);
@@ -321,6 +401,8 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     const grid = (v, up) => (up ? Math.ceil : Math.floor)(v / 64) * 64;
     for (const element of [...changed, ...animating]) {
       if (!element.isConnected) continue;
+      // The strip's logos are laid over the copy after this (marquee()).
+      if (band.element && band.element !== element && band.element.contains(element)) { band.moved = true; continue; }
       if (isFixed(element)) { fixedDirty = liveDirty = true; continue; }
       const r = element.getBoundingClientRect(), before = lastRects.get(element);
       const now = [r.top + sy, r.bottom + sy, r.left + sx, r.right + sx];
@@ -373,17 +455,78 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     const target = left > 0 || right < ring.w ? part : strip;
     for (let y = a; y < b;) {
       const offset = ((y % ring.rows) + ring.rows) % ring.rows, n = Math.min(b - y, ring.rows - offset);
-      snapshot.scroll(target, doc, { x: left, y, w: right - left, h: n }, dpr);
+      snapshot.scroll(target, doc, { x: left, y, w: right - left, h: n }, dpr, band.box ? band.element : null);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, ringTexture.texture);
       const pixels = target.getContext('2d').getImageData(0, 0, target.width, target.height).data;
+      if (band.box) underStrip(pixels, { x: left, y, w: target.width, h: target.height });
       gl.texSubImage2D(gl.TEXTURE_2D, 0, left, offset, target.width, target.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
       y += n;
     }
   }
 
+  // The logo strip. Its box: device columns of the view and rows of the page, the
+  // strip's own edges (it clips its logos).
+  function boxOf(element) {
+    const r = element.getBoundingClientRect(), sy = win.scrollY;
+    return [Math.floor(r.left * dpr), Math.floor((r.top + sy) * dpr), Math.ceil(r.right * dpr), Math.ceil((r.bottom + sy) * dpr)];
+  }
+  // This frame's logos (page-snapshot.js strip()), null if they can't be laid over.
+  function logos() {
+    const [x0, y0, x1, y1] = band.box;
+    return band.ops ??= snapshot.strip(doc, band.element, { x: x0 / dpr, y: y0 / dpr, w: (x1 - x0) / dpr, h: (y1 - y0) / dpr });
+  }
+  // A freshly painted block of the ring (straight RGBA, painted without the
+  // strip): keeps the part under the strip as the page under the logos, then lays
+  // the logos over it.
+  function underStrip(pixels, block) {
+    const box = band.box, u = band.under;
+    const x0 = Math.max(block.x, box[0]), x1 = Math.min(block.x + block.w, box[2]);
+    const y0 = Math.max(block.y, box[1]), y1 = Math.min(block.y + block.h, box[3]);
+    if (x1 <= x0 || y1 <= y0) return;
+    if (u) {
+      const ux0 = Math.max(x0, u.x), ux1 = Math.min(x1, u.x + u.w), uy0 = Math.max(y0, u.y), uy1 = Math.min(y1, u.y + u.h);
+      for (let y = uy0; y < uy1 && ux1 > ux0; y++) {
+        const from = ((y - block.y) * block.w + (ux0 - block.x)) * 4;
+        u.data.set(pixels.subarray(from, from + (ux1 - ux0) * 4), ((y - u.y) * u.w + (ux0 - u.x)) * 4);
+      }
+    }
+    const ops = logos();
+    if (ops) snapshot.overlay(pixels, block, ops, dpr, box);
+  }
+  // The strip's logos moved: lay them over the kept page under them, where the
+  // glasses can see (columns x0..x1) and the ring holds rows, and upload just that.
+  // The first time, or once that area changes, it's painted from the page.
+  function marquee(x0, x1) {
+    const box = band.box;
+    if (!box) return;
+    const x = Math.max(box[0], x0, 0), right = Math.min(box[2], x1, ring.w), y = Math.max(box[1], ring.v0), bottom = Math.min(box[3], ring.v1);
+    if (right <= x || bottom <= y) return;
+    const u = band.under, w = right - x, h = bottom - y;
+    if (!u || u.x !== x || u.y !== y || u.w !== w || u.h !== h) {
+      band.under = { x, y, w, h, data: new Uint8ClampedArray(w * h * 4) };
+      paintRows(y, bottom, x, right);
+      return;
+    }
+    const ops = logos();
+    if (!ops) { band.fast = false; dirty = true; return; }
+    const pixels = u.data.slice();
+    snapshot.overlay(pixels, u, ops, dpr, box);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ringTexture.texture);
+    for (let row = 0; row < h;) {
+      const offset = (((y + row) % ring.rows) + ring.rows) % ring.rows, n = Math.min(h - row, ring.rows - offset);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, x, offset, w, n, gl.RGBA, gl.UNSIGNED_BYTE, pixels.subarray(row * w * 4, (row + n) * w * 4));
+      row += n;
+    }
+  }
+
   return {
-    attach, resize, draw,
+    attach, resize, draw, ready,
+    // Whether the next frame has anything new to copy (glass.js draws less often
+    // when it hasn't and nothing moves).
+    busy: () => dirty || changed.size > 0 || animating.size > 0 || stale.length > 0 || band.moved || (liveDirty && liveOn > 0),
+    failed: () => failed,
     // Something changed that the page itself doesn't report (its colors, say): copy it all again.
     invalidate() { dirty = true; },
     detach() { unhook(); observer?.disconnect(); observer = null; doc = win = null; }

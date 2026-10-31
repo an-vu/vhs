@@ -8,18 +8,13 @@
 //   rainbow    first lines of rainbow(pos, spread) (other split styles)
 //   outside    more see-through tints outside the glass (e.g. echoes)
 //   modes      other edge-color modes, as "if (...) { ... } else"
-// Shader lengths are device px.
+// Shader lengths are device px. pageShader() draws the page it bends.
 export function glassShader(extra = {}) {
   return `
 uniform float uVivid;
-uniform sampler2D uScrollTex, uFixedTex, uLiveTex;
-// Live canvas (the rover): 0 none, 1 behind the page's text, 2 in front of everything.
-uniform float uLiveOn;
+uniform sampler2D uPageTex;
 uniform vec2 uRes, uC, uHalf;
-// Ring (texture width, rows, page scroll), the fixed layer's block (x, y from
-// the top, width, height), the site's header bar (top, height, blur reach) and
-// footer bar (top, bottom, reach, opacity).
-uniform vec4 uRing, uFixed, uHeader, uFooter;
+uniform vec4 uBlock;
 uniform vec3 uBg;
 uniform float uDpr, uTime, uDark, uAppear;
 uniform float uRadius, uSmooth, uBezel, uRefr, uZoom, uWarp, uChroma, uFold, uProfile, uRimGlow;
@@ -31,53 +26,11 @@ uniform float uEdgePow, uRimBand, uBulgeRing;
 uniform float uScale;
 uniform float uCorners, uFocus, uQuiet, uSway, uAngle;
 
-vec4 liveAt(vec2 px) {
-  vec2 uv = (vec2(px.x, uRes.y - px.y) - uFixed.xy) / uFixed.zw;
-  return uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0 ? vec4(0.0) : texture2D(uLiveTex, uv);
-}
-// The page under the header and footer glass: its color, the rover when it sits
-// behind the text, then the see-through scrolling layer.
-vec3 base(vec2 px) {
-  vec3 c = uBg;
-  if (uLiveOn > 0.5 && uLiveOn < 1.5) { vec4 live = liveAt(px); c = mix(c, live.rgb, live.a); }
-  float row = mod(uRes.y - px.y + uRing.z, uRing.y);
-  vec4 page = texture2D(uScrollTex, vec2(px.x / uRing.x, row / uRing.y));
-  return mix(c, page.rgb, page.a);
-}
+// The page as the glass sees it, drawn once a frame for the area the glasses
+// can show (pageShader() below), so the many samples the glass takes per pixel
+// are one lookup each. uBlock: that area (x, y from the top, width, height).
+vec3 page(vec2 px) { return texture2D(uPageTex, vec2((px.x - uBlock.x) / uBlock.z, (uRes.y - px.y - uBlock.y) / uBlock.w)).rgb; }
 float grain() { return 6.2831 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))); }
-vec3 blurred(vec2 px, float r) {
-  vec3 acc = vec3(0.0); float wsum = 0.0, spin = grain();
-  for (int i = 0; i < 16; i++) {
-    float f = (float(i) + 0.5) / 16.0, a = spin + float(i) * 2.39996, w = exp(-2.0 * f);
-    acc += base(px + vec2(cos(a), sin(a)) * r * 2.0 * sqrt(f)) * w; wsum += w;
-  }
-  return acc / wsum;
-}
-// The site's bar glass (site.css): a 2px blur with a paper tint that fades out
-// over the blur reach, under 5px and 9px blurs on shorter fades. t runs from the
-// bar's outer edge inward; returns the blur radius and the tint.
-vec2 siteBlur(float t, float body, float reach) {
-  float f = t / (body + reach), u = clamp((t - body) / reach, 0.0, 1.0) * 4.0;
-  float edge = u < 1.0 ? mix(1.0, 0.85, u) : u < 2.0 ? mix(0.85, 0.5, u - 1.0) : u < 3.0 ? mix(0.5, 0.15, u - 2.0) : mix(0.15, 0.0, u - 3.0);
-  float m2 = 1.0 - clamp((f - 0.55) / 0.4, 0.0, 1.0), m3 = 1.0 - clamp((f - 0.4) / 0.4, 0.0, 1.0);
-  return vec2(sqrt(4.0 * edge + 25.0 * m2 + 81.0 * m3) * uDpr, mix(0.55, 0.3, clamp((f - 0.55) / 0.45, 0.0, 1.0)) * edge);
-}
-vec3 page(vec2 px) {
-  float y = uRes.y - px.y;
-  vec2 b = vec2(0.0);
-  float th = y - uHeader.x;
-  if (uHeader.y > 0.0 && th >= 0.0 && th < uHeader.y + uHeader.z) b = siteBlur(th, uHeader.y, uHeader.z);
-  float tf = uFooter.y - y;
-  if (uFooter.w > 0.0 && tf >= 0.0 && tf < uFooter.y - uFooter.x + uFooter.z) b = max(b, siteBlur(tf, uFooter.y - uFooter.x, uFooter.z) * uFooter.w);
-  vec3 c = b.x > 0.5 ? blurred(px, b.x) : base(px);
-  c = mix(c, uBg, b.y);
-  vec2 uv = (vec2(px.x, uRes.y - px.y) - uFixed.xy) / uFixed.zw;
-  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return c;
-  vec4 top = texture2D(uFixedTex, uv);
-  c = mix(c, top.rgb, top.a);
-  if (uLiveOn > 1.5) { vec4 live = texture2D(uLiveTex, uv); c = mix(c, live.rgb, live.a); }
-  return c;
-}
 ${extra.functions ?? ''}
 // The rim's rainbow hue around the glass.
 ${extra.sheen ?? `vec3 sheenHue(float x) { return 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + x)); }`}
@@ -310,5 +263,72 @@ void main() {
 
   float cover = clamp(0.5 - d, 0.0, 1.0) * uAppear;
   gl_FragColor = vec4(g * cover, cover) + outside * (1.0 - cover);
+}`;
+}
+
+// The page under the glasses, for the area they can show (uBlock), one pixel per
+// pixel, into a texture the glass reads (glass-renderer.js): the copy of the
+// page, the site's header and footer glass over it, then what sits in those bars.
+export function pageShader() {
+  return `
+uniform sampler2D uScrollTex, uFixedTex, uLiveTex;
+// Live canvas (the rover): 0 none, 1 behind the page's text, 2 in front of everything.
+uniform float uLiveOn;
+uniform vec2 uRes;
+// Ring (texture width, rows, page scroll), the fixed layer's block (x, y from
+// the top, width, height), the site's header bar (top, height, blur reach) and
+// footer bar (top, bottom, reach, opacity), and the area drawn.
+uniform vec4 uRing, uFixed, uHeader, uFooter, uBlock;
+uniform vec3 uBg;
+uniform float uDpr;
+float grain() { return 6.2831 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))); }
+vec4 liveAt(vec2 px) {
+  vec2 uv = (vec2(px.x, uRes.y - px.y) - uFixed.xy) / uFixed.zw;
+  return uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0 ? vec4(0.0) : texture2D(uLiveTex, uv);
+}
+// The page under the header and footer glass: its color, the rover when it sits
+// behind the text, then the see-through scrolling layer.
+vec3 base(vec2 px) {
+  vec3 c = uBg;
+  if (uLiveOn > 0.5 && uLiveOn < 1.5) { vec4 live = liveAt(px); c = mix(c, live.rgb, live.a); }
+  float row = mod(uRes.y - px.y + uRing.z, uRing.y);
+  vec4 page = texture2D(uScrollTex, vec2(px.x / uRing.x, row / uRing.y));
+  return mix(c, page.rgb, page.a);
+}
+vec3 blurred(vec2 px, float r) {
+  vec3 acc = vec3(0.0); float wsum = 0.0, spin = grain();
+  for (int i = 0; i < 16; i++) {
+    float f = (float(i) + 0.5) / 16.0, a = spin + float(i) * 2.39996, w = exp(-2.0 * f);
+    acc += base(px + vec2(cos(a), sin(a)) * r * 2.0 * sqrt(f)) * w; wsum += w;
+  }
+  return acc / wsum;
+}
+// The site's bar glass (site.css): a 2px blur with a paper tint that fades out
+// over the blur reach, under 5px and 9px blurs on shorter fades. t runs from the
+// bar's outer edge inward; returns the blur radius and the tint.
+vec2 siteBlur(float t, float body, float reach) {
+  float f = t / (body + reach), u = clamp((t - body) / reach, 0.0, 1.0) * 4.0;
+  float edge = u < 1.0 ? mix(1.0, 0.85, u) : u < 2.0 ? mix(0.85, 0.5, u - 1.0) : u < 3.0 ? mix(0.5, 0.15, u - 2.0) : mix(0.15, 0.0, u - 3.0);
+  float m2 = 1.0 - clamp((f - 0.55) / 0.4, 0.0, 1.0), m3 = 1.0 - clamp((f - 0.4) / 0.4, 0.0, 1.0);
+  return vec2(sqrt(4.0 * edge + 25.0 * m2 + 81.0 * m3) * uDpr, mix(0.55, 0.3, clamp((f - 0.55) / 0.45, 0.0, 1.0)) * edge);
+}
+vec3 page(vec2 px) {
+  float y = uRes.y - px.y;
+  vec2 b = vec2(0.0);
+  float th = y - uHeader.x;
+  if (uHeader.y > 0.0 && th >= 0.0 && th < uHeader.y + uHeader.z) b = siteBlur(th, uHeader.y, uHeader.z);
+  float tf = uFooter.y - y;
+  if (uFooter.w > 0.0 && tf >= 0.0 && tf < uFooter.y - uFooter.x + uFooter.z) b = max(b, siteBlur(tf, uFooter.y - uFooter.x, uFooter.z) * uFooter.w);
+  vec3 c = b.x > 0.5 ? blurred(px, b.x) : base(px);
+  c = mix(c, uBg, b.y);
+  vec2 uv = (vec2(px.x, uRes.y - px.y) - uFixed.xy) / uFixed.zw;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return c;
+  vec4 top = texture2D(uFixedTex, uv);
+  c = mix(c, top.rgb, top.a);
+  if (uLiveOn > 1.5) { vec4 live = texture2D(uLiveTex, uv); c = mix(c, live.rgb, live.a); }
+  return c;
+}
+void main() {
+  gl_FragColor = vec4(page(vec2(uBlock.x + gl_FragCoord.x, uRes.y - uBlock.y - gl_FragCoord.y)), 1.0);
 }`;
 }

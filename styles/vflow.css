@@ -74,7 +74,14 @@
   pointer-events: none
 }
 
-/* Keep blur out of the moving stack; one image surface per card. */
+/* Keep blur out of the moving stack; one image surface per card. Each picture is
+   its own layer in a nearby gallery, so the graphics chip blurs it: painted, the
+   blur was redone on the processor over the whole photo whenever the card
+   repainted (0.25 s freezes on a 2016 MacBook Pro, Oct 30). Same blur either way. */
+.vflow.is-nearby .vflow-card img {
+  will-change: filter;
+}
+
 .vflow:not(.is-moving) .vflow-card[data-depth="near"] img {
   filter: blur(1.2px)
 }

@@ -117,7 +117,10 @@ export function createSnapshot(onIconLoad) {
     }
   }
 
-  function collect(doc, areas) {
+  // `skip`: an element left out with everything in it. `root`: copy only this
+  // element and what's in it, as it shows inside the page (its parents' opacity
+  // and stacking count); null if it sits in a fixed bar or a lens.
+  function collect(doc, areas, { skip = null, root = null } = {}) {
     const win = doc.defaultView, ops = [], scrollY = win.scrollY;
     const range = doc.createRange();
     // The logo strip's layers keep to their side of the middle circle
@@ -150,7 +153,7 @@ export function createSnapshot(onIconLoad) {
     }
     function paintElement(element, opacity, z, tilt) {
       // The glass's own canvas (and anything else marked) stays out of the copy.
-      if (element.hasAttribute('data-glass-ignore')) return;
+      if (element.hasAttribute('data-glass-ignore') || element === skip) return;
       const style = win.getComputedStyle(element);
       if (style.display === 'none' || style.visibility === 'hidden') return;
       // Text kept for screen readers only (clipped away, or cut to a 1 px box) isn't on screen.
@@ -202,7 +205,7 @@ export function createSnapshot(onIconLoad) {
       }
       if (tag.toLowerCase() === 'svg') {
         const image = rect.width && hits(rect) && icon(element);
-        if (image) add({ kind: 'image', source: image, rect, radius: 0, border: null, fit: 'fill', tint: element.hasAttribute('data-color') ? null : style.color });
+        if (image) add({ kind: 'image', icon: true, source: image, rect, radius: 0, border: null, fit: 'fill', tint: element.hasAttribute('data-color') ? null : style.color });
         return;
       }
       if (element !== doc.body && hits(rect) && (visibleColor(style.backgroundColor) || border)) {
@@ -230,7 +233,21 @@ export function createSnapshot(onIconLoad) {
         }
       }
     }
-    visit(doc.body, 1, 0);
+    if (root) {
+      let opacity = 1, z = 0;
+      const parents = [];
+      for (let node = root.parentElement; node && node !== doc.documentElement; node = node.parentElement) parents.unshift(node);
+      for (const node of parents) {
+        const style = win.getComputedStyle(node);
+        if (style.display === 'none' || style.visibility === 'hidden') return [];
+        if (style.position === 'fixed' || style.position === 'sticky' || node.dataset.glassCircle || quadOf(node, style)) return null;
+        opacity *= parseFloat(style.opacity);
+        const faded = style.filter.match(/opacity\(([\d.]+)(%?)\)/);
+        if (faded) opacity *= faded[2] ? faded[1] / 100 : +faded[1];
+        if (style.position !== 'static' && style.zIndex !== 'auto') z = parseInt(style.zIndex, 10) || 0;
+      }
+      visit(root, opacity, z);
+    } else visit(doc.body, 1, 0);
     // Later stacking layers (the rover sits above the text) paint last.
     ops.sort((a, b) => a.z - b.z);
     return ops;
@@ -318,14 +335,117 @@ export function createSnapshot(onIconLoad) {
     }
   }
 
+  // A logo strip's logos are laid over a copy of the page under them in memory
+  // (glass-renderer.js), not drawn on a canvas and read back. Each logo is drawn
+  // once at its size on the page, premultiplied, and kept (a few sizes per logo).
+  const sprites = new WeakMap();
+  function sprite(op, dpr) {
+    const w = op.rect.width * dpr, h = op.rect.height * dpr, key = `${w.toFixed(2)}x${h.toFixed(2)}`;
+    let sizes = sprites.get(op.source);
+    if (!sizes) sprites.set(op.source, sizes = new Map());
+    let entry = sizes.get(key);
+    if (!entry) {
+      // A pixel of border all round, so the edges blend into nothing.
+      const W = Math.ceil(w) + 2, H = Math.ceil(h) + 2, canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(op.source, 1, 1, w, h);
+      const data = context.getImageData(0, 0, W, H).data;
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3] / 255;
+        data[i] *= a; data[i + 1] *= a; data[i + 2] *= a;
+      }
+      if (sizes.size > 6) sizes.delete(sizes.keys().next().value);
+      sizes.set(key, entry = { data, W, H });
+    }
+    return entry;
+  }
+  // A computed color as [r, g, b, a] (0-255, alpha 0-1): rgb(), rgba() and
+  // color(srgb ...), which is how browsers give a color-mix(); anything else
+  // through a canvas, once.
+  const colors = new Map(), probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  function rgba(value) {
+    let color = colors.get(value);
+    if (color) return color;
+    const n = value.match(/-?[\d.]+%?/g)?.map(v => v.endsWith('%') ? parseFloat(v) / 100 : parseFloat(v)) ?? [];
+    if (/^rgba?\(/.test(value) && n.length >= 3) color = [n[0], n[1], n[2], n[3] ?? 1];
+    else if (/^color\(srgb\s/.test(value) && n.length >= 3) color = [n[0] * 255, n[1] * 255, n[2] * 255, n[3] ?? 1];
+    else {
+      probe.clearRect(0, 0, 1, 1); probe.fillStyle = value; probe.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+      color = [r, g, b, a / 255];
+    }
+    if (colors.size > 256) colors.clear();
+    colors.set(value, color);
+    return color;
+  }
+  // Lays `ops` (from strip()) over `pixels`, a copy of device rows region.y.. and
+  // columns region.x.. (straight RGBA, as a canvas gives them), only inside `clip`
+  // ([x0, y0, x1, y1], the strip's own box). Blends as the canvas does: the logo
+  // shifted by its fraction of a pixel, faded by its opacity, cut to its side of the
+  // lens circle with a pixel of soft edge.
+  function overlay(pixels, region, ops, dpr, clip) {
+    const { x: rx, y: ry, w: rw } = region;
+    for (const op of ops) {
+      const sx = op.rect.left * dpr, sy = op.rect.top * dpr;
+      const X0 = Math.max(rx, clip[0], Math.floor(sx) - 1), X1 = Math.min(rx + rw, clip[2], Math.ceil(sx + op.rect.width * dpr) + 1);
+      const Y0 = Math.max(ry, clip[1], Math.floor(sy) - 1), Y1 = Math.min(ry + region.h, clip[3], Math.ceil(sy + op.rect.height * dpr) + 1);
+      if (X1 <= X0 || Y1 <= Y0 || op.opacity < .005) continue;
+      const { data, W, H } = sprite(op, dpr), tint = op.tint ? rgba(op.tint) : null;
+      const alpha = op.opacity * (tint ? tint[3] : 1);
+      const circle = op.circle && { x: op.circle.x * dpr, y: op.circle.y * dpr, r: op.circle.r * dpr, inside: op.circle.inside };
+      // The sprite's pixel i covers device x sx - 1 + i, its center at sx - .5 + i:
+      // device pixel X's center falls at sprite pixel X - sx + 1.
+      for (let Y = Y0; Y < Y1; Y++) {
+        const fy = Y - sy + 1, j0 = Math.floor(fy), ty = fy - j0;
+        for (let X = X0; X < X1; X++) {
+          let cover = alpha;
+          if (circle) {
+            const inside = Math.min(Math.max(circle.r - Math.hypot(X + .5 - circle.x, Y + .5 - circle.y) + .5, 0), 1);
+            cover *= circle.inside ? inside : 1 - inside;
+            if (cover <= 0) continue;
+          }
+          const fx = X - sx + 1, i0 = Math.floor(fx), tx = fx - i0;
+          let r = 0, g = 0, b = 0, a = 0;
+          for (let k = 0; k < 4; k++) {
+            const i = i0 + (k & 1), j = j0 + (k >> 1);
+            if (i < 0 || j < 0 || i >= W || j >= H) continue;
+            const w = ((k & 1) ? tx : 1 - tx) * ((k >> 1) ? ty : 1 - ty), p = (j * W + i) * 4;
+            r += data[p] * w; g += data[p + 1] * w; b += data[p + 2] * w; a += data[p + 3] * w;
+          }
+          if (a <= 0) continue;
+          // A tinted logo is white in its sprite: its coverage takes the tint's color.
+          if (tint) { r = tint[0] * a / 255; g = tint[1] * a / 255; b = tint[2] * a / 255; }
+          r *= cover; g *= cover; b *= cover; a *= cover;
+          const p = ((Y - ry) * rw + (X - rx)) * 4, da = pixels[p + 3], keep = 1 - a / 255;
+          const outA = a + da * keep;
+          if (outA <= 0) continue;
+          const dk = da / 255 * keep;
+          pixels[p] = (r + pixels[p] * dk) * 255 / outA;
+          pixels[p + 1] = (g + pixels[p + 1] * dk) * 255 / outA;
+          pixels[p + 2] = (b + pixels[p + 2] * dk) * 255 / outA;
+          pixels[p + 3] = outA;
+        }
+      }
+    }
+  }
+
   return {
     // Paints the page's scrolling layer for device rows y..y+h (page coordinates).
     // It's see-through: the shader lays it over the page color, with the rover
-    // underneath when the page puts the rover behind the text.
-    scroll(canvas, doc, block, dpr) {
-      const ops = collect(doc, { scroll: { x: block.x / dpr, y: block.y / dpr, w: block.w / dpr, h: block.h / dpr }, fixed: null });
+    // underneath when the page puts the rover behind the text. `skip` leaves an
+    // element out (the logo strip, laid over later).
+    scroll(canvas, doc, block, dpr, skip = null) {
+      const ops = collect(doc, { scroll: { x: block.x / dpr, y: block.y / dpr, w: block.w / dpr, h: block.h / dpr }, fixed: null }, { skip });
       paint(canvas, ops.filter(op => op.layer === 'scroll'), block, dpr, null);
     },
+    // A logo strip's logos in `area` (page CSS px), for overlay(); null if the
+    // strip holds anything but logo pictures, or sits somewhere this can't copy.
+    strip(doc, element, area) {
+      const ops = collect(doc, { scroll: area, fixed: null }, { root: element });
+      return ops && ops.every(op => op.icon && op.layer === 'scroll') ? ops : null;
+    },
+    overlay,
     // Paints the fixed layer (header, footer) or its live canvases for a viewport
     // block, see-through elsewhere. Returns null if nothing was drawn, otherwise
     // the highest stacking order drawn (the rover's z-index).

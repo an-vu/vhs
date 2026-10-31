@@ -22,6 +22,9 @@ import { opus } from './opus.js';
 // a glass of another size scales them. Without WebGL it returns null and the
 // page stays as it is. It only runs while a glass is on screen, and does
 // nothing inside a frame marked data-glass-host (a tool drawing its own glass).
+// The glass's shader builds in the background (glass-renderer.js): entrances wait
+// for it, and if it can't build, each element gets a last 'glassgrow' (grow 1,
+// done) and the glass goes away, as if there were no WebGL.
 export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4, reference = 200 } = {}) {
   // A page shown inside a glass tool (the Glass Lab's frame, data-glass-host)
   // already has glass drawn over it.
@@ -57,7 +60,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     start();
   }
 
-  function shapeOf(target) {
+  function shapeOf(target, ready) {
     const box = target.getBoundingClientRect();
     if (!box.width || !box.height) return null;
     const x = box.left + box.width / 2, y = box.top + box.height / 2;
@@ -71,7 +74,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
       smooth = 2;
     }
     // Fully in view (or filling it, for a glass taller than the view).
-    if (!starts.has(target) && Math.min(box.bottom, innerHeight) - Math.max(box.top, 0) >= Math.min(box.height, innerHeight) - 1) {
+    if (ready && !starts.has(target) && Math.min(box.bottom, innerHeight) - Math.max(box.top, 0) >= Math.min(box.height, innerHeight) - 1) {
       starts.set(target, clock + (parseFloat(target.dataset.glassDelay) || 0));
     }
     const t = starts.has(target) ? clock - starts.get(target) : -1;
@@ -94,23 +97,50 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     renderer.resize(width, height, Math.min(devicePixelRatio || 1, 2));
     start();
   }
+  // Every frame while anything moves. Once nothing does but the glass's slow
+  // corner sway (the page still, the glasses grown in, nothing new to copy), at
+  // most IDLE_RATE times a second: a 120 Hz screen drew the same glass 120 times.
+  const IDLE_RATE = 30;
+  let drawn = 0, lastKey = '';
   function frame(now) {
     raf = 0;
     const dt = last ? Math.min((now - last) / 1000, .05) : 1 / 60;
     last = now; clock += dt;
+    if (renderer.failed()) { fail(); return; }
     if (innerHeight !== height || document.documentElement.clientWidth !== width) resize();
-    const shapes = targets.filter(target => onScreen.has(target)).map(shapeOf).filter(Boolean);
+    const ready = renderer.ready();
+    const shapes = targets.filter(target => onScreen.has(target)).map(target => shapeOf(target, ready)).filter(Boolean);
     // Kept inside the page (past its ends while it bounces), so it never makes the page longer.
     const end = document.body.getBoundingClientRect().bottom + scrollY;
     const top = Math.min(Math.max(scrollY, 0), Math.max(0, end - height)), offset = top - scrollY;
-    canvas.style.transform = `translate(${scrollX}px, ${top}px)`;
-    renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), look, clock, offset);
+    const key = `${scrollX} ${top} ${shapes.map(shape => [shape.x, shape.y, shape.hw, shape.hh, shape.appear, shape.scale, shape.burst].map(v => v.toFixed(2)).join()).join(' ')}`;
+    const still = ready && key === lastKey && shapes.every(shape => shape.appear === 1 && shape.scale === 1 && !shape.burst) && !renderer.busy();
+    lastKey = key;
+    if (!still || now - drawn >= 1000 / IDLE_RATE - 2) {
+      drawn = now;
+      canvas.style.transform = `translate(${scrollX}px, ${top}px)`;
+      renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), look, clock, offset);
+    }
     start();
+  }
+  function fail() {
+    for (const target of targets) {
+      if (!grown.has(target)) target.dispatchEvent(new CustomEvent('glassgrow', { detail: { grow: 1, time: Infinity, done: true } }));
+    }
+    destroy();
   }
   function start() {
     if (raf) return;
     if (!onScreen.size || document.hidden) { last = 0; return; }
     raf = requestAnimationFrame(frame);
+  }
+  function destroy() {
+    cancelAnimationFrame(raf); raf = 0;
+    watcher.disconnect();
+    removeEventListener('resize', resize);
+    document.removeEventListener('visibilitychange', start);
+    renderer.detach();
+    canvas.remove();
   }
   addEventListener('resize', resize);
   document.addEventListener('visibilitychange', start);
@@ -120,13 +150,6 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   return {
     // Looks for [data-glass] elements again (after adding or removing some).
     refresh: scan,
-    destroy() {
-      cancelAnimationFrame(raf); raf = 0;
-      watcher.disconnect();
-      removeEventListener('resize', resize);
-      document.removeEventListener('visibilitychange', start);
-      renderer.detach();
-      canvas.remove();
-    }
+    destroy
   };
 }
