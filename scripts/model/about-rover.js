@@ -29,6 +29,10 @@ const animationSpeed = 1.3;
 // long (seconds) before playing out again.
 const restartHold = 1;
 const worldUp = new THREE.Vector3(0, 1, 0);
+// Half the rover's box (a little roomier, for the arm as it moves), for telling
+// whether any of it is on screen (onScreen()).
+const corner = new THREE.Vector3();
+let halfSize = null;
 const frameClock = createFrameClock();
 let spectralPreparation, preparingSpectral;
 const meshes = [];
@@ -89,6 +93,8 @@ function draw(now) {
   frame = 0;
   if (disposed || document.hidden || !lines || !entranceStarted) return;
   const held = scrolling && !roverView.expanded && !roverView.transitioning;
+  // Scrolled out of view, it stops; scrolling back (the scroll's end wakes it), it carries on.
+  if (!roverView.expanded && !roverView.transitioning && !onScreen()) { last = null; return; }
   if (held && !(spectral && !reduced.matches && revealedAt === null)) { last = null; return; }
   if (last === null) frameClock.reset();
   const dt = frameClock.tick(now, reduced.matches);
@@ -148,6 +154,17 @@ function draw(now) {
   const interacting = Math.abs(state.velocityX) + Math.abs(state.velocityY) > .0001 || Math.abs(zoom - state.targetCameraZ) > .001;
   if (!reduced.matches || interacting || roverView.transitioning) wake();
   else last = null;
+}
+// Whether any of the rover shows: its box as last drawn, against the view.
+function onScreen() {
+  if (!halfSize) return true;
+  const box = host.getBoundingClientRect();
+  let low = Infinity, high = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    corner.set(i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1).multiply(halfSize).applyMatrix4(rotation.matrixWorld).project(camera);
+    low = Math.min(low, corner.y); high = Math.max(high, corner.y);
+  }
+  return box.top + (1 - low) / 2 * box.height > 0 && box.top + (1 - high) / 2 * box.height < innerHeight;
 }
 function finishReveal() {
   revealedAt = entranceElapsed;
@@ -248,6 +265,7 @@ async function start() {
     const scale = 3.5 * .8 / extent;
     wrapper.scale.setScalar(scale);
     wrapper.position.copy(bounds.getCenter(new THREE.Vector3())).multiplyScalar(-scale);
+    halfSize = size.clone().multiplyScalar(scale / 2 * 1.15);
     scene.updateMatrixWorld(true);
     camera.position.copy(view); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
     lines = createModelLines(meshes, scene, entrance, { followTheme: true });
