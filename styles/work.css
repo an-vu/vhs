@@ -275,52 +275,6 @@
   font-weight: normal;
   text-align: center;
 }
-/* Under the strip, set like its label: shown once the glass draws lighter on a
-   device that can't keep up (work.js, scripts/glass). Pointing at it or tapping
-   it fades in why, under it, with a switch to full detail and back (.is-off). */
-.quality-note {
-  max-width: 46ch;
-  margin: 18px auto 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-  text-align: center;
-}
-.quality-note[hidden] { display: none }
-.quality-note.is-off [data-on],
-.quality-note:not(.is-off) [data-off] { display: none }
-.quality-note button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  transition: color .2s ease;
-}
-.quality-note-why {
-  display: block;
-  margin-top: 4px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity .2s ease, visibility 0s .2s;
-}
-.quality-note-switch { display: block; margin: 4px auto 0 }
-.quality-note-toggle[aria-expanded="true"],
-.quality-note .quality-note-switch { color: var(--fg) }
-.quality-note-toggle[aria-expanded="true"] + .quality-note-why {
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 0s;
-}
-@media (hover: hover) {
-  .quality-note:hover .quality-note-toggle { color: var(--fg) }
-  .quality-note:hover .quality-note-why { opacity: 1; visibility: visible; transition-delay: 0s }
-  .quality-note .quality-note-switch:hover { color: var(--muted) }
-}
-@media (prefers-reduced-motion: reduce) {
-  .quality-note button, .quality-note-why { transition: none }
-}
 /* The strip's glass sits on the strip's middle, below the label. */
 .work-clients .glass-spot { top: calc(100% - var(--row-mid)) }
 /* The header stays over the glass (its layer is 4, scripts/glass), so a scrolling

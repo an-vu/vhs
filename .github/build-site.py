@@ -17,7 +17,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 DOMAIN = (ROOT / "CNAME").read_text().strip()  # Full addresses on this domain are local files too.
-PAGES = {"index.html", "about.html", "work.html", "faq.html", "legal.html", "404.html"}
+PAGES = {"index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html", "404.html"}
 SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt", "agents.md"}
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".md", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
@@ -160,8 +160,144 @@ def stamp(files):
     return output
 
 
+# A plain-text copy of each page for AI tools and readers (/about.md; Home is
+# /index.md), made from the page itself at publish time so it never drifts. Its
+# main content as markdown, under the page's title and Google text.
+MARKDOWN = ["index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html"]
+SKIPPED = {"script", "style", "svg", "button", "template", "figure", "picture", "img", "noscript"}
+VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+
+class Markdown(HTMLParser):
+    """Turns a page into markdown: <title>, the description, and what's in <main>.
+
+    Left out: anything hidden from people (aria-hidden, hidden, except Work's project
+    panels, which only wait for a click), pictures, buttons and placeholders.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.title, self.description, self.canonical = "", "", ""
+        self.in_title = False
+        self.stack, self.skip, self.main = [], 0, 0
+        self.blocks, self.line, self.link, self.depth = [], "", None, 0
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "meta" and a.get("name") == "description":
+            self.description = a.get("content", "")
+        if tag == "link" and a.get("rel") == "canonical":
+            self.canonical = a.get("href", "")
+        if tag == "title":
+            self.in_title = True
+        if tag in VOID:
+            return
+        hidden = (a.get("aria-hidden") == "true" or ("hidden" in a and a.get("role") != "tabpanel")
+                  or tag in SKIPPED or "project-image-placeholder" in (a.get("class") or ""))
+        # A section's own list is its rows (Legal, FAQ): their titles become headings.
+        rows = tag in {"ul", "ol"} and bool(self.stack) and self.stack[-1][0] == "section"
+        self.stack.append((tag, hidden, rows))
+        if hidden:
+            self.skip += 1
+        if tag == "main":
+            self.main += 1
+        if not self.main or self.skip:
+            return
+        if tag in {"p", "h1", "h2", "h3", "h4", "summary", "li", "figcaption"}:
+            self.flush()
+        if tag in {"ul", "ol"} and not rows:
+            self.flush()
+            self.depth += 1
+        if tag == "a":
+            self.link = a.get("href", "")
+            self.line += "["
+        if tag in {"strong", "b"}:
+            self.line += "**"
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.in_title = False
+        if tag in VOID or not self.stack:
+            return
+        while self.stack:
+            open_tag, hidden, rows = self.stack.pop()
+            inside = self.main and not self.skip
+            if hidden:
+                self.skip -= 1
+            if open_tag == "main":
+                self.flush()
+                self.main -= 1
+            if inside and not rows:
+                self.close(open_tag)
+            if open_tag == tag:
+                break
+
+    def close(self, tag):
+        if tag == "a" and self.link is not None:
+            href = self.link
+            if href.startswith("/"):
+                href = f"https://{DOMAIN}{href}"
+            self.line += f"]({href})"
+            self.link = None
+            # A menu's links (Home's, About's) become a list.
+            if any(entry[0] == "nav" for entry in self.stack):
+                self.flush("- ", list_item=True)
+        elif tag in {"strong", "b"}:
+            self.line += "**"
+        elif tag in {"h1", "h2", "h3", "h4", "summary"}:
+            level = {"h1": 1, "h2": 2, "h3": 3, "h4": 4, "summary": 3}[tag]
+            # A heading inside an open row (Legal's) sits under the row's own.
+            if tag in {"h3", "h4"} and any(entry[0] == "details" for entry in self.stack):
+                level += 1
+            self.flush("#" * level + " ")
+        elif tag == "li":
+            self.flush("  " * (self.depth - 1) + "- ", list_item=True)
+        elif tag in {"ul", "ol"}:
+            self.flush()
+            self.depth -= 1
+            self.blocks.append("")
+        elif tag == "nav":
+            self.flush()
+            self.blocks.append("")
+        elif tag in {"p", "figcaption", "div", "section", "details"}:
+            self.flush()
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title += data
+        elif self.main and not self.skip:
+            self.line += data
+
+    def flush(self, prefix="", list_item=False):
+        text = " ".join(self.line.split()).replace("[ ", "[").replace(" ]", "]")
+        self.line = ""
+        if not text:
+            return
+        if list_item:
+            self.blocks.append(prefix + text)
+        else:
+            if self.blocks and self.blocks[-1] != "":
+                self.blocks.append("")
+            self.blocks.append(prefix + text)
+            self.blocks.append("")
+
+    def text(self):
+        body = "\n".join(self.blocks)
+        body = re.sub(r"\n{3,}", "\n\n", body).strip()
+        head = f"# {' '.join(self.title.split())}\n\n> {self.description}\n\nSource: {self.canonical}"
+        return f"{head}\n\n{body}\n"
+
+
+def markdown(path):
+    page = Markdown()
+    page.feed((ROOT / path).read_text())
+    return page.text().encode()
+
+
 def main():
     files = stamp(public_files())
+    for page in MARKDOWN:
+        files[Path(page).with_suffix(".md").as_posix()] = markdown(page)
     shutil.rmtree(OUTPUT, ignore_errors=True)
     for path, data in sorted(files.items()):
         target = OUTPUT / path

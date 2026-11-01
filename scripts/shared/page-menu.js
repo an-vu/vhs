@@ -1,7 +1,7 @@
 // The header's page name ("Work ›") opens a menu of the site's other pages under
 // it (site.css); "vHuman" still goes home. A tap outside, Esc or picking a page
-// closes it. Contact is a plain link: the email for now, the Contact page (/contact)
-// once it's built; it doesn't turn into the address like Home's.
+// closes it. Contact goes to the Contact page (/contact); it doesn't turn into the
+// address like Home's.
 export function createPageMenu() {
   const header = document.querySelector('.site-header');
   const button = header?.querySelector('.page-menu-toggle');
