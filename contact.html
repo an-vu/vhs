@@ -19,8 +19,7 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#F9F8F6">
     <link rel="stylesheet" href="styles/site.css">
-    <link rel="stylesheet" href="styles/disclosure.css">
-    <link rel="stylesheet" href="styles/legal.css">
+    <link rel="stylesheet" href="styles/about.css">
 
     <meta name="description" content="How to reach vHuman, an American creative technology studio, and what to include when starting a project.">
     <link rel="canonical" href="https://vhumanstudios.com/contact">
@@ -29,10 +28,10 @@
     <meta property="og:title" content="Contact - vHuman">
     <meta property="og:description" content="How to reach vHuman, an American creative technology studio, and what to include when starting a project.">
     <meta property="og:url" content="https://vhumanstudios.com/contact">
-    <meta property="og:image" content="https://vhumanstudios.com/images/share.png">
+    <meta property="og:image" content="https://vhumanstudios.com/images/share-contact.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="vHuman: Technology, made human.">
+    <meta property="og:image:alt" content="vHuman. Contact us at eve@vhumanstudios.com">
     <meta name="twitter:card" content="summary_large_image">
     <script type="application/ld+json">
 {
@@ -80,44 +79,42 @@
             </nav>
         </div>
     </header>
-    <main class="page-content wrap" aria-label="Contact vHuman">
-        <!-- Each row opens to its text, like the FAQ's; /contact#id opens one. -->
-        <div class="contact-content">
-            <section class="content-section" aria-labelledby="contact-heading">
-                <h2 id="contact-heading">Contact</h2>
+    <main class="page-content about wrap" aria-label="Contact vHuman">
+        <!-- About's look (about.css): big text that rises in, the details in reading
+             size under it, then the links. -->
+        <div class="about-content">
+            <p class="about-intro">
+                <span class="about-sentence">Email eve@vhumanstudios.com for a project, a question, or press.</span>
+            </p>
+            <div class="intro-detail">
+                <p>Tell us what you want to build and when you need it, and we'll get back with how we'd do it.</p>
+                <h2>What to include in your email</h2>
                 <ul>
-                    <li>
-                        <details class="disclosure" name="contact" id="start-a-project" open>
-                            <summary>Start a project</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Write to <a href="mailto:eve@vhumanstudios.com?subject=New%20project">eve@vhumanstudios.com</a>. A useful first email covers:</p>
-                                <ul>
-                                    <li>What you want to make, and who it is for</li>
-                                    <li>Where it stands: an idea, a design, or something already built</li>
-                                    <li>Timing, and any dates that cannot move</li>
-                                    <li>Links to anything that exists: a site, an app, files, or references</li>
-                                </ul>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="contact" id="everything-else">
-                            <summary>Questions and press</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Write to <a href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a>. For questions about the studio, the <a href="/faq">FAQ</a> may already have the answer.</p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="contact" id="where-we-are">
-                            <summary>Where we are</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>vHuman is an American studio that works remotely, with clients around the world.</p>
-                            </div>
-                        </details>
-                    </li>
+                    <li><strong>What you're making and where it runs.</strong> A website, an iOS app, an AR experience
+                        for Vision Pro or a trade show floor. The platform settles many of the technical choices before
+                        design starts.</li>
+                    <li><strong>Who it's for.</strong> The people who will use it, and what they need to get done.</li>
+                    <li><strong>Where it stands.</strong> An idea, a sketch, a working prototype, or a live product that
+                        needs a rebuild. We work at every stage; this tells us where to start.</li>
+                    <li><strong>When you need it.</strong> A launch, a demo, a conference, a funding round. A real date
+                        shapes the scope, and if there's no deadline, that's useful to know too.</li>
+                    <li><strong>The budget you're working with.</strong> An estimate is enough for us to tell you if
+                        we're the right fit.</li>
+                    <li><strong>Links to anything that exists.</strong> A repo, a Figma file, a site, a video.</li>
                 </ul>
-            </section>
+                <p>A few paragraphs are enough. You don't need a finished brief.</p>
+                <p>Not sure what you need? <a href="/services">Services</a> and <a href="/work">Work</a> show what we
+                    do, and the <a href="/faq">FAQ</a> answers the usual questions. Or just write, and we'll work it out
+                    together.</p>
+                <p>vHuman works remotely from the United States with brands, product teams, aerospace programs, sports
+                    organizations, and game studios worldwide. Good ideas can come from anyone. Write to us.</p>
+            </div>
+            <!-- The address itself, at the menu's size (shrinks to fit a narrow phone, site.css). -->
+            <nav class="main-nav" aria-label="Studio">
+                <a class="is-address" href="mailto:eve@vhumanstudios.com?subject=New%20project">eve@vhumanstudios.com</a>
+                <a href="/work">Work</a>
+                <a href="/about">About</a>
+            </nav>
         </div>
     </main>
     <footer class="site-footer">

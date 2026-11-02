@@ -361,6 +361,18 @@ html.page-motion {
   color: var(--fg)
 }
 
+/* Links inside reading text (Contact's details; the FAQ's, Services' and Legal's
+   open rows), like Work's "Ask about …": the menus' grey, darkening when pointed at. */
+:is(.intro-detail, .disclosure-detail) a {
+  color: var(--nav-fg);
+  transition: color .2s ease
+}
+
+:is(.intro-detail, .disclosure-detail) a:hover,
+:is(.intro-detail, .disclosure-detail) a:focus-visible {
+  color: var(--fg)
+}
+
 /* Home's Contact with a mouse (copy-address.js): the word, the address and
    "Copied" share one spot and cross-fade, centred in the menu's column. */
 .main-nav a.is-swap {
@@ -409,7 +421,8 @@ html.page-motion {
     transition: none
   }
 
-  .main-nav a {
+  .main-nav a,
+  :is(.intro-detail, .disclosure-detail) a {
     transition: none
   }
 }

@@ -1,4 +1,4 @@
-/* Legal's policies, the FAQ's questions, Contact's and Services' rows: a heading,
+/* Legal's policies, the FAQ's questions, Services' rows: a heading,
    then rows that open one at a time (styles/disclosure.css). */
 .content-section h2 {
   margin: 0 0 16px;
@@ -35,19 +35,3 @@
   font-weight: 400;
 }
 
-/* A list inside an open row (Contact's "Start a project") is body text, not rows. */
-.legal-copy ul {
-  list-style: disc;
-  margin: 0 0 1em;
-  padding-left: 1.2em;
-}
-
-.legal-copy li {
-  font-size: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-}
-
-.legal-copy li+li {
-  margin-top: .35em
-}

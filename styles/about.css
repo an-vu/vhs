@@ -94,3 +94,24 @@
 @media (prefers-reduced-motion: reduce) {
   #about-rover, .about-intro, .about .main-nav { transition: none; }
 }
+
+/* Contact's details under its big text: reading size, like an FAQ answer. */
+.intro-detail {
+  max-width: 65ch;
+  margin-top: 40px;
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.55;
+}
+.intro-detail h2 {
+  margin: 0 0 .65em;
+  font-size: 1.15em;
+  font-weight: 400;
+}
+.intro-detail ul {
+  margin: 0 0 1em;
+  padding-left: 1.2em;
+}
+.intro-detail li + li { margin-top: .35em; }
+.intro-detail p { margin: 0; }
+.intro-detail p + p { margin-top: 1em; }
+.intro-detail p + h2 { margin-top: 1.5em; }

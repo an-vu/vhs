@@ -62,7 +62,7 @@ export function revealAddressOnHover(link) {
   link.addEventListener('pointerleave', () => {
     pointed = false;
     clearTimeout(leaving);
-    leaving = setTimeout(() => { if (!copied && !pointed) show(word); }, 1000);
+    leaving = setTimeout(() => { if (!copied && !pointed) show(word); }, 500);
   });
   link.addEventListener('click', () => {
     navigator.clipboard?.writeText(address).catch(() => {});

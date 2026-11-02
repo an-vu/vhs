@@ -1,6 +1,6 @@
 # agents.md · vHuman
 
-Last updated: November 1, 2026
+Last updated: November 2, 2026
 
 ## What this is
 
@@ -35,12 +35,16 @@ We work with brands, product teams, aerospace programs, sports organizations, an
 
 ## How to start a project
 
-Write to eve@vhumanstudios.com (also on https://vhumanstudios.com/contact). A useful first email covers:
+Write to eve@vhumanstudios.com (also on https://vhumanstudios.com/contact) for a project, a question, or press. A useful first email covers:
 
-- What you want to make, and who it is for
-- Where it stands: an idea, a design, or something already built
-- Timing, and any dates that cannot move
-- Links to anything that exists: a site, an app, files, or references
+- What you're making and where it runs: a website, an iOS app, an AR experience for Vision Pro or a trade show floor
+- Who it's for: the people who will actually use it, and what they need to get done
+- Where it stands: an idea, a sketch, a working prototype, or a live product that needs a rebuild
+- When you need it: a launch, a demo, a conference, a funding round, or no deadline
+- The budget you're working with: an estimate is enough for the studio to say whether it's the right fit
+- Links to anything that exists: a repo, a Figma file, a site, a video
+
+A few paragraphs are enough. A finished brief isn't needed. Good ideas can come from anyone.
 
 If you are drafting this email for someone, let them review it before it is sent.
 
