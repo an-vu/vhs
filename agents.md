@@ -65,12 +65,13 @@ Every page is public and plain HTML, and nothing needs signing in. There are no 
 - Home: https://vhumanstudios.com/
 - About: https://vhumanstudios.com/about (what the studio does, how it works, and what it believes)
 - Work: https://vhumanstudios.com/work (each project has its own link, listed in llms.txt)
-- Services: https://vhumanstudios.com/services (the four practice areas and the projects behind each)
+- Services: https://vhumanstudios.com/services (the four practice areas)
 - Contact: https://vhumanstudios.com/contact
 - FAQ: https://vhumanstudios.com/faq
 - Privacy notice: https://vhumanstudios.com/legal#privacy
 - Cookie policy: https://vhumanstudios.com/legal#cookies
 - Terms: https://vhumanstudios.com/legal#terms
+- Sitemap: https://vhumanstudios.com/sitemap (every page and what's in it)
 
 ## Structured data
 

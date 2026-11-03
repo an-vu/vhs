@@ -1,5 +1,5 @@
-// The logo strip at the end of the Work page (the Glass Lab's Icon tab uses it
-// too). Logos drift right to left through seven spots, five in view: one fades in
+// The logo strip at the end of the Work and Services pages (the Glass Lab's Icon
+// tab uses it too). Logos drift right to left through seven spots, five in view: one fades in
 // from the 7th spot to the 6th, passes the middle, and fades out from the 2nd to
 // the 1st, one glass apart (the spacing comes from the caller).
 //
@@ -133,4 +133,54 @@ function copies(text, name) {
   mono.style.setProperty('--logo-ink', '#000');
   mono.setAttribute('aria-hidden', 'true');
   return { color, mono };
+}
+
+// A page's "Featured in our work" section (Work, Services): its strip drifts right
+// to left through the seven spots, its logos one glass apart (the circle's width),
+// where Work's project row has its first neighbours too. It sits outside the
+// page's content, so the bottom bounce and the entrances leave it alone. Resting
+// the pointer on its glass (or a finger) eases it to a crawl, so the logo there
+// can be read and the glass looked at.
+export function driftLogoStrip(section) {
+  if (!section) return;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const mouse = event => event.pointerType === 'mouse';
+  const strip = section.querySelector('.work-clients-strip');
+  const logos = createLogoStrip(strip, [...section.querySelectorAll('.work-clients-list li')].map(li => ({
+    logo: li.dataset.logo, fit: li.dataset.fit.split(' ').map(Number)
+  })), new URL('../../images/logos/', import.meta.url));
+  const SPEED = .3, CRAWL = SPEED / 10; // spots per second
+  let scroll = 0, speed = SPEED, last = 0, frame = 0, visible = true, held = false;
+  // The strip's glass circle radius (logo-strip.css).
+  const radius = () => parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 67;
+  const place = () => logos.paint(scroll, 2 * radius());
+  function drift(now) {
+    frame = 0;
+    const dt = last ? Math.min((now - last) / 1000, .05) : 0;
+    last = now;
+    speed += ((held ? CRAWL : SPEED) - speed) * Math.min(1, dt * 6);
+    scroll += speed * dt;
+    place();
+    run();
+  }
+  // On the glass: inside the middle circle.
+  function onGlass(event) {
+    const box = strip.getBoundingClientRect();
+    return Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height / 2)) <= radius();
+  }
+  strip.addEventListener('pointermove', event => { held = onGlass(event); });
+  strip.addEventListener('pointerdown', event => { held = onGlass(event); });
+  strip.addEventListener('pointerleave', () => { held = false; });
+  strip.addEventListener('pointerup', event => { if (!mouse(event)) held = false; });
+  function run() {
+    if (frame) return;
+    if (!visible || document.hidden || reduced.matches) { last = 0; return; }
+    frame = requestAnimationFrame(drift);
+  }
+  new ResizeObserver(place).observe(strip);
+  new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; run(); }).observe(strip);
+  document.addEventListener('visibilitychange', run);
+  reduced.addEventListener('change', run);
+  place();
+  run();
 }

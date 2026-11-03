@@ -31,17 +31,12 @@
   margin-bottom: 20px;
 }
 
-/* The glass circle's radius, registered as a length so scripts (the glass's page
-   copy, the Glass Lab) read it resolved, in px. */
-@property --circle { syntax: '<length>'; inherits: true; initial-value: 52px; }
-
 /* Work page: two docks under the Opus glass (scripts/glass). At the top, a row of
    project logos like apple.com/airpods' product row, starting 45% of the header's
    height below it (Apple: 20 px under its 44 px bar); the selected one sits in the
    glass in the middle and shows its panel below. At the end, the logo strip drifts
    through the same glass (logo-strip.js).
-   Both docks share one glass circle: 104 px (34vw at most), times --dock-scale
-   (1.3: 135 px), times --dock-size (smaller on phones, below).
+   Both docks share one glass circle (logo-strip.css).
    --logo is sized from the glass: the v's farthest point sits at half its box from
    the middle and reaches --mark-reach of the circle's radius, Opus's Icon size
    (iconScale in scripts/glass/opus.js); the other logos are sized to match it
@@ -49,20 +44,10 @@
    --logo-gap is the header-to-logo space, --title-air the space down to the title. */
 .work-page {
   overflow-x: clip;
-  --mark-reach: .85;
-  --dock-scale: 1.3;
-  --dock-size: 1;
-  --circle: calc(min(calc(var(--select-size, 104) * 1px), 34vw) / 2 * var(--dock-scale) * var(--dock-size));
-  /* A row's middle line (the row is the circle plus 2 px each side). */
-  --row-mid: calc(var(--circle) + 2px);
   --logo: calc(var(--circle) * 2 * var(--mark-reach) / 2 / .5);
   /* The projects' logos outside the glass stay the size they were before the docks
      grew (1/φ of the old 104 px row), so the row stays light. */
   --outside-scale: calc(.618 / var(--dock-scale));
-  /* Inside the glass the logos sit a little smaller, in both docks: on Opus's rainbow
-     diagonal the edge folds anything past about two thirds of the radius into the
-     rim, and at .78 the icon that reaches farthest (the feather) stays inside that line. */
-  --inside-scale: .78;
   --logo-gap: 39px;
   --title-air: 40px;
 }
@@ -261,104 +246,20 @@
   letter-spacing: -.02em;
 }
 
-/* The logo strip: placed by script each frame (logo-strip.js), the same size as
-   the project row. */
-.work-clients { position: relative; margin-top: clamp(12px, 2vw, 28px) }
-/* Over the strip, set like the footer's words (.footer-row): the brands appear in
-   the work, without calling them clients. Real text, so Google reads the logos in
-   context. */
-.work-clients-label {
-  margin: 0 0 18px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-  font-weight: normal;
-  text-align: center;
-}
-/* The strip's glass sits on the strip's middle, below the label. */
-.work-clients .glass-spot { top: calc(100% - var(--row-mid)) }
-/* The header stays over the glass (its layer is 4, scripts/glass), so a scrolling
-   glass passes under the header's blur instead of over "vHuman / Work". */
-.site-header { z-index: 5; }
-/* Where the glass sits (scripts/glass): over the selected project and over the
-   logo strip's middle circle, both the circle's size. */
-.glass-spot {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(var(--circle) * 2);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-/* As wide as the project text's column (58ch at its size), so the logos fade out
-   at the text's edges (logo-strip.js fades them before the strip's edge). */
-.work-clients-strip {
-  position: relative;
-  max-width: 58ch;
-  margin: 0 auto;
-  font-size: clamp(17px, 1.6vw, 20px);
-  height: calc(var(--row-mid) * 2);
-  overflow: hidden;
-  /* How far a logo's farthest point reaches into the circle (share of its
-     radius), the same as the projects'. A logo's data-fit is its box in
-     --logo-unit, which puts its farthest point at .423 of the unit. */
-  --logo-reach: var(--mark-reach);
-  --logo-unit: calc(var(--circle) * 2 / .846 * var(--logo-reach));
-}
-/* A spot in the strip. Outside the glass its logo is graded by how far it is from
-   the middle (logo-strip.js sets --a and --b): ink, then vHuman grey, then light grey. */
-.client-slot {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: grid;
-  place-items: center;
-  width: calc(88px * var(--dock-scale, 1) * var(--dock-size, 1));
-  height: 100%;
-  --a: 0;
-  --b: 0;
-  color: color-mix(in srgb, color-mix(in srgb, var(--fg) calc(var(--a) * 100%), var(--nav-fg)) calc(var(--b) * 100%), var(--light-gray));
-}
-/* The middle circle is a lens: inside it the logos are big and in color, outside
-   small (1/φ) and flat in the grade color. Each layer is cut to its side. */
-.client-flats,
-.client-colors {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.client-flats .client-logo { transform: scale(.618); }
-.client-colors .client-logo { transform: scale(var(--inside-scale)); }
-/* Each logo on its own layer: its size changes every frame without repainting it. */
-.client-logo { position: relative; display: block; will-change: transform; }
-.client-logo > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
-/* Both lenses: the outside layers are cut away inside the circle, the inside
-   layers cut to it. Each opens with its glass: --lens-grow (work.js) is how far
-   the glass has grown in, so the big, colored logos come in with the bubble. */
-.client-flats,
+/* The project row's lens, like the strip's (logo-strip.css): the outside row is
+   cut away inside the circle, the inside one cut to it, opening with its glass. */
 .project-flow-track {
   -webkit-mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px));
   mask: radial-gradient(circle at 50% 50%, transparent calc(var(--circle) * var(--lens-grow, 1)), #000 calc(var(--circle) * var(--lens-grow, 1) + .5px));
 }
-.client-colors,
 .project-lens { clip-path: circle(calc(var(--circle) * var(--lens-grow, 1)) at 50% 50%); }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 @media(max-width:760px) {
   /* On a phone: less room above and below the project row, and both docks the
      size they were before they grew (1 / --dock-scale): a 104 px glass, logos and
      gaps a quarter smaller, so two project logos show on each side. */
-  .work-page { --logo-gap: 30px; --title-air: 32px; --dock-size: .769 }
+  .work-page { --logo-gap: 30px; --title-air: 32px }
   /* The project row fades softly into the text column's edges (the last 36 px),
      so its outer logos dissolve there instead of showing past them. Two masks:
      the glass cut and this fade (--column-inset comes from work.js). */

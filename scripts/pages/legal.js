@@ -1,9 +1,11 @@
-import { StudioContentList } from '../shared/content-list.js';
+import { StudioPageScroll } from '../shared/page-scroll.js';
+import { StudioIntroText } from '../shared/intro-text.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
 import { createPageMenu } from '../shared/page-menu.js';
 
-// A link to a section (/legal#privacy, #cookies, #terms) opens it.
-StudioContentList(document.querySelector(".legal-content"), { deepLinks: true });
+const content = document.querySelector(".about-content");
+StudioPageScroll(content);
 createPageMenu();
-// The address shows already; clicking it also copies it.
-copyAddressOnClick(document.querySelectorAll('.legal-content a[href^="mailto:"]'));
+// The addresses also copy when clicked, for a computer with no mail app set up.
+copyAddressOnClick(content.querySelectorAll('a[href^="mailto:"]'));
+StudioIntroText(content);

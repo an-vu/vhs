@@ -1,6 +1,6 @@
 import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
-import { createLogoStrip } from './logo-strip.js';
+import { driftLogoStrip } from './logo-strip.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
 import { createPageMenu } from '../shared/page-menu.js';
 
@@ -451,50 +451,8 @@ import { createPageMenu } from '../shared/page-menu.js';
     egg.classList.add('is-answered');
   }, { once: true });
 
-  // The logo strip at the end of the page drifts right to left through seven
-  // spots, in a random order (see logo-strip.js), its logos one glass apart (its
-  // circle's width), where the project row's first neighbours sit too. It's
-  // outside the content, so the bottom bounce and the entrances leave it alone.
-  // Resting the pointer on its glass (or a finger) eases it to a crawl, so the
-  // logo there can be read and the glass looked at.
-  const strip = document.querySelector('.work-clients-strip');
-  const logos = createLogoStrip(strip, [...document.querySelectorAll('.work-clients-list li')].map(li => ({
-    logo: li.dataset.logo, fit: li.dataset.fit.split(' ').map(Number)
-  })), new URL('../../images/logos/', import.meta.url));
-  const SPEED = .3, CRAWL = SPEED / 10; // spots per second
-  let scroll = 0, speed = SPEED, last = 0, frame = 0, visible = true, held = false;
-  // The strip's glass circle radius (work.css).
-  const radius = () => parseFloat(getComputedStyle(strip).getPropertyValue('--circle')) || 67;
-  const place = () => logos.paint(scroll, 2 * radius());
-  function drift(now) {
-    frame = 0;
-    const dt = last ? Math.min((now - last) / 1000, .05) : 0;
-    last = now;
-    speed += ((held ? CRAWL : SPEED) - speed) * Math.min(1, dt * 6);
-    scroll += speed * dt;
-    place();
-    run();
-  }
-  // On the glass: inside the middle circle.
-  function onGlass(event) {
-    const box = strip.getBoundingClientRect();
-    return Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height / 2)) <= radius();
-  }
-  strip.addEventListener('pointermove', event => { held = onGlass(event); });
-  strip.addEventListener('pointerdown', event => { held = onGlass(event); });
-  strip.addEventListener('pointerleave', () => { held = false; });
-  strip.addEventListener('pointerup', event => { if (!mouse(event)) held = false; });
-  function run() {
-    if (frame) return;
-    if (!visible || document.hidden || reduced.matches) { last = 0; return; }
-    frame = requestAnimationFrame(drift);
-  }
-  new ResizeObserver(place).observe(strip);
-  new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; run(); }).observe(strip);
-  document.addEventListener('visibilitychange', run);
-  reduced.addEventListener('change', run);
-  place();
-  run();
+  // The logo strip at the end of the page (logo-strip.js).
+  driftLogoStrip(document.querySelector('.work-clients'));
 
   // The glass over the selected project and the logo strip (scripts/glass): loaded
   // after the page, and only where WebGL works; without it the page stays as is.

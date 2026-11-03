@@ -7,7 +7,7 @@
     <script>document.documentElement.classList.add("page-loading"); setTimeout(() => document.documentElement.classList.remove("page-loading"), 3000);</script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Services - vHuman</title>
+    <title>Software, Interfaces, 3D and Spatial Computing Services - vHuman</title>
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/images/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icons/favicon-32.png">
@@ -19,15 +19,15 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#F9F8F6">
     <link rel="stylesheet" href="styles/site.css">
-    <link rel="stylesheet" href="styles/disclosure.css">
-    <link rel="stylesheet" href="styles/legal.css">
+    <link rel="stylesheet" href="styles/about.css">
+    <link rel="stylesheet" href="styles/logo-strip.css">
 
-    <meta name="description" content="vHuman is a creative technology studio with four practice areas: software and digital products, interfaces and design systems, 3D and spatial computing, and research and development.">
+    <meta name="description" content="vHuman is an American creative technology studio offering software and digital products, interfaces and design systems, 3D and spatial computing, and research and development.">
     <link rel="canonical" href="https://vhumanstudios.com/services">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="vHuman">
-    <meta property="og:title" content="Services - vHuman">
-    <meta property="og:description" content="vHuman is a creative technology studio with four practice areas: software and digital products, interfaces and design systems, 3D and spatial computing, and research and development.">
+    <meta property="og:title" content="Software, Interfaces, 3D and Spatial Computing Services - vHuman">
+    <meta property="og:description" content="vHuman is an American creative technology studio offering software and digital products, interfaces and design systems, 3D and spatial computing, and research and development.">
     <meta property="og:url" content="https://vhumanstudios.com/services">
     <meta property="og:image" content="https://vhumanstudios.com/images/share.png">
     <meta property="og:image:width" content="1200">
@@ -42,7 +42,7 @@
       "@type": "WebPage",
       "@id": "https://vhumanstudios.com/services#webpage",
       "url": "https://vhumanstudios.com/services",
-      "name": "Services - vHuman",
+      "name": "Software, Interfaces, 3D and Spatial Computing Services - vHuman",
       "isPartOf": {
         "@id": "https://vhumanstudios.com/#website"
       },
@@ -57,11 +57,67 @@
             "position": 1,
             "item": {
               "@type": "Service",
-              "name": "Software and digital products",
-              "description": "Web applications, tools, and systems, designed and built by one team from first concept to shipped product. The work so far includes enterprise sign-in and user management, a machine-learning web app for image recognition, a reader controlled by eye tracking, and a strategy simulator built on real race data.",
-              "url": "https://vhumanstudios.com/services#software",
+              "@id": "https://vhumanstudios.com/services#research",
+              "name": "Research and development",
+              "description": "We find out whether an idea can work before you fund it.",
+              "url": "https://vhumanstudios.com/services#research",
               "provider": {
                 "@id": "https://vhumanstudios.com/#organization"
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Research and development",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Feasibility studies"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Proofs of concept"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Rapid prototyping"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Technical research and audits"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Emerging technology exploration"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "AI and machine learning experiments"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Computer vision and sensor input"
+                    }
+                  }
+                ]
               }
             }
           },
@@ -70,11 +126,81 @@
             "position": 2,
             "item": {
               "@type": "Service",
-              "name": "Interfaces and design systems",
-              "description": "Interfaces, component systems, and typography-led design for products that need to be understood at a glance. Motion and interaction appear where they help someone follow the work, and the systems behind them are built to grow with the product.",
-              "url": "https://vhumanstudios.com/services#interfaces",
+              "@id": "https://vhumanstudios.com/services#software",
+              "name": "Software and digital products",
+              "description": "We design and build products end to end, along with the systems behind them.",
+              "url": "https://vhumanstudios.com/services#software",
               "provider": {
                 "@id": "https://vhumanstudios.com/#organization"
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Software and digital products",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Web applications"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "iOS and mobile apps"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "SaaS platforms"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Internal tools and dashboards"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "APIs and backend systems"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Sign-in, accounts, and user management"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "AI and machine learning features"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Data visualization"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Rebuilds of existing products"
+                    }
+                  }
+                ]
               }
             }
           },
@@ -83,11 +209,81 @@
             "position": 3,
             "item": {
               "@type": "Service",
-              "name": "3D and spatial computing",
-              "description": "AR asset pipelines, USDZ optimization and inspection, LiDAR capture, and real-time 3D. Complex source models are rebuilt into clean, editable assets that run in real time across rendering, AR, VR, and interactive software.",
-              "url": "https://vhumanstudios.com/services#3d-and-spatial",
+              "@id": "https://vhumanstudios.com/services#interfaces",
+              "name": "Interfaces and design systems",
+              "description": "We design the interface and the system behind it, so the next feature looks like it belongs.",
+              "url": "https://vhumanstudios.com/services#interfaces",
               "provider": {
                 "@id": "https://vhumanstudios.com/#organization"
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Interfaces and design systems",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "UI and UX design"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Product design"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Design systems"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Component libraries"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Websites"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Prototypes and user flows"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Motion and interaction design"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Typography and visual identity"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Accessibility"
+                    }
+                  }
+                ]
               }
             }
           },
@@ -96,11 +292,88 @@
             "position": 4,
             "item": {
               "@type": "Service",
-              "name": "Research and development",
-              "description": "For the question of whether something is possible. The studio researches it, builds what it needs to find out, and reports back with what it learned.",
-              "url": "https://vhumanstudios.com/services#research",
+              "@id": "https://vhumanstudios.com/services#3d-and-spatial",
+              "name": "3D and spatial computing",
+              "description": "We build 3D for the device it runs on, at the frame rate the platform demands.",
+              "url": "https://vhumanstudios.com/services#3d-and-spatial",
               "provider": {
                 "@id": "https://vhumanstudios.com/#organization"
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "3D and spatial computing",
+                "itemListElement": [
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "AR experiences"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "VR experiences"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Apple Vision Pro and visionOS apps"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Real-time 3D for web, apps, and games"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "3D modeling and asset rebuilds"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "3D optimization and performance"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "USDZ, glTF, and AR Quick Look"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "LiDAR scanning and spatial capture"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "Product visualization and configurators"
+                    }
+                  },
+                  {
+                    "@type": "Offer",
+                    "itemOffered": {
+                      "@type": "Service",
+                      "name": "3D environments and maps"
+                    }
+                  }
+                ]
               }
             }
           }
@@ -129,7 +402,7 @@
 </script>
 </head>
 
-<body class="content-page">
+<body class="content-page services-page">
     <header class="site-header">
         <div class="header-blur" aria-hidden="true"><span class="blur-layer"></span></div>
         <div class="wrap header-inner">
@@ -142,62 +415,125 @@
             </nav>
         </div>
     </header>
-    <main class="page-content wrap" aria-label="Services">
-        <!-- Each practice area opens to what it covers and the projects behind it, like the
-             FAQ's rows; /services#id opens one. Every text here is also in the hidden info
-             above, word for word. -->
-        <div class="services-content">
-            <section class="content-section" aria-labelledby="services-heading">
-                <h2 id="services-heading">Services</h2>
-                <ul>
-                    <li>
-                        <details class="disclosure" name="services" id="software">
-                            <summary>Software and digital products</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Web applications, tools, and systems, designed and built by one team from first concept to shipped product. The work so far includes enterprise sign-in and user management, a machine-learning web app for image recognition, a reader controlled by eye tracking, and a strategy simulator built on real race data.</p>
-                                <p>Related work: <a href="/work#iris">Iris</a>, <a href="/work#sesame">Sesame</a>, <a href="/work#scarecrow-ai">Scarecrow AI</a>, <a href="/work#pit-wall">Pit Wall</a></p>
-                                <p class="project-link"><a href="mailto:eve@vhumanstudios.com?subject=About%3A%20Software">Ask about software&nbsp;›</a></p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="services" id="interfaces">
-                            <summary>Interfaces and design systems</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Interfaces, component systems, and typography-led design for products that need to be understood at a glance. Motion and interaction appear where they help someone follow the work, and the systems behind them are built to grow with the product.</p>
-                                <p>Related work: <a href="/work#vhuman-year-five">vHuman, Year Five</a>, <a href="/work#kobachi">Kobachi</a></p>
-                                <p class="project-link"><a href="mailto:eve@vhumanstudios.com?subject=About%3A%20Interfaces">Ask about interfaces&nbsp;›</a></p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="services" id="3d-and-spatial">
-                            <summary>3D and spatial computing</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>AR asset pipelines, USDZ optimization and inspection, LiDAR capture, and real-time 3D. Complex source models are rebuilt into clean, editable assets that run in real time across rendering, AR, VR, and interactive software.</p>
-                                <p>Related work: <a href="/work#reality-check">Reality Check</a>, <a href="/work#wind-tunnel">Wind Tunnel</a>, <a href="/work#studio-kit-26">Studio Kit 26</a></p>
-                                <p class="project-link"><a href="mailto:eve@vhumanstudios.com?subject=About%3A%203D%20and%20spatial%20computing">Ask about 3D and spatial computing&nbsp;›</a></p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="services" id="research">
-                            <summary>Research and development</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>For the question of whether something is possible. The studio researches it, builds what it needs to find out, and reports back with what it learned.</p>
-                                <p class="project-link"><a href="mailto:eve@vhumanstudios.com?subject=About%3A%20Research">Ask about research&nbsp;›</a></p>
-                            </div>
-                        </details>
-                    </li>
+    <main class="page-content about wrap" aria-label="Services">
+        <!-- Contact's look (about.css): big text that rises in, then the four areas, all
+             open, and Work's logo strip at the end. /services#id goes to an area. The
+             areas' texts are also in the hidden info above, word for word. -->
+        <div class="about-content">
+            <p class="about-intro">
+                <span class="about-sentence">Our work brings design and engineering together to create technology
+                    that is useful, thoughtful, and enjoyable to use.</span>
+            </p>
+            <div class="intro-detail page-detail">
+                <p>vHuman works across research and development, software and digital products,
+                    interfaces and design systems, and 3D and spatial computing. Research shows what’s
+                    possible, design decides how it looks and how people use it, and engineering makes it
+                    work. Everything happens with one team under one direction, so nothing gets lost in
+                    handoffs and you talk to the same people from first idea to launch.</p>
+
+                <h2 class="section-heading">What we do</h2>
+
+                <h3 id="research">Research and development</h3>
+                <p>We find out whether an idea can work before you fund it.</p>
+                <ul class="service-list">
+                    <li>Feasibility studies</li>
+                    <li>Proofs of concept</li>
+                    <li>Rapid prototyping</li>
+                    <li>Technical research and audits</li>
+                    <li>Emerging technology exploration</li>
+                    <li>AI and machine learning experiments</li>
+                    <li>Computer vision and sensor input</li>
                 </ul>
-            </section>
+
+                <h3 id="software">Software and digital products</h3>
+                <p>We design and build products end to end, along with the systems behind them.</p>
+                <ul class="service-list">
+                    <li>Web applications</li>
+                    <li>iOS and mobile apps</li>
+                    <li>SaaS platforms</li>
+                    <li>Internal tools and dashboards</li>
+                    <li>APIs and backend systems</li>
+                    <li>Sign-in, accounts, and user management</li>
+                    <li>AI and machine learning features</li>
+                    <li>Data visualization</li>
+                    <li>Rebuilds of existing products</li>
+                </ul>
+
+                <h3 id="interfaces">Interfaces and design systems</h3>
+                <p>We design the interface and the system behind it, so the next feature looks like it
+                    belongs.</p>
+                <ul class="service-list">
+                    <li>UI and UX design</li>
+                    <li>Product design</li>
+                    <li>Design systems</li>
+                    <li>Component libraries</li>
+                    <li>Websites</li>
+                    <li>Prototypes and user flows</li>
+                    <li>Motion and interaction design</li>
+                    <li>Typography and visual identity</li>
+                    <li>Accessibility</li>
+                </ul>
+
+                <h3 id="3d-and-spatial">3D and spatial computing</h3>
+                <p>We build 3D for the device it runs on, at the frame rate the platform demands.</p>
+                <ul class="service-list">
+                    <li>AR experiences</li>
+                    <li>VR experiences</li>
+                    <li>Apple Vision Pro and visionOS apps</li>
+                    <li>Real-time 3D for web, apps, and games</li>
+                    <li>3D modeling and asset rebuilds</li>
+                    <li>3D optimization and performance</li>
+                    <li>USDZ, glTF, and AR Quick Look</li>
+                    <li>LiDAR scanning and spatial capture</li>
+                    <li>Product visualization and configurators</li>
+                    <li>3D environments and maps</li>
+                </ul>
+
+                <p>Not every project needs all four. The <a href="/faq">FAQ</a> answers the usual
+                    questions, or write and we’ll work out together where to start.</p>
+            </div>
+            <nav class="main-nav" aria-label="Studio">
+                <a href="/work">Work</a>
+                <a href="/about">About</a>
+                <a href="mailto:eve@vhumanstudios.com?subject=New%20project"><span>Contact</span></a>
+            </nav>
         </div>
+        <!-- Work's logo strip (logo-strip.css, logo-strip.js), outside the content so
+             it holds still while the content lifts at the bottom. -->
+        <section class="work-clients" aria-labelledby="work-clients-label">
+            <h2 class="work-clients-label" id="work-clients-label">Featured in our work</h2>
+            <ul class="work-clients-list visually-hidden">
+                <li data-logo="lockheed-martin" data-fit="0.842 0.371">Lockheed Martin</li>
+                <li data-logo="northrop-grumman" data-fit="0.73 0.427">Northrop Grumman</li>
+                <li data-logo="nasa" data-fit="0.678 0.555">NASA</li>
+                <li data-logo="nasa-jpl" data-fit="0.812 0.239">NASA Jet Propulsion Laboratory</li>
+                <li data-logo="secret-service" data-fit="0.757 0.718">United States Secret Service</li>
+                <li data-logo="red-bull-racing" data-fit="0.816 0.310">Red Bull Racing</li>
+                <li data-logo="f1" data-fit="0.821 0.205">Formula 1</li>
+                <li data-logo="nascar" data-fit="0.835 0.139">NASCAR</li>
+                <li data-logo="openusd" data-fit="0.635 0.721">OpenUSD</li>
+                <li data-logo="frostbite" data-fit="0.816 0.820">Frostbite</li>
+                <li data-logo="brown-university" data-fit="0.496 0.847">Brown University</li>
+                <li data-logo="angular" data-fit="0.692 0.732">Angular</li>
+                <li data-logo="tensorflow" data-fit="0.733 0.786">TensorFlow</li>
+                <li data-logo="spring" data-fit="0.696 0.697">Spring</li>
+                <li data-logo="graphql" data-fit="0.854 0.854">GraphQL</li>
+                <li data-logo="voidzero" data-fit="0.829 0.503">VoidZero</li>
+                <li data-logo="autodesk" data-fit="0.699 0.478">Autodesk</li>
+                <li data-logo="blender" data-fit="0.773 0.628">Blender Foundation</li>
+                <li data-logo="eclipse-foundation" data-fit="0.838 0.271">Eclipse Foundation</li>
+                <li data-logo="openstreetmap" data-fit="0.798 0.795">OpenStreetMap Foundation</li>
+                <li data-logo="khronos-group" data-fit="0.839 0.146">Khronos Group</li>
+            </ul>
+            <div class="work-clients-strip" data-glass-marquee aria-hidden="true"></div>
+            <span class="glass-spot" data-glass data-glass-delay=".2" aria-hidden="true"></span>
+        </section>
     </main>
     <footer class="site-footer">
         <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
         <div class="wrap footer-row" data-nosnippet>
             <div>© 2026 vHuman LLC · vHuman Studios</div>
-            <div class="legal"><a href="/services">Services</a><a href="/faq">FAQ</a><a href="/legal">Legal</a></div>
+            <div class="legal"><a href="/services">Services</a><a href="/faq">FAQ</a><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
         </div>
     </footer>
     <script type="module" src="scripts/pages/services.js"></script>

@@ -1,8 +1,11 @@
-import { StudioContentList } from '../shared/content-list.js';
+import { StudioPageScroll } from '../shared/page-scroll.js';
+import { StudioIntroText } from '../shared/intro-text.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
 import { createPageMenu } from '../shared/page-menu.js';
 
-// A link to a question (/faq#vhuman-studios) opens it.
-StudioContentList(document.querySelector(".faq-content"), { deepLinks: true });
+const content = document.querySelector(".about-content");
+StudioPageScroll(content);
 createPageMenu();
-copyAddressOnClick(document.querySelectorAll('.faq-content a[href^="mailto:"]'));
+// The addresses also copy when clicked, for a computer with no mail app set up.
+copyAddressOnClick(content.querySelectorAll('a[href^="mailto:"]'));
+StudioIntroText(content);

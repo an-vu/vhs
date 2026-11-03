@@ -19,8 +19,7 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#F9F8F6">
     <link rel="stylesheet" href="styles/site.css">
-    <link rel="stylesheet" href="styles/disclosure.css">
-    <link rel="stylesheet" href="styles/legal.css">
+    <link rel="stylesheet" href="styles/about.css">
 
     <meta name="description" content="Privacy notice, cookie policy, and terms for vHuman, a creative technology studio.">
     <link rel="canonical" href="https://vhumanstudios.com/legal">
@@ -73,106 +72,90 @@
             </nav>
         </div>
     </header>
-    <main class="page-content wrap" aria-label="Legal notices">
-        <div class="legal-content">
-            <section class="content-section" aria-labelledby="legal-heading">
-                <h2 id="legal-heading">vHuman LLC</h2>
-                <ul>
-                    <li>
-                        <details class="disclosure" name="legal-policies" id="privacy">
-                            <summary>General Privacy Notice</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Last updated: October 25, 2026</p>
-                                <h3>About this notice</h3>
-                                <p>vHuman LLC handles personal information when you
-                                    visit this website, contact us, or work with us.</p>
-                                <h3>Information and use</h3>
-                                <p>We may receive your name, email address, messages, and project or business details.
-                                    We use this information to respond, provide services, manage our working
-                                    relationships, and keep necessary business records. Hosting and infrastructure
-                                    providers may also process technical information, such as your IP address and
-                                    browser details, to deliver and secure the site.</p>
-                                <h3>Sharing and retention</h3>
-                                <p>We may share information with service providers and collaborators as needed to
-                                    operate the studio, or when required by law. We do not sell personal information for
-                                    money. We retain information as needed for these purposes and applicable legal
-                                    obligations, and use reasonable safeguards to protect it. No system is completely
-                                    secure. Our providers may process information outside your country.</p>
-                                <h3>Your choices</h3>
-                                <p>Depending on applicable law, you may have rights to access, correct, delete, or
-                                    obtain a copy of your information, restrict or object to processing, or withdraw
-                                    consent. Contact <a href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a> to
-                                    make a request; we may need to verify your identity. We will not discriminate
-                                    against you for exercising applicable rights.</p>
-                                <p>Third-party sites have their own privacy practices. We may update this notice as our
-                                    practices change. Questions about privacy can be sent to <a
-                                        href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a>.</p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="legal-policies" id="cookies">
-                            <summary>Cookie Policy</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Last updated: November 1, 2026</p>
-                                <h3>Cookies and external services</h3>
-                                <p>The current website code does not set cookies or include advertising or analytics
-                                    trackers. Some features load resources from external providers, including jsDelivr
-                                    for our 3D library. Requests to these providers disclose technical information such
-                                    as your IP address; their own privacy practices apply.</p>
-                                <p>You can manage cookies through your browser settings. If we introduce cookies or
-                                    tracking services, we will update this notice and provide any disclosures and
-                                    choices required by applicable law.</p>
-                                <p>Questions: <a href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a>.</p>
-                            </div>
-                        </details>
-                    </li>
-                    <li>
-                        <details class="disclosure" name="legal-policies" id="terms">
-                            <summary>Terms and Conditions</summary>
-                            <div class="disclosure-detail legal-copy">
-                                <p>Last updated: October 26, 2026</p>
-                                <h3>Using this website</h3>
-                                <p>This website is operated by vHuman LLC, also known as vHuman Studios. Use it
-                                    lawfully and do not disrupt its operation, attempt unauthorized access, or
-                                    misrepresent your relationship with us.</p>
-                                <h3>Our work and third-party material</h3>
-                                <p>Original site content belongs to vHuman LLC or its licensors. Third-party names,
-                                    logos, designs, and other materials remain the property of their respective owners.
-                                    Their appearance here does not, by itself, indicate affiliation, endorsement,
-                                    sponsorship, or a client relationship. Independent studies and experiments are not
-                                    official brand projects unless expressly identified as such.</p>
-                                <p>If you believe material on this site infringes your rights, please contact <a
-                                        href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a> with the page URL
-                                    and details of your concern so we can review it and, where appropriate, correct or
-                                    remove it promptly. This request does not limit anyone’s legal rights or remedies.
-                                </p>
-                                <p>You may browse and share links to this site. Other reuse of protected material
-                                    requires permission from the relevant rights holder unless permitted by law.
-                                    Separate agreements govern commissioned work.</p>
-                                <h3>Availability and responsibility</h3>
-                                <p>The site is provided “as is” and “as available.” We do not guarantee uninterrupted
-                                    access or that all content is complete, current, or error-free. External links are
-                                    provided for reference; we do not control their content or practices.</p>
-                                <p>To the extent permitted by law, we disclaim implied warranties and liability for
-                                    indirect or consequential loss arising from use of the site. Nothing here excludes
-                                    rights or liability that cannot lawfully be excluded.</p>
-                                <h3>Updates and contact</h3>
-                                <p>We may update these terms and will revise the date above. For questions or
-                                    permissions, contact <a
-                                        href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a>.</p>
-                            </div>
-                        </details>
-                    </li>
-                </ul>
-            </section>
+    <main class="page-content about wrap" aria-label="Legal notices">
+        <!-- Contact's look (about.css): big text that rises in, then the three policies,
+             all open, with no menu after them. /legal#privacy, #cookies and #terms go to each. -->
+        <div class="about-content">
+            <p class="about-intro">
+                <span class="about-sentence">Privacy notice, cookie policy, and terms for vHuman LLC.</span>
+            </p>
+            <div class="intro-detail page-detail legal-detail">
+                <p class="related">Last updated: November 2, 2026</p>
+
+                <h2 class="section-heading" id="privacy">General Privacy Notice</h2>
+                <h3>About this notice</h3>
+                <p>vHuman LLC handles personal information when you
+                visit this website, contact us, or work with us.</p>
+                <h3>Information and use</h3>
+                <p>We may receive your name, email address, messages, and project or business details.
+                We use this information to respond, provide services, manage our working
+                relationships, and keep necessary business records. Hosting and infrastructure
+                providers may also process technical information, such as your IP address and
+                browser details, to deliver and secure the site.</p>
+                <h3>Sharing and retention</h3>
+                <p>We may share information with service providers and collaborators as needed to
+                operate the studio, or when required by law. We do not sell personal information for
+                money. We retain information as needed for these purposes and applicable legal
+                obligations, and use reasonable safeguards to protect it. No system is completely
+                secure. Our providers may process information outside your country.</p>
+                <h3>Your choices</h3>
+                <p>Depending on applicable law, you may have rights to access, correct, delete, or
+                obtain a copy of your information, restrict or object to processing, or withdraw
+                consent. Contact <a href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a> to
+                make a request; we may need to verify your identity. We will not discriminate
+                against you for exercising applicable rights.</p>
+                <p>Third-party sites have their own privacy practices. We may update this notice as our
+                practices change.</p>
+
+                <h2 class="section-heading" id="cookies">Cookie Policy</h2>
+                <h3>Cookies and external services</h3>
+                <p>The current website code does not set cookies or include advertising or analytics
+                trackers. Some features load resources from external providers, including jsDelivr
+                for our 3D library. Requests to these providers disclose technical information such
+                as your IP address; their own privacy practices apply.</p>
+                <p>You can manage cookies through your browser settings. If we introduce cookies or
+                tracking services, we will update this notice and provide any disclosures and
+                choices required by applicable law.</p>
+
+
+                <h2 class="section-heading" id="terms">Terms and Conditions</h2>
+                <h3>Using this website</h3>
+                <p>This website is operated by vHuman LLC, also known as vHuman Studios. Use it
+                lawfully and do not disrupt its operation, attempt unauthorized access, or
+                misrepresent your relationship with us.</p>
+                <h3>Our work and third-party material</h3>
+                <p>Original site content belongs to vHuman LLC or its licensors. Third-party names,
+                logos, designs, and other materials remain the property of their respective owners.
+                Their appearance here does not, by itself, indicate affiliation, endorsement,
+                sponsorship, or a client relationship. Independent studies and experiments are not
+                official brand projects unless expressly identified as such.</p>
+                <p>If you believe material on this site infringes your rights, please let us know, with the page URL
+                and details of your concern, so we can review it and, where appropriate, correct or
+                remove it promptly. This request does not limit anyone’s legal rights or remedies.
+                </p>
+                <p>You may browse and share links to this site. Other reuse of protected material
+                requires permission from the relevant rights holder unless permitted by law.
+                Separate agreements govern commissioned work.</p>
+                <h3>Availability and responsibility</h3>
+                <p>The site is provided “as is” and “as available.” We do not guarantee uninterrupted
+                access or that all content is complete, current, or error-free. External links are
+                provided for reference; we do not control their content or practices.</p>
+                <p>To the extent permitted by law, we disclaim implied warranties and liability for
+                indirect or consequential loss arising from use of the site. Nothing here excludes
+                rights or liability that cannot lawfully be excluded.</p>
+                <h3>Updates and contact</h3>
+                <p>We may update these terms and will revise the date above. For questions, permissions, or
+                concerns about any of these policies, contact <a
+                href="mailto:eve@vhumanstudios.com">eve@vhumanstudios.com</a>.</p>
+
+            </div>
         </div>
     </main>
     <footer class="site-footer">
         <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
         <div class="wrap footer-row" data-nosnippet>
             <div>© 2026 vHuman LLC · vHuman Studios</div>
-            <div class="legal"><a href="/services">Services</a><a href="/faq">FAQ</a><a href="/legal">Legal</a></div>
+            <div class="legal"><a href="/services">Services</a><a href="/faq">FAQ</a><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
         </div>
     </footer>
     <script type="module" src="scripts/pages/legal.js"></script>

@@ -61,16 +61,17 @@ The studio's in-house toolset, shared with partners and clients as part of worki
 - [Home](https://vhumanstudios.com/): Technology, made human.
 - [About](https://vhumanstudios.com/about): what the studio does, how it works, and what it believes
 - [Work](https://vhumanstudios.com/work): our projects
-- [Services](https://vhumanstudios.com/services): the studio's four practice areas and the projects behind each
+- [Services](https://vhumanstudios.com/services): the studio's four practice areas
 - [Contact](https://vhumanstudios.com/contact): how to reach the studio and start a project
 - [FAQ](https://vhumanstudios.com/faq): questions and answers about the studio
 - [Legal](https://vhumanstudios.com/legal): privacy notice, cookie policy, and terms
+- [Sitemap](https://vhumanstudios.com/sitemap): every page and what's in it
 
 ## Markdown copies
 
 Every page above has a plain-text markdown copy: add .md to its address (Home is /index.md). They are made from the pages each time the site is published.
 
-- [index.md](https://vhumanstudios.com/index.md), [about.md](https://vhumanstudios.com/about.md), [work.md](https://vhumanstudios.com/work.md) (all nine projects), [services.md](https://vhumanstudios.com/services.md), [contact.md](https://vhumanstudios.com/contact.md), [faq.md](https://vhumanstudios.com/faq.md), [legal.md](https://vhumanstudios.com/legal.md)
+- [index.md](https://vhumanstudios.com/index.md), [about.md](https://vhumanstudios.com/about.md), [work.md](https://vhumanstudios.com/work.md) (all nine projects), [services.md](https://vhumanstudios.com/services.md), [contact.md](https://vhumanstudios.com/contact.md), [faq.md](https://vhumanstudios.com/faq.md), [legal.md](https://vhumanstudios.com/legal.md), [sitemap.md](https://vhumanstudios.com/sitemap.md)
 
 ## For AI agents
 

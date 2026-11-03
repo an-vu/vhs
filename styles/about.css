@@ -115,3 +115,29 @@
 .intro-detail p { margin: 0; }
 .intro-detail p + p { margin-top: 1em; }
 .intro-detail p + h2 { margin-top: 1.5em; }
+
+/* Services, the FAQ and Legal in Contact's look: section headings a step up,
+   area names and questions bold at reading size, related work and dates in the
+   menus' grey. A link to an id (/faq#cost) lands just under the header. */
+.page-detail .section-heading {
+  margin-top: 2.4em;
+  font-size: 1.45em;
+  letter-spacing: -.02em;
+}
+.page-detail :is(h3, .question) {
+  margin: 1.6em 0 .35em;
+  font-size: 1em;
+  font-weight: 700;
+}
+.page-detail [id] { scroll-margin-top: calc(var(--header-height) + 16px); }
+.page-detail > :first-child { margin-top: 0; }
+.page-detail .section-heading + :is(h3, .related) { margin-top: .9em; }
+.page-detail .related { color: var(--nav-fg); }
+/* Services: each area's smaller services, as bullets. */
+.page-detail .service-list li + li { margin-top: .15em; }
+.page-detail p + .service-list { margin-top: .6em; }
+.page-detail ul + p { margin-top: 1em; }
+.page-detail + .main-nav { margin-top: 56px; }
+/* Contact's word, address and "Copied" (copy-address.js) line up on the left here,
+   like the menu, instead of Home's centred column. */
+.about .main-nav a.is-swap { justify-items: start; }

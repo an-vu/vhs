@@ -17,7 +17,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 DOMAIN = (ROOT / "CNAME").read_text().strip()  # Full addresses on this domain are local files too.
-PAGES = {"index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html", "404.html"}
+PAGES = {"index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html", "sitemap.html", "404.html"}
 SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt", "agents.md"}
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".md", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
@@ -74,6 +74,9 @@ def local_path(url, parent):
     parts = urlsplit(url)
     own = parts.scheme == "https" and parts.netloc == DOMAIN
     if (parts.scheme or parts.netloc) and not own or not parts.path:
+        return None
+    # The markdown copies (/about.md) are made at publish time (MARKDOWN, below).
+    if parts.path.lstrip("/") in {Path(page).with_suffix(".md").as_posix() for page in MARKDOWN}:
         return None
     base = ROOT if parts.path.startswith("/") else (ROOT / parent).parent
     candidate = base / unquote(parts.path).lstrip("/")
@@ -163,7 +166,7 @@ def stamp(files):
 # A plain-text copy of each page for AI tools and readers (/about.md; Home is
 # /index.md), made from the page itself at publish time so it never drifts. Its
 # main content as markdown, under the page's title and Google text.
-MARKDOWN = ["index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html"]
+MARKDOWN = ["index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html", "sitemap.html"]
 SKIPPED = {"script", "style", "svg", "button", "template", "figure", "picture", "img", "noscript"}
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
 
