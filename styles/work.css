@@ -32,8 +32,10 @@
 }
 
 /* Work page: two docks under the Opus glass (scripts/glass). At the top, a row of
-   project logos like apple.com/airpods' product row, starting 45% of the header's
-   height below it (Apple: 20 px under its 44 px bar); the selected one sits in the
+   project logos like apple.com/airpods' product row, starting 39 px below the
+   header on a computer and 30 px on a phone (--logo-gap: 45% of the header's
+   height when it was 86 px, kept when it got slimmer; Apple: 20 px under its
+   44 px bar); the selected one sits in the
    glass in the middle and shows its panel below. At the end, the logo strip drifts
    through the same glass (logo-strip.js).
    Both docks share one glass circle (logo-strip.css).

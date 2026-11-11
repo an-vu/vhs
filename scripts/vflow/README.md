@@ -48,7 +48,7 @@ The default motion is one second with an ease-in/out quadratic curve.
 The timeline's inverse calculations depend on that curve; changing the curve also
 requires updating those calculations. Dot and image motion share one timeline.
 
-Optional CSS variables: `--bg`, `--fg`, `--nav-fg`, `--muted`, `--light-gray`,
+Optional CSS variables: `--bg`, `--fg`, `--muted`, `--light-gray`,
 `--image-border`, and `--image-radius`. Each has a fallback.
 Override `--gallery-height` on your gallery to change its height.
 

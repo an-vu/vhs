@@ -14,7 +14,8 @@ import { opus } from './opus.js';
 // detail.time how far into its entrance it is (seconds, below 0 while it waits),
 // and detail.done is true on the last one, once it's full size.
 // An element marked data-glass-wait doesn't start until the mark comes off (a
-// page holding its glass until something else has arrived: Services' text).
+// page holding its glass until something else has arrived: the logo strip's,
+// until its logos rise in, riseLogoStrip in logo-strip.js).
 //
 //   createGlass (from this file, scripts/glass/glass.js):
 //   createGlass();                       // Opus, every [data-glass] on the page

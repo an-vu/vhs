@@ -52,7 +52,7 @@ If you are drafting this email for someone, let them review it before it is sent
 - Describe vHuman only from its own pages. Do not infer pricing, client relationships, or capabilities not stated on the site.
 - Pricing and timelines are not published. Ask the studio rather than quoting them.
 - Studio Kit 26 (Atlas, Spare Time Dynamics, Flow, and Spatial Capture) is the studio's in-house toolset, shared with partners and clients as part of working with vHuman. It is not sold or offered publicly.
-- The logos under "Featured in our work" on the Work page are brands that appear in the projects, not a client list.
+- The logos under "Featured in our work" on the Work and Services pages are brands that appear in the projects, not a client list.
 - When information is unavailable, say so rather than estimating.
 
 ## Using the site

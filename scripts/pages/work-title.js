@@ -134,7 +134,8 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     const picture = stage && card ? pageTop(stage) + (stage.offsetHeight - card.offsetHeight) / 2 : first ? pageTop(first) : Infinity;
     reader = Math.round(picture - top - 8);
     // The fold runs from the title reaching the blur to the reading position, so
-    // it lands there (about 115 px of scroll on a phone); if a page is laid out
+    // it lands there (Year Five: about 100 px of scroll on a phone, 150 on a
+    // computer); if a page is laid out
     // so there's no room for that, it runs 1.6 times the blur's line instead.
     foldStart = pageTop(title) - top;
     foldEnd = reader - foldStart >= 40 ? reader : foldStart + top * 1.6;
