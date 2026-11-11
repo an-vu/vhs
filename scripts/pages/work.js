@@ -1,6 +1,6 @@
 import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
-import { driftLogoStrip } from './logo-strip.js';
+import { driftLogoStrip, riseLogoStrip } from './logo-strip.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
 import { dockProjectTitle } from './work-title.js';
 import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
@@ -242,6 +242,11 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   // already there, so the text waits for the bubble.
   const ENTER = .5, TEXT_AFTER = .22, FADE_OUT = 200;
   let pending = -1, glassTime = -Infinity, holdUntil = 0, left = false, swiping = false;
+  // The row's glass only grows while the row is fully in view (glass.js), so once
+  // it isn't, the text stops waiting for it: scrolled down in the first moment,
+  // the project's text stayed blank till the row came back (Nov 10).
+  let rowAway = false;
+  new IntersectionObserver(([entry]) => { rowAway = entry.intersectionRatio < 1; arrive(); }, { threshold: 1 }).observe(flow);
   // Fades the text on show out (or back in).
   function fade(panel, out) {
     if (!out) { if (panel.style.opacity) panel.style.removeProperty('opacity'); return; }
@@ -264,7 +269,7 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     if (open && Math.abs(position - panels.indexOf(open)) > ENTER) { fade(open, true); left = true; }
   }
   function arrive() {
-    if (pending < 0 || Math.abs(position - pending) > ENTER || performance.now() < holdUntil || !(reduced.matches || glassTime >= TEXT_AFTER)) return;
+    if (pending < 0 || Math.abs(position - pending) > ENTER || performance.now() < holdUntil || !(reduced.matches || glassTime >= TEXT_AFTER || rowAway)) return;
     const panel = panels[pending], opened = panel.hidden;
     pending = -1;
     left = false;
@@ -444,13 +449,18 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     egg.classList.add('is-answered');
   }, { once: true });
 
-  // The logo strip at the end of the page (logo-strip.js).
-  driftLogoStrip(document.querySelector('.work-clients'));
+  // The logo strip at the end of the page (logo-strip.js). It rises in once
+  // everything above it that has started rising has landed (riseLogoStrip).
+  const strip = document.querySelector('.work-clients');
+  driftLogoStrip(strip);
+  const landed = s => s.delay <= 0 && Math.abs(s.target - s.value) * 44 < 1 && Math.abs(s.velocity) * 44 < 20;
+  // (Not before the project's text has come: pending, arrive().)
+  riseLogoStrip(strip, () => pending < 0 && items.every(item => !item.spring || landed(item.spring)));
 
   // The glass over the selected project and the logo strip (scripts/glass): loaded
   // after the page, and only where WebGL works; without it the page stays as is.
   // The project glass bubbles in with the row, a hair after it starts rising in;
-  // the strip's waits a moment once in view (data-glass-delay, work.html). Each
+  // the strip's just after the strip starts rising in (riseLogoStrip). Each
   // lens opens with its glass (--lens-grow, work.css): the big, colored logos
   // inside the circle grow in with the bubble, not before it.
   const hosts = [...document.querySelectorAll('.glass-spot[data-glass]')].map(spot => spot.parentElement);

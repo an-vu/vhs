@@ -1,4 +1,4 @@
-import { FADE } from './motion.js';
+import { swapText } from './swap-text.js';
 
 // An email link that also copies its address and shows it in the link's place, for
 // a computer with no mail app set up (the email opens nothing there), and since no
@@ -23,36 +23,16 @@ export function copyAddressOnClick(links) {
 // copies it and says so for a moment ("Copied"), then shows the address again, or
 // the word once the pointer has left. Touch screens keep copyAddressOnClick (a
 // phone always has a mail app, and there's no pointing).
-// The texts cross-fade in one spot (.is-swap, site.css), soft: the new one fades
-// in from a slight blur while the old one fades out into it, so there's never a
-// gap and the overlap reads as a blend. The room the dots behind Home's text make
-// for each word fades with it (text-mask.js); "studio:text-change" starts that.
-// Timing: the site's fade curve, over FADE.swap (motion.js).
-const CROSSFADE = { duration: FADE.swap, easing: FADE.ease };
-const SHARP = { opacity: 1, filter: 'blur(0)' }, SOFT = { opacity: 0, filter: 'blur(2px)' };
+// The texts cross-fade in one spot (swap-text.js, shared with About's town). The
+// room the dots behind Home's text make for each word fades with it
+// (text-mask.js); "studio:text-change" starts that.
 export function revealAddressOnHover(link) {
-  const first = textOf(link), word = first.textContent, address = addressOf(link);
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let pointed = false, copied = 0, current = word;
-  link.classList.add('is-swap');
-  const changed = () => dispatchEvent(new Event('studio:text-change'));
+  const word = textOf(link).textContent, address = addressOf(link);
+  let pointed = false, copied = 0;
+  const swap = swapText(link, { onChange: () => dispatchEvent(new Event('studio:text-change')) });
   const show = value => {
-    if (value === current) return;
-    current = value;
     link.classList.toggle('is-address', value !== word);
-    const incoming = Object.assign(document.createElement('span'), { textContent: value });
-    if (first.hasAttribute('data-nosnippet')) incoming.setAttribute('data-nosnippet', '');
-    for (const layer of link.querySelectorAll(':scope > span:not([data-leaving])')) {
-      layer.dataset.leaving = '';
-      if (reduced.matches) { layer.remove(); continue; }
-      const { opacity, filter } = getComputedStyle(layer);
-      layer.getAnimations().forEach(animation => animation.cancel());
-      layer.animate([{ opacity, filter }, SOFT], { ...CROSSFADE, fill: 'forwards' })
-        .finished.then(() => { layer.remove(); changed(); }, () => {});
-    }
-    link.append(incoming);
-    if (!reduced.matches) incoming.animate([SOFT, SHARP], CROSSFADE);
-    changed();
+    swap(value);
   };
   // Leaving, the address stays a moment before the word comes back; pointing again
   // in that moment keeps it.

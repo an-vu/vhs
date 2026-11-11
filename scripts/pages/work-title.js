@@ -173,7 +173,10 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     slash.style.opacity = room;
     const docked = e >= 1, flying = e > 0 && !docked;
     crumb.classList.toggle('is-flying', !docked);
-    crumb.inert = !docked;
+    // Only when it changes: setting it at all counts as a change to the page, and
+    // the logo row's glass copies the page again for anything but a style change
+    // (glass-renderer.js), which on phones made the fold stutter (Nov 10).
+    if (crumb.inert === docked) crumb.inert = !docked;
     title.classList.toggle('is-docked', e > 0);
     // The project's own menu closes once its name starts to leave; another open
     // menu follows the header recentring.

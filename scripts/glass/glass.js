@@ -13,6 +13,8 @@ import { opus } from './opus.js';
 // (0 before it starts, a little over 1 as it bursts past full size, then 1),
 // detail.time how far into its entrance it is (seconds, below 0 while it waits),
 // and detail.done is true on the last one, once it's full size.
+// An element marked data-glass-wait doesn't start until the mark comes off (a
+// page holding its glass until something else has arrived: Services' text).
 //
 //   createGlass (from this file, scripts/glass/glass.js):
 //   createGlass();                       // Opus, every [data-glass] on the page
@@ -74,7 +76,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
       smooth = 2;
     }
     // Fully in view (or filling it, for a glass taller than the view).
-    if (ready && !starts.has(target) && Math.min(box.bottom, innerHeight) - Math.max(box.top, 0) >= Math.min(box.height, innerHeight) - 1) {
+    if (ready && !starts.has(target) && !('glassWait' in target.dataset) && Math.min(box.bottom, innerHeight) - Math.max(box.top, 0) >= Math.min(box.height, innerHeight) - 1) {
       starts.set(target, clock + (parseFloat(target.dataset.glassDelay) || 0));
     }
     const t = starts.has(target) ? clock - starts.get(target) : -1;

@@ -344,6 +344,19 @@ html.page-motion {
   color: var(--muted);
 }
 
+/* The © line, on one line always (An, Nov 11: "if must be 2 line dont show
+   vhuman studios just show vhuman llc"): where all of it doesn't fit (a 320 px
+   phone), " · vHuman Studios" wraps onto a second line that the one-line height
+   cuts off, leaving "© 2026 vHuman LLC". */
+.footer-copy {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  height: 1.55em;
+  overflow: hidden;
+}
+.footer-copy > span { white-space: nowrap; }
+
 .legal {
   display: flex;
   flex-wrap: wrap;
@@ -361,7 +374,7 @@ html.page-motion {
 }
 
 .is-founded .footer-copy { grid-area: 1 / 1; }
-.is-founded .footer-facts { grid-area: 1 / 2; text-align: center; }
+.is-founded .footer-facts { grid-area: 1 / 2; text-align: center; white-space: nowrap; }
 .is-founded .legal { grid-area: 1 / 3; justify-self: end; }
 
 .legal a:hover {
@@ -401,15 +414,28 @@ html.page-motion {
   color: var(--fg)
 }
 
-/* Home's Contact with a mouse (copy-address.js): the word, the address and
-   "Copied" share one spot and cross-fade, centred in the menu's column. */
-.main-nav a.is-swap {
+/* Texts that cross-fade in one spot (swap-text.js) stack in one grid cell. */
+.is-swap {
   display: inline-grid;
+}
+
+.is-swap > span {
+  grid-area: 1 / 1;
+}
+
+/* Home's Contact with a mouse (copy-address.js): the word, the address and
+   "Copied", centred in the menu's column. */
+.main-nav a.is-swap {
   justify-items: center;
 }
 
-.main-nav a.is-swap > span {
-  grid-area: 1 / 1;
+/* About's footer: "Cody, Wyoming" and its coordinates (about.js), from the left
+   edge, the spot's width gliding between them. Plain text: no pointer, and no
+   grey flash on a tap. */
+.footer-town {
+  justify-items: start;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Contact once clicked shows the address (copy-address.js), at the menu's size
@@ -442,8 +468,19 @@ html.page-motion {
     gap: 12px
   }
 
-  /* About's: the founding line in the left corner above the © line, the links
-     in the right corner beside the © line. */
+  /* On the narrowest phones (320 px) the © line drops " · vHuman Studios"
+     (.footer-copy); Legal and Sitemap stay together. */
+  .legal {
+    flex-wrap: nowrap;
+    flex-shrink: 0
+  }
+}
+
+/* About's footer below 960 px (phones, and narrow computer windows, where the
+   centred line with the town's coordinates showing wouldn't fit between © and
+   the links): the founding line in the left corner above the © line, the links
+   in the right corner beside it. */
+@media(max-width:959px) {
   .footer-row.is-founded {
     grid-template-columns: 1fr auto;
     column-gap: 12px;
@@ -453,12 +490,6 @@ html.page-motion {
   .is-founded .footer-facts { grid-area: 1 / 1 / 2 / 3; text-align: left; }
   .is-founded .footer-copy { grid-area: 2 / 1; }
   .is-founded .legal { grid-area: 2 / 2; }
-
-  /* On the narrowest phones (320 px) the © line wraps; Legal and Sitemap stay together. */
-  .legal {
-    flex-wrap: nowrap;
-    flex-shrink: 0
-  }
 }
 
 @media(prefers-reduced-motion:reduce) {

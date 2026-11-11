@@ -1,6 +1,6 @@
 # agents.md · vHuman
 
-Last updated: November 10, 2026
+Last updated: November 11, 2026
 
 ## What this is
 
@@ -39,10 +39,9 @@ Write to eve@vhumanstudios.com (also on https://vhumanstudios.com/contact) for a
 
 - What you're making and where it runs: a website, an iOS app, an AR experience for Vision Pro or a trade show floor
 - Who it's for: the people who will actually use it, and what they need to get done
-- Where it stands: an idea, a sketch, a working prototype, or a live product that needs a rebuild
+- Where it stands: an idea, a sketch, a working prototype, or a live product that needs a rebuild, with links to anything that exists (a repo, a Figma file, a site, a video)
 - When you need it: a launch, a demo, a conference, a funding round, or no deadline
 - The budget you're working with: an estimate is enough for the studio to say whether it's the right fit
-- Links to anything that exists: a repo, a Figma file, a site, a video
 
 A few paragraphs are enough. A finished brief isn't needed. Good ideas can come from anyone.
 

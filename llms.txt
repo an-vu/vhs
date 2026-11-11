@@ -21,7 +21,7 @@ vHuman is the studio at vhumanstudios.com, also known as vHuman Studios. It is s
 - 3D and spatial computing: AR asset pipelines, USDZ optimization and inspection, LiDAR capture, real-time 3D
 - Research and development: researching whether something is possible, building what it takes to find out, and reporting back
 
-More on each, with the projects behind it: https://vhumanstudios.com/services
+More on each: https://vhumanstudios.com/services
 
 ## Studio Kit 26
 

@@ -107,9 +107,12 @@
   font-size: 1.15em;
   font-weight: 400;
 }
+/* Lists (Services, FAQ, Contact, the Sitemap) mark each item with an en dash, not
+   a dot (An, Nov 10). The en space after it is the gap; it doesn't collapse. */
 .intro-detail ul {
   margin: 0 0 1em;
   padding-left: 1.2em;
+  list-style-type: "\2013\2002";
 }
 .intro-detail li + li { margin-top: .35em; }
 .intro-detail p { margin: 0; }
@@ -129,7 +132,9 @@
   font-size: 1em;
   font-weight: 700;
 }
-.page-detail [id] { scroll-margin-top: calc(var(--header-height) + 16px); }
+/* A link to a part (/services#software, from the Sitemap) lands with its name a
+   line below the header's blur, not in it (An, Nov 10): 1.55em is a line here. */
+.page-detail [id] { scroll-margin-top: calc(var(--header-height) + 16px + 1.55em); }
 .page-detail > :first-child { margin-top: 0; }
 .page-detail .section-heading + :is(h3, .related) { margin-top: .9em; }
 .page-detail .related { color: var(--nav-fg); }

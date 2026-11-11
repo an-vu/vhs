@@ -14,6 +14,8 @@
 // layers, each cut to its side of the circle, so a logo crossing the edge is half
 // one, half the other. Dark brand colors use --logo-ink, so a dark page can
 // lighten them.
+import { StudioMotion } from '../shared/motion.js';
+
 const SPOTS = 7, GAP = 2 * SPOTS;
 const NS = 'http://www.w3.org/2000/svg';
 const clamp = value => Math.max(0, Math.min(1, value));
@@ -138,7 +140,8 @@ function copies(text, name) {
 // A page's "Featured in our work" section (Work, Services): its strip drifts right
 // to left through the seven spots, its logos one glass apart (the circle's width),
 // where Work's project row has its first neighbours too. It sits outside the
-// page's content, so the bottom bounce and the entrances leave it alone. Resting
+// page's content, so the bottom bounce and the text's entrance leave it alone; it
+// rises in on its own, after the text (riseLogoStrip, below). Resting
 // the pointer on its glass (or a finger) eases it to a crawl, so the logo there
 // can be read and the glass looked at.
 export function driftLogoStrip(section) {
@@ -183,4 +186,45 @@ export function driftLogoStrip(section) {
   reduced.addEventListener('change', run);
   place();
   run();
+}
+
+// The strip comes in last (An, Nov 10: "text scrolled > bottom dock scrolled in >
+// bubble glass appears"): once it's on screen and `ready()` says the text above it
+// has finished rising, its label and then its logos rise in like the text (the
+// site's entrance spring). Its glass is let go (data-glass-wait, glass.js) once
+// the logos are halfway up, so it grows in just after them (An, Nov 10: "almost
+// same time as the dock but just after the dock started"). Called before the
+// glass is made. Reduce motion: no rise, the glass isn't held.
+export function riseLogoStrip(section, ready = () => true) {
+  if (!section) return;
+  const M = StudioMotion;
+  const spot = section.querySelector('.glass-spot');
+  const parts = [section.querySelector('.work-clients-label'), section.querySelector('.work-clients-strip')].filter(Boolean);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !parts.length) return;
+  if (spot) spot.dataset.glassWait = '';
+  M.paintEntrance(parts, parts.map(() => M.spring(0)));
+  // In place to the eye: within a pixel, no longer bouncing.
+  const landed = s => s.delay <= 0 && Math.abs(s.target - s.value) * 44 < 1 && Math.abs(s.velocity) * 44 < 20;
+  let springs = null, inView = false, done = false;
+  const loop = M.createLoop(dt => {
+    if (done) return false;
+    // Waiting: checked each frame while the strip is on screen.
+    if (!springs) {
+      if (!inView || !ready()) return inView;
+      springs = parts.map((_, i) => M.spring(0, 1, M.entranceDelay(i)));
+    }
+    let moving = false;
+    for (const s of springs) moving = M.step(s, dt) || moving;
+    M.paintEntrance(parts, springs);
+    if (spot && 'glassWait' in spot.dataset && springs.at(-1).value >= .5) delete spot.dataset.glassWait;
+    if (springs.every(landed)) {
+      done = true;
+      parts.forEach(part => { part.style.removeProperty('opacity'); part.style.removeProperty('transform'); });
+      watch.disconnect();
+      return false;
+    }
+    return true;
+  }, () => true);
+  const watch = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; loop.wake(); });
+  watch.observe(section);
 }
