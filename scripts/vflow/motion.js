@@ -32,14 +32,19 @@ export function createMotion(count, settings) {
       && i !== wrap(Math.round(state.journey.from)) && i !== wrap(state.journey.to);
     if (passing) fold = 1;
     const outer = Math.min(1, Math.max(0, distance - 1));
+    // With one card a side, the second layer doesn't fan out to the gallery's edge:
+    // it stays tucked behind the first, fading as it goes (opacity below).
+    const sides = typeof settings.sideCards === "function" ? settings.sideCards() : settings.sideCards;
+    const single = sides < 2;
     const nearAngle = 90 / phi;
     const angle = (nearAngle + (90 - nearAngle) / (phi * phi) * outer) * fold;
     const nearScale = 1 - 1 / phi ** 4;
     const scale = 1 - ((1 - nearScale) * (1 + outer / phi)) * fold;
-    // Near cards use 61.8% of the available side margin; far cards use all of it.
+    // Near cards use 61.8% of the available side margin; far cards use all of it
+    // (or, with one card a side, stay tucked behind the near ones).
     // Account for perspective so their outer edges remain inside the gallery.
     const margin = (1 - state.centerFraction) / 2;
-    const edge = state.centerFraction / 2 + margin * (1 / phi + outer / (phi * phi));
+    const edge = state.centerFraction / 2 + margin * (1 / phi + (single ? 0 : outer) / (phi * phi));
     const radians = angle * Math.PI / 180;
     const perspective = Math.max(settings.perspective, state.cardWidth * settings.perspectiveRatio);
     const projectedHalf = scale * Math.cos(radians) / 2
@@ -60,7 +65,7 @@ export function createMotion(count, settings) {
     const recycling = loopEnabled && count > 2 && distance > count / 2 - .12;
     return {
       transform: `translate(-50%, -50%) translateX(${side * shift}%) perspective(${perspective}px) rotateY(${-side * angle}deg) scale(${scale})`,
-      opacity: recycling ? 0 : 1,
+      opacity: recycling ? 0 : single ? Math.max(0, Math.min(1, 2 - distance)) : 1,
       dot: Math.max(0, 1 - distance),
       main: 1 - fold,
       near: distance <= 1 ? 1 : 0

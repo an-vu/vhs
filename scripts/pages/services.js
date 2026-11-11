@@ -1,17 +1,15 @@
 import { StudioPageScroll } from '../shared/page-scroll.js';
 import { StudioIntroText } from '../shared/intro-text.js';
-import { copyAddressOnClick, revealAddressOnHover } from '../shared/copy-address.js';
+import { copyAddressOnClick } from '../shared/copy-address.js';
 import { createPageMenu } from '../shared/page-menu.js';
 import { driftLogoStrip } from './logo-strip.js';
 
 const content = document.querySelector(".about-content");
 StudioPageScroll(content);
 createPageMenu();
-// Contact at the end works like Home's: with a mouse, pointing at it shows the
-// address and a click copies it ("Copied"); on a touch screen a tap shows it.
-const contact = content.querySelectorAll('.main-nav a[href^="mailto:"]');
-if (matchMedia('(hover: hover) and (pointer: fine)').matches) contact.forEach(revealAddressOnHover);
-else copyAddressOnClick(contact);
+// The address at the end (and any in the text) opens an email and copies it,
+// like FAQ's and Contact's.
+copyAddressOnClick(content.querySelectorAll('a[href^="mailto:"]'));
 StudioIntroText(content);
 
 // Work's logo strip at the end (logo-strip.js), under its glass (scripts/glass):

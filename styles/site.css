@@ -9,7 +9,22 @@
      since the gallery's turned cards squeeze their corners and 10 px read as
      neither sharp nor round there. The same at every width. */
   --image-radius: 14px;
-  --header-height: 86px;
+  /* The "›" after a header menu's name ("Work ›"): a switch. Off since Nov 10
+     (An: "just vhuman / work / project"); the menus still open on a tap. On:
+     --menu-arrow: "›"; */
+  --menu-arrow: none;
+  /* The site's fades (FADE in shared/motion.js has the same): a soft start and
+     landing, a gentle fade in, a slower fade away. */
+  --fade-ease: cubic-bezier(.4, 0, .2, 1);
+  --fade-in: .7s;
+  --fade-out: .9s;
+  /* Big pictures fading away (the phone gallery's side cards): they read as
+     faster than small things at the same speed, so they take longer. */
+  --fade-out-slow: 1.4s;
+  /* The header bar: its words in the middle, about 26 px above and below on a
+     computer, 21 on a phone (Nov 10, was 86 and 72: An, "the gap between the
+     header text and top screen and the gap below look big"). */
+  --header-height: 76px;
   --brand-size: 24px;
   --blur-reach: 22px;
   --display-size: min(clamp(64px, 10vw, 150px), 12svh);
@@ -143,7 +158,7 @@ html.page-motion {
    tighter letters), turned down while the menu is open. Drawn here, so the
    heading's text stays "vHuman / Work". */
 .page-menu-toggle::after {
-  content: "›";
+  content: var(--menu-arrow);
   display: inline-block;
   margin-left: .3em;
   color: var(--nav-fg);
@@ -151,7 +166,7 @@ html.page-motion {
 }
 
 /* Turned, the "›" sits closer to the word, so it moves out a touch. */
-.is-menu-open .page-menu-toggle::after {
+.page-menu-toggle[aria-expanded="true"]::after {
   transform: translateX(.08em) rotate(90deg);
 }
 
@@ -195,18 +210,17 @@ html.page-motion {
   z-index: 5;
 }
 
-.is-menu-open .page-menu {
+.page-menu.is-open {
   visibility: visible;
   transition-delay: 0s;
 }
 
-.is-menu-open .page-menu a {
+/* Each item .04 s after the one before (--i, page-menu.js). */
+.page-menu.is-open a {
   opacity: 1;
   translate: 0 0;
+  transition-delay: 0s, calc(var(--i, 0) * .04s), calc(var(--i, 0) * .04s);
 }
-
-.is-menu-open .page-menu a:nth-child(2) { transition-delay: 0s, .04s, .04s; }
-.is-menu-open .page-menu a:nth-child(3) { transition-delay: 0s, .08s, .08s; }
 
 .header-blur {
   transition: height .25s ease;
@@ -314,7 +328,8 @@ html.page-motion {
   position: relative;
   z-index: 2;
   flex-shrink: 0;
-  padding: 18px 0 22px;
+  /* Nov 10: 10% less room above and below (was 18 and 22). */
+  padding: 16px 0 20px;
 }
 
 .footer-row {
@@ -335,6 +350,19 @@ html.page-motion {
   justify-content: flex-end;
   gap: 7px 16px;
 }
+
+/* About's footer (about.html): the © line in the left corner and the links in
+   the right, as on every page, with the founding line centred between them. */
+.footer-row.is-founded {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  column-gap: 24px;
+}
+
+.is-founded .footer-copy { grid-area: 1 / 1; }
+.is-founded .footer-facts { grid-area: 1 / 2; text-align: center; }
+.is-founded .legal { grid-area: 1 / 3; justify-self: end; }
 
 .legal a:hover {
   color: var(--fg)
@@ -393,7 +421,7 @@ html.page-motion {
 
 @media(max-width:760px) {
   :root {
-    --header-height: 72px;
+    --header-height: 64px;
     --brand-size: 22px;
     /* 15vw, not edge to edge: at 17vw "made human." ran to 14 px from the
        sides and the page felt cramped on a phone (60 px on an iPhone 16 Pro). */
@@ -408,8 +436,28 @@ html.page-motion {
     padding: 24px 8px 64px
   }
 
+  /* One line on phones too: the © line on the left, Legal and Sitemap on the
+     right (with two links it fits from a 375 px phone up; Nov 10). */
   .footer-row {
     gap: 12px
+  }
+
+  /* About's: the founding line in the left corner above the © line, the links
+     in the right corner beside the © line. */
+  .footer-row.is-founded {
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    row-gap: 2px;
+  }
+
+  .is-founded .footer-facts { grid-area: 1 / 1 / 2 / 3; text-align: left; }
+  .is-founded .footer-copy { grid-area: 2 / 1; }
+  .is-founded .legal { grid-area: 2 / 2; }
+
+  /* On the narrowest phones (320 px) the © line wraps; Legal and Sitemap stay together. */
+  .legal {
+    flex-wrap: nowrap;
+    flex-shrink: 0
   }
 }
 

@@ -2,13 +2,13 @@ import { StudioMotion } from './motion.js';
 
 // The big text of About, Contact, Services, the FAQ and Legal: its sentences rise
 // in line by line, then the details under it (each heading, list item and
-// paragraph as one line), then the links (and About's small facts line). onSettled
+// paragraph as one line), then the links. onSettled
 // runs once, when the lines in view have finished their bounce and the fonts are
 // in (About begins its rover then).
 export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   const M = StudioMotion;
   const paragraph = content?.querySelector(".about-intro");
-  const links = [...content?.querySelectorAll(".main-nav a, .about-facts") ?? []];
+  const links = [...content?.querySelectorAll(".main-nav a") ?? []];
   const sentences = [...content?.querySelectorAll(".about-sentence") ?? []];
   const details = [...content?.querySelectorAll(".intro-detail > :is(h2, h3), .intro-detail li, .intro-detail > p") ?? []];
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");

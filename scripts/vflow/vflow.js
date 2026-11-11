@@ -121,13 +121,17 @@ export function createVFlow(images, title = "Project", options = {}) {
     });
     updateSelection();
   }
+  // A finished move tells the page ("vflow:settle" on the gallery), so it can
+  // react once the cards are still.
   function stop() {
+    const moving = gallery.classList.contains("is-moving");
     cancelAnimationFrame(frame);
     frame = 0;
     paint();
     animations.forEach(animation => animation.cancel());
     animations = [];
     gallery.classList.remove("is-moving");
+    if (moving) gallery.dispatchEvent(new Event("vflow:settle"));
   }
   function show(index) {
     // Finish the current journey before accepting another navigation request.

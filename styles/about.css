@@ -84,24 +84,15 @@
   z-index: 5;
 }
 .about-model-expanded .about { pointer-events: none; }
-.about-intro, .about .main-nav, .about-facts {
+.about-intro, .about .main-nav {
   transition: translate .55s ease, opacity .55s ease;
 }
 .about-model-expanded .about-intro { translate: 0 -100px; opacity: 0; }
 .about-model-expanded .about .main-nav { translate: 0 100px; opacity: 0; }
-.about-model-expanded .about-facts { opacity: 0; }
 .about-model-expanded .site-header,
 .about-model-expanded .site-footer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
-  #about-rover, .about-intro, .about .main-nav, .about-facts { transition: none; }
-}
-
-/* About's facts (founded, by whom, where): small and grey like the footer's words. */
-.about-facts {
-  margin: 28px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
+  #about-rover, .about-intro, .about .main-nav { transition: none; }
 }
 
 /* Contact's details under its big text: reading size, like an FAQ answer. */
@@ -147,6 +138,3 @@
 .page-detail p + .service-list { margin-top: .6em; }
 .page-detail ul + p { margin-top: 1em; }
 .page-detail + .main-nav { margin-top: 56px; }
-/* Contact's word, address and "Copied" (copy-address.js) line up on the left here,
-   like the menu, instead of Home's centred column. */
-.about .main-nav a.is-swap { justify-items: start; }

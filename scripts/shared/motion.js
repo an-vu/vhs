@@ -1,4 +1,13 @@
 // Shared motion primitives. Page scripts own their navigation and scroll policy.
+
+// The site's fades, in one place: a soft start and a soft landing (the curve), a
+// gentle fade in, a slower fade away, and a quicker swap where two texts share one
+// spot (Contact and the address), since both are half there while it runs. Work's
+// project row and the phone galleries fade with these (work.css has the same
+// values as --fade-ease, --fade-in and --fade-out in site.css); Contact's swap
+// uses ease and swap (copy-address.js), and Home's dots follow it.
+export const FADE = { ease: 'cubic-bezier(.4, 0, .2, 1)', in: 700, out: 900, swap: 600 };
+
 export const StudioMotion = (() => {
   const clamp = value => Math.max(0, Math.min(1, value));
   const spring = (value, target = value, delay = 0) => ({ value, target, velocity: 0, delay });

@@ -1,6 +1,6 @@
 # agents.md · vHuman
 
-Last updated: November 3, 2026
+Last updated: November 10, 2026
 
 ## What this is
 
@@ -71,7 +71,7 @@ Every page is public and plain HTML, and nothing needs signing in. There are no 
 - Privacy notice: https://vhumanstudios.com/legal#privacy
 - Cookie policy: https://vhumanstudios.com/legal#cookies
 - Terms: https://vhumanstudios.com/legal#terms
-- Sitemap: https://vhumanstudios.com/sitemap (every page and what's in it)
+- Sitemap: https://vhumanstudios.com/sitemap (every page, project, service area and policy)
 
 ## Structured data
 

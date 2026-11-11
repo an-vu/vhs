@@ -10,7 +10,8 @@ export const defaults = Object.freeze({
   shadeOpacity: .48,
   dotWidth: 24,
   dotExpansion: 40,
-  swipeThreshold: 35
+  swipeThreshold: 35,
+  sideCards: 2            // cards showing on each side: 2, or 1 (the second stays tucked behind the first and fades); a number or a function returning one
 });
 
 // The sampled timeline and its inverse must use the same curve.

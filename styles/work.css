@@ -86,7 +86,7 @@
   font: inherit;
   cursor: pointer;
   filter: opacity(var(--edge, 1));
-  transition: opacity .7s cubic-bezier(.4, 0, .2, 1), color .3s cubic-bezier(0, 0, .5, 1);
+  transition: opacity var(--fade-in) var(--fade-ease), color .3s cubic-bezier(0, 0, .5, 1);
 }
 .project-flow-track .project-mark {
   transform: scale(var(--outside-scale));
@@ -125,6 +125,71 @@
   transition: opacity .3s cubic-bezier(0, 0, .5, 1);
 }
 .project-labels > .is-shown:not(.is-selected) { opacity: 1; }
+/* The project in the header, after "vHuman / Work ›" (work-title.js): it opens as
+   wide as the name has come in (--crumb-width), at the header's size and spacing.
+   While the title is on its way the name itself is the flying copy, so the
+   crumb's own name and "›" wait (is-flying); the "›" fades in as it lands. */
+.project-crumb {
+  display: inline-block;
+  max-width: var(--crumb-width, 0px);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--brand-size);
+  line-height: 1;
+  letter-spacing: -.055em;
+}
+@supports (overflow: clip) { .project-crumb { overflow: visible; overflow-x: clip; } }
+.project-toggle::after { transition: transform .2s ease, opacity .2s ease; }
+.project-crumb.is-flying .project-toggle { color: transparent; }
+.project-crumb.is-flying .project-toggle::after { opacity: 0; transition: none; }
+/* The title in flight, over the header and the glass; the real one hides
+   meanwhile (and while it's in the header). */
+.title-flight {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  white-space: nowrap;
+  line-height: 1.1;
+  pointer-events: none;
+  visibility: hidden;
+}
+.title-flight.is-flying { visibility: visible; }
+.project-panel .project-title.is-docked { visibility: hidden; }
+/* The tagline fades as it scrolls into the header's blur, so it doesn't pass
+   behind the header's words once the title has moved up (work-title.js sets
+   --leaving). A switch (Nov 10, on trial): 1 = on, 0 = off. A filter, since the
+   entrance owns its opacity. */
+.project-panel { --tagline-fade: 1; }
+/* The reading position: the title landed in the header and the project's first
+   picture just below the blur, a place the scroll settles into (work-title.js).
+   A switch (Nov 10, on trial): 1 = on, 0 = off. */
+:root { --reader-stop: 1; }
+/* The browser's own snapping, gentle mode (proximity): two resting places, the
+   page's top and the reading position (a point on the first picture's top); a
+   scroll that ends near one glides into it, anywhere else is free. Going down, a
+   flick slows into the reading position where the browser allows it
+   (scroll-snap-stop); going up it doesn't. */
+html.reader-snap {
+  scroll-snap-type: y proximity;
+  scroll-padding-top: var(--reader-top, 0px);
+}
+.reader-snap-top,
+.reader-snap-point {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+/* The top's resting place sits the page's scroll-padding down, so it rests at
+   exactly 0 (at 0 itself it pointed above the page, and Firefox ignored it and
+   pulled a fresh page down to the reading position). */
+.reader-snap-top { top: var(--reader-top, 0px); }
+html:not(.reader-snap) :is(.reader-snap-top, .reader-snap-point) { display: none; }
+html.reader-snap :is(.reader-snap-top, .reader-snap-point) { scroll-snap-align: start; }
+html.reader-snap.is-scrolling-down .reader-snap-point { scroll-snap-stop: always; }
+.project-panel .project-tagline { filter: opacity(calc(1 - var(--leaving, 0) * var(--tagline-fade))); }
 /* The phone's invisible scroller over the row (work.js); not on larger screens. */
 .project-scroller { display: none; }
 /* While the row is held and moving, every name shows (the one in the glass fades
@@ -138,7 +203,7 @@
 .project-flow.is-resting .project-flow-track button[aria-selected="false"],
 .project-flow.is-resting .project-labels > span {
   opacity: 0;
-  transition-duration: .9s;
+  transition-duration: var(--fade-out);
 }
 /* Each project's logo: one simple mark in a --logo box, like Apple Music's single note. */
 .project-mark {
@@ -179,8 +244,11 @@
    about Apple's own 980 px on a 1440 px screen. The card is 88% of the stage's width and
    94% of its height (vflow.css), so the stage is sized from the picture and
    centred on the text; the side cards fill the room either side. On a phone the
-   stage spans the screen: the picture comes out about as wide as the text, and
-   the side cards sit in the margins. */
+   stage spans the screen and the picture reaches 6 px past the text on each side
+   (16 px from the screen's edges while the text is 22 px in): 370 px against 358
+   on a 402 px iPhone, 288 against 276 at 320. Past about 650 px the text stops at
+   58ch and centres, so the picture does too (58ch + 12 px) and the side cards get
+   the extra room. */
 .project-panel .vflow {
   --picture-width: min(58ch * 1.4, (100vw - 20px) * .88);
   --gallery-height: calc(var(--picture-width) / 1.5 / .94);
@@ -188,10 +256,28 @@
   margin-left: calc(50% - var(--picture-width) / .88 / 2);
 }
 @media (max-width: 760px) {
-  .project-panel .vflow { --picture-width: calc(100vw * .88); }
+  .project-panel .vflow {
+    --picture-width: min(100vw - 32px, 58ch + 12px);
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+  /* vflow.js measures the card against the stage, so the side cards follow. */
+  .project-panel .vflow-card { width: var(--picture-width); }
   /* The gallery spans the screen here, and the text sits 22 px in from each side
-     (the page's 14 px margin and 8 px padding), so the captions do too. */
-  .project-panel .vflow-captions { max-width: calc(100% - 44px); }
+     (the page's 14 px margin and 8 px padding), up to its 58ch, so the captions do
+     too (centred under it, like the text). */
+  .project-panel .vflow-captions { max-width: min(100% - 44px, 58ch); }
+  /* ...so its side pictures would touch the screen's edges. At rest (work.js,
+     restGallery) they fade away and only the front one stays, with the project
+     row's fade in (.7s) and a longer fade away (1.4s, --fade-out-slow): at the
+     row's .9s, big dark pictures read as vanishing much faster than its small grey
+     logos (An, Nov 10). The picture's surface fades (vflow.js moves the card
+     itself), shadow and all. */
+  .project-panel .vflow-surface { transition: opacity var(--fade-in) var(--fade-ease); }
+  .project-panel .vflow.is-resting .vflow-card:not([aria-current="true"]) .vflow-surface {
+    opacity: 0;
+    transition-duration: var(--fade-out-slow);
+  }
 }
 @media (max-width: 1068px) { .project-image-placeholder { margin: 36px 0; } }
 @media (max-width: 760px) { .project-image-placeholder { margin: 32px 0; } }
@@ -304,3 +390,4 @@
   .project-panel { line-height: 1.65 }
   .project-panel .project-title { letter-spacing: -.03em }
 }
+@media (prefers-reduced-motion: reduce) { .project-toggle::after { transition: none; } }

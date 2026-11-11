@@ -31,11 +31,14 @@ To offer modern formats, add `sources` (rendered as a `<picture>`; `src` stays t
 At least one entry is required; one image hides navigation.
 Each instance has independent state. Navigation requests during movement are ignored,
 not queued. Reduced-motion preferences skip the transition.
+When a move finishes, the gallery fires `vflow:settle` (the Work page uses it to
+let a phone gallery's side cards rest, `scripts/pages/work.js` restGallery).
 
 ## Where to edit
 
 - **settings.js**: duration (milliseconds), loop, layer handoff, perspective,
-  dimming, dot widths and swipe distance. The optional third argument overrides
+  dimming, dot widths, swipe distance and how many cards show on each side (2, or
+  1 with the second tucked behind; a function lets it change with the screen). The optional third argument overrides
   defaults for one gallery.
 - **motion.js**: golden-ratio angle, scale and spacing calculations; edge-on poses.
 - **vflow.js**: markup, timeline generation, clicks, keyboard, swipes and lifecycle.

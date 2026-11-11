@@ -1,4 +1,5 @@
 import { createTextMask } from './text-mask.js';
+import { FADE } from '../shared/motion.js';
 import { chooseModel, models } from "./registry.js";
 import { createModelScene } from "./scene.js";
 import { setupModelControls } from "./controls.js";
@@ -39,10 +40,11 @@ export async function createModelBackground(container, button, onExpand, onContr
     textMask.invalidate(); updateTextExclusion();
   });
   // Contact's words cross-fading (copy-address.js): the room in the dots follows each
-  // word's fade, so it's redrawn every frame until the cross-fade is over.
+  // word's fade, so it's redrawn every frame until the cross-fade is over (and a
+  // tenth of a second more).
   addEventListener("studio:text-change", () => {
     textMask.invalidate();
-    trackUntil = Math.max(trackUntil, performance.now() + 600);
+    trackUntil = Math.max(trackUntil, performance.now() + FADE.swap + 100);
     updateTextExclusion();
   });
   const controls = setupModelControls({ ...scene, isEnabled: () => active && expanded });

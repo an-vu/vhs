@@ -1,3 +1,5 @@
+import { FADE } from './motion.js';
+
 // An email link that also copies its address and shows it in the link's place, for
 // a computer with no mail app set up (the email opens nothing there), and since no
 // text on the site can be selected. The address stays once shown. A link's
@@ -25,7 +27,8 @@ export function copyAddressOnClick(links) {
 // in from a slight blur while the old one fades out into it, so there's never a
 // gap and the overlap reads as a blend. The room the dots behind Home's text make
 // for each word fades with it (text-mask.js); "studio:text-change" starts that.
-const CROSSFADE = { duration: 500, easing: 'ease-in-out' };
+// Timing: the site's fade curve, over FADE.swap (motion.js).
+const CROSSFADE = { duration: FADE.swap, easing: FADE.ease };
 const SHARP = { opacity: 1, filter: 'blur(0)' }, SOFT = { opacity: 0, filter: 'blur(2px)' };
 export function revealAddressOnHover(link) {
   const first = textOf(link), word = first.textContent, address = addressOf(link);

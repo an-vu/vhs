@@ -136,16 +136,19 @@
           <path class="collapse-icon" d="M4 9h5V4m6 0v5h5M9 20v-5H4m16 0h-5v5" />
         </svg>
       </button>
-      <!-- The studio's facts in small grey type, like the footer's: who, when, where. -->
-      <p class="about-facts">Founded in 2022 by An Vu. vHuman LLC is a Wyoming company.</p>
     </div>
   </main>
 
   <footer class="site-footer">
     <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
-    <div class="wrap footer-row" data-nosnippet>
-      <div>© 2026 vHuman LLC · vHuman Studios</div>
-      <div class="legal"><a href="/services">Services</a><a href="/faq">FAQ</a><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
+    <!-- About's footer (Nov 10): like every page's, the © line in the left corner
+         and the links in the right, with the studio's founding line centred
+         between them (on phones, in the left corner above the © line). The
+         founding line can show in Google's results; the rest can't, as on every page. -->
+    <div class="wrap footer-row is-founded">
+      <div class="footer-facts">Est. 2022 by An Vu · Cody, Wyoming</div>
+      <div class="footer-copy" data-nosnippet>© 2026 vHuman LLC · vHuman Studios</div>
+      <div class="legal" data-nosnippet><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
     </div>
   </footer>
   <script type="module" src="scripts/pages/about.js"></script>

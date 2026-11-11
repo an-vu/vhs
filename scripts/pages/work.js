@@ -2,7 +2,8 @@ import { StudioMotion } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
 import { driftLogoStrip } from './logo-strip.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
-import { createPageMenu } from '../shared/page-menu.js';
+import { dockProjectTitle } from './work-title.js';
+import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
 
 // The Work page: a row of project logos as tabs. Picking one slides the row
 // (vFlow's motion) so it sits in the middle, under the glass, names each one, and
@@ -24,7 +25,6 @@ import { createPageMenu } from '../shared/page-menu.js';
   const page = location.pathname.replace(/\.html$/, '');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   StudioPageScroll(content);
-  createPageMenu();
 
   // Entrance: queued elements fade and rise in with the site's spring, in DOM order,
   // as each comes into view. `shown` once the first view looks still (its springs'
@@ -197,32 +197,23 @@ import { createPageMenu } from '../shared/page-menu.js';
   });
 
   // At rest (.7 s after a touch, .4 s after the mouse leaves, a second after the
-  // keyboard) the row hides
-  // everything but the selected logo in its glass, so it doesn't distract from the
-  // page; pointing at the row, touching it or tabbing into it brings it back
-  // (work.css). The first rest waits for the page to rise in and the glass to
-  // bubble in (it grows in with the row), then a tad more.
-  const REST = 1000, TOUCH = 700, LEAVE = 400, FIRST_HOLD = 200;
-  let restTimer = 0, pointing = false, glassIn = false, touch = false;
-  function wake(delay = touch ? TOUCH : REST) {
-    flow.classList.remove('is-resting');
-    clearTimeout(restTimer);
-    restTimer = setTimeout(() => rest(delay), delay);
-  }
-  function rest(delay = REST) {
-    if (!glassIn || !shown) return;
-    // Keyboard focus keeps it up; the focus a click leaves on a logo doesn't.
-    if (pointing || journey || flow.querySelector(':focus-visible')) { restTimer = setTimeout(() => rest(delay), delay); return; }
-    flow.classList.add('is-resting');
-  }
+  // keyboard) the row hides everything but the selected logo in its glass, so it
+  // doesn't distract from the page; pointing at the row, touching it or tabbing
+  // into it brings it back (work.css; the timing is shared/rest.js, which the
+  // galleries use too). The first rest waits for the page to rise in and the glass
+  // to bubble in (it grows in with the row), then a tad more.
+  const FIRST_HOLD = 200;
+  let pointing = false, glassIn = false, touch = false;
+  // Keyboard focus keeps it up; the focus a click leaves on a logo doesn't.
+  const resting = createRest(flow, { ready: () => glassIn && shown,
+    busy: () => pointing || journey || flow.querySelector(':focus-visible') });
+  const wake = (delay = touch ? REST_TOUCH : REST) => resting.wake(delay);
   function firstRest() {
-    if (!glassIn || !shown) return;
-    clearTimeout(restTimer);
-    restTimer = setTimeout(() => rest(), FIRST_HOLD);
+    if (glassIn && shown) resting.after(FIRST_HOLD, REST);
   }
   flow.addEventListener('pointerdown', event => { touch = !mouse(event); }, true);
   flow.addEventListener('pointerenter', event => { if (mouse(event)) { pointing = true; wake(); } });
-  flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(LEAVE); } });
+  flow.addEventListener('pointerleave', event => { if (mouse(event)) { pointing = false; wake(REST_LEAVE); } });
   flow.addEventListener('pointerup', event => { if (!mouse(event)) wake(); });
   flow.addEventListener('focusin', () => wake());
   flow.addEventListener('focusout', () => wake());
@@ -437,6 +428,8 @@ import { createPageMenu } from '../shared/page-menu.js';
   flow.classList.add('is-placed');
   if (location.pathname !== page) history.replaceState(null, '', page + location.search + location.hash);
   addEventListener('hashchange', () => { if (linked() >= 0) select(linked()); });
+  // The header's menus, and the project's title moving into the header (work-title.js).
+  dockProjectTitle({ panels, labels: labels.map(label => label.textContent), ids: panels.map(link), select });
   new ResizeObserver(paint).observe(flow);
   queue([flow], M.entranceDelay(0));
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
@@ -486,7 +479,39 @@ import { createPageMenu } from '../shared/page-menu.js';
     .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); } });
 })();
 
-// Galleries upgrade to vFlow; without it they stay as plain images.
+// On a phone the gallery spans the screen, so its side pictures would touch the
+// screen's edges. Like the project row, it rests: once it has been on screen a
+// moment, and .7 s after a finger lets go or a move ends, the side pictures fade
+// away and only the front one stays; touching the gallery or a dot, or the
+// keyboard, brings them back. The fade itself is phone-only (work.css), so on
+// larger screens the class changes nothing.
+function restGallery(gallery) {
+  let held = false;
+  const resting = createRest(gallery, { busy: () => held || gallery.classList.contains('is-moving')
+    || gallery.querySelector(':focus-visible') });
+  const touched = event => { if (event.isPrimary) { held = true; resting.wake(REST_TOUCH); } };
+  const lifted = () => { held = false; resting.wake(REST_TOUCH); };
+  gallery.addEventListener('pointerdown', touched);
+  gallery.addEventListener('pointerup', lifted);
+  gallery.addEventListener('pointercancel', lifted);
+  gallery.addEventListener('vflow:settle', () => resting.wake(REST_TOUCH));
+  gallery.addEventListener('focusin', () => resting.wake(REST));
+  gallery.addEventListener('focusout', () => resting.wake(REST));
+  // The first rest: a second after the gallery is mostly on screen, so the side
+  // pictures show once on the way in, a hint that it swipes.
+  const seen = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    seen.disconnect();
+    resting.after(REST);
+  }, { threshold: .6 });
+  seen.observe(gallery);
+}
+
+// Galleries upgrade to vFlow; without it they stay as plain images. On a phone each
+// shows one side card a side instead of two (Nov 10): in the 16 px beside the
+// picture two read as a stack of slivers, and the outer pair ran to the screen's
+// edge. The near ones stop about 6 px short of it.
+const phoneGallery = matchMedia('(max-width: 760px)');
 const galleries = [...document.querySelectorAll('.work-content .project-gallery')];
 if (galleries.length) import('../vflow/vflow.js').then(({ createVFlow }) => {
   galleries.forEach(container => {
@@ -500,7 +525,9 @@ if (galleries.length) import('../vflow/vflow.js').then(({ createVFlow }) => {
     });
     const title = container.closest('.project-panel').querySelector('.project-title').textContent;
     // Inside the same container, so its entrance and place in the panel carry over.
-    try { container.replaceChildren(createVFlow(images, title)); }
-    catch (error) { console.warn('Gallery kept as static images:', error); }
+    let gallery;
+    try { gallery = createVFlow(images, title, { sideCards: () => phoneGallery.matches ? 1 : 2 }); container.replaceChildren(gallery); }
+    catch (error) { console.warn('Gallery kept as static images:', error); return; }
+    restGallery(gallery);
   });
 }).catch(error => console.warn('Gallery enhancement unavailable:', error));

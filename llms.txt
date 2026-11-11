@@ -65,7 +65,7 @@ The studio's in-house toolset, shared with partners and clients as part of worki
 - [Contact](https://vhumanstudios.com/contact): how to reach the studio and start a project
 - [FAQ](https://vhumanstudios.com/faq): questions and answers about the studio
 - [Legal](https://vhumanstudios.com/legal): privacy notice, cookie policy, and terms
-- [Sitemap](https://vhumanstudios.com/sitemap): every page and what's in it
+- [Sitemap](https://vhumanstudios.com/sitemap): every page, project, service area and policy
 
 ## Markdown copies
 
