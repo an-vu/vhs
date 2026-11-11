@@ -36,7 +36,12 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     for (const item of items) {
       if (!item.spring) continue;
       moving = M.step(item.spring, dt) || moving;
-      M.paintEntrance([item.element], [item.spring]);
+      // Only when its rise moved (Nov 11: every item was painted each frame).
+      if (item.painted !== item.spring.value) { M.paintEntrance([item.element], [item.spring]); item.painted = item.spring.value; }
+      // The row's glass grows in once the row has landed (glass.js, data-glass-wait),
+      // not while it rises: each frame of the rise made it copy the row again (Nov 11).
+      if (item.element === flow && rowSpot.dataset.glassWait !== undefined && item.spring.delay <= 0
+        && Math.abs(1 - item.spring.value) * 44 < 1 && Math.abs(item.spring.velocity) * 44 < 20) delete rowSpot.dataset.glassWait;
     }
     if (!shown && pending < 0 && items.every(item => item.seen && (!item.spring || still(item.spring)))) { shown = true; firstRest(); }
     return moving;
@@ -274,7 +279,9 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     pending = -1;
     left = false;
     panels.forEach(other => {
-      other.hidden = other !== panel;
+      // Only when it changes: setting it at all counts as a change, which makes
+      // the glass copy the page again (glass-renderer.js; Nov 11).
+      if (other.hidden !== (other !== panel)) other.hidden = other !== panel;
       other.style.removeProperty('opacity');
       other.style.removeProperty('transition');
     });
@@ -436,6 +443,10 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   // The header's menus, and the project's title moving into the header (work-title.js).
   dockProjectTitle({ panels, labels: labels.map(label => label.textContent), ids: panels.map(link), select });
   new ResizeObserver(paint).observe(flow);
+  // Held until the row has risen (the entrance loop lets it go); with reduced motion
+  // there's no rise, so it isn't held.
+  const rowSpot = flow.querySelector('.glass-spot');
+  if (!reduced.matches) rowSpot.dataset.glassWait = '';
   queue([flow], M.entranceDelay(0));
   reduced.addEventListener('change', () => { forget(items.map(item => item.element)); });
 
@@ -449,17 +460,31 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     egg.classList.add('is-answered');
   }, { once: true });
 
-  // The logo strip at the end of the page (logo-strip.js). It rises in once
-  // everything above it that has started rising has landed (riseLogoStrip).
+  // The logo strip at the end of the page (logo-strip.js) rises in as the
+  // project's last lines do, and its glass grows once they've landed
+  // (riseLogoStrip). Neither before the project's text has come (pending, arrive()).
   const strip = document.querySelector('.work-clients');
   driftLogoStrip(strip);
   const landed = s => s.delay <= 0 && Math.abs(s.target - s.value) * 44 < 1 && Math.abs(s.velocity) * 44 < 20;
-  // (Not before the project's text has come: pending, arrive().)
-  riseLogoStrip(strip, () => pending < 0 && items.every(item => !item.spring || landed(item.spring)));
+  const onScreen = element => { const box = element.getBoundingClientRect(); return box.height > 0 && box.bottom > 0 && box.top < innerHeight; };
+  riseLogoStrip(strip, {
+    // Seconds until the last item on screen starts rising; null while one on
+    // screen hasn't started yet.
+    start() {
+      if (pending >= 0) return null;
+      let at = 0;
+      for (const item of items) {
+        if (item.spring) at = Math.max(at, item.spring.delay);
+        else if (onScreen(item.element)) return null;
+      }
+      return at;
+    },
+    landed: () => pending < 0 && items.every(item => !item.spring || landed(item.spring))
+  });
 
   // The glass over the selected project and the logo strip (scripts/glass): loaded
   // after the page, and only where WebGL works; without it the page stays as is.
-  // The project glass bubbles in with the row, a hair after it starts rising in;
+  // The project glass bubbles in once the row has risen in (data-glass-wait, the entrance loop);
   // the strip's just after the strip starts rising in (riseLogoStrip). Each
   // lens opens with its glass (--lens-grow, work.css): the big, colored logos
   // inside the circle grow in with the bubble, not before it.
@@ -479,12 +504,7 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
       if (detail.done) glassDone();
     });
   });
-  const GLASS_LAG = .05;
-  import('../glass/glass.js').then(({ createGlass }) => {
-    const row = items.find(item => item.element === flow)?.spring;
-    flow.querySelector('.glass-spot').dataset.glassDelay = (Math.max(0, row ? row.delay : startDelay) + GLASS_LAG).toFixed(2);
-    return createGlass();
-  })
+  import('../glass/glass.js').then(({ createGlass }) => createGlass())
     .catch(error => { console.warn('Glass unavailable:', error); return null; })
     .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); } });
 })();

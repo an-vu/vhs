@@ -198,41 +198,40 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     flight.style.transform = `translate(${x}px, ${y2}px)`;
   }
 
-  // The reading position, by the browser's own scroll snapping (Nov 10; a
-  // hand-made stop cut the scroll dead and felt like hitting a bumper, An), in
-  // its gentle mode (proximity): two resting places, the page's top and the
-  // reading position, and a scroll that ends near one glides into it, so the
-  // header is never left half-folded; anywhere else, and below the reading
-  // position, scrolling is free. Going down, a flick slows into the reading
-  // position instead of flying past where the browser allows it
-  // (scroll-snap-stop). (A strict version with one long resting area below it
-  // trapped Safari 15's scrolling there.) A switch: --reader-stop in work.css.
-  const snapTop = Object.assign(document.createElement('div'), { className: 'reader-snap-top' });
+  // The reading position's catch, a detent (Nov 11, An: free scrolling, but "that
+  // feeling when things go into place... like cạch", "the pause, the snap... not
+  // the pixel"): the browser's own snapping, gentle mode, switched on only within
+  // NEAR px of the reading position while scrolling down. A scroll that ends that
+  // close settles the last bit into place, a flick slows into it
+  // (scroll-snap-stop), and anywhere else scrolling stays free (always on, Safari
+  // pulled from hundreds of px away: "tiny scroll boom it right there"). Once it has
+  // caught, it lets go, so the next scroll down is free; it's ready again once
+  // you've gone back up above it. Never going up. (Nov 10: a stop made in code
+  // felt like hitting a bumper.) A switch: --reader-stop in work.css.
+  // 48 at first, then 24 (An, Nov 11: "anything less than 48px?"), settled at 36 ("36px?").
+  const NEAR = 36;
   const snapAt = Object.assign(document.createElement('div'), { className: 'reader-snap-point' });
-  [snapTop, snapAt].forEach(element => element.setAttribute('aria-hidden', 'true'));
-  document.body.append(snapTop, snapAt);
-  // It catches you once (Nov 10, An: after landing, the next quick scrolls
-  // sprang back a few times before one got out of its catch zone): once you're at
-  // the reading position or past it, the snapping lets go, so scrolling on, or
-  // back up, is free; back at the very top it's ready again.
-  let armed = true;
+  snapAt.setAttribute('aria-hidden', 'true');
+  document.body.append(snapAt);
+  let armed = true, lastY = scrollY, down = false;
   function snap(on, picture) {
-    // Above the fold, it's ready (a first measure, before the page is built,
-    // can give a reading position that isn't real yet).
-    if (scrollY < foldStart) armed = true;
-    root.classList.toggle('reader-snap', on && armed);
-    if (!on) return;
-    // The point sits on the picture's top; the page's scroll-padding keeps it 8
-    // px below the blur, which puts the resting place exactly on the reading position.
-    root.style.setProperty('--reader-top', `${top + 8}px`);
-    snapAt.style.top = `${picture}px`;
+    if (on) {
+      // The point sits on the picture's top; the page's scroll-padding keeps it 8
+      // px below the blur, which puts the resting place exactly on the reading position.
+      root.style.setProperty('--reader-top', `${top + 8}px`);
+      snapAt.style.top = `${picture}px`;
+    }
+    watch();
   }
-  let lastY = scrollY;
   function watch() {
     const y = scrollY;
-    if (y !== lastY) root.classList.toggle('is-scrolling-down', y > lastY);
-    if (armed && stops && y >= reader - 1) { armed = false; root.classList.remove('reader-snap'); }
-    else if (!armed && y <= 2 && stops) { armed = true; root.classList.add('reader-snap'); }
+    if (y !== lastY) { down = y > lastY; root.classList.toggle('is-scrolling-down', down); }
+    if (y < reader - NEAR * 2) armed = true;
+    else if (armed && Math.abs(y - reader) < 1) armed = false;
+    // On only coming down into it; once on, it stays on while it settles (a settle
+    // can move up a little).
+    if (!stops || !armed || Math.abs(y - reader) > NEAR) root.classList.remove('reader-snap');
+    else if (down) root.classList.add('reader-snap');
     lastY = y;
   }
 

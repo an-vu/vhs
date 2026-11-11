@@ -87,7 +87,36 @@ ${scanBandGLSL}
 void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.)));
 #include <colorspace_fragment>
 }`;
-export function createModelLines(meshes, scene, entrance = null, { followTheme = false } = {}) {
+// Several geometries as one (`names`: the attributes to keep, in every one), indexed
+// if any is, so parts that always move together cost one draw instead of many.
+function combine(geometries, names) {
+  const merged = new THREE.BufferGeometry();
+  for (const name of names) {
+    const first = geometries[0].getAttribute(name), size = first.itemSize;
+    const array = new Float32Array(geometries.reduce((n, g) => n + g.getAttribute(name).count * size, 0));
+    let at = 0;
+    for (const g of geometries) { array.set(g.getAttribute(name).array, at); at += g.getAttribute(name).array.length; }
+    merged.setAttribute(name, new THREE.BufferAttribute(array, size));
+  }
+  if (geometries.some(g => g.index)) {
+    const indices = [];
+    let offset = 0;
+    for (const g of geometries) {
+      const count = g.getAttribute(names[0]).count;
+      if (g.index) for (let i = 0; i < g.index.count; i++) indices.push(g.index.getX(i) + offset);
+      else for (let i = 0; i < count; i++) indices.push(i + offset);
+      offset += count;
+    }
+    merged.setIndex(indices);
+  }
+  return merged;
+}
+
+// `groupOf(mesh)`, optional: the object a mesh always moves with (About's rover:
+// its nearest animated part, or the model). Meshes with the same one are drawn as
+// one, placed by that object, instead of four draws each (Nov 11: 70 rover parts
+// in 33 moving groups, about 280 draws a frame down to about 132).
+export function createModelLines(meshes, scene, entrance = null, { followTheme = false, groupOf = null } = {}) {
   const root = new THREE.Group(); scene.add(root); root.visible = false;
   const options = { ...lineDefaults }, resources = new Set(), copies = [];
   const uniforms = { ...scanUniforms(), pixelRatio: { value: 1 }, resolution: { value: new THREE.Vector2() }, color: { value: new THREE.Color(options.color) } };
@@ -121,10 +150,37 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
     mat.customProgramCacheKey = () => 'rover-entrance';
   }
   let surface = lit;
-  for (const source of meshes) {
-    const geometry = edgeGeometry(source.geometry); resources.add(geometry);
-    const make = (g, m, order) => { const object = new THREE.Mesh(g, m); object.matrixAutoUpdate = false; object.frustumCulled = false; object.renderOrder = order; root.add(object); return object; };
-    copies.push({ source, depth: make(source.geometry, depth, -100), surface: make(source.geometry, surface, -50), front: make(geometry, front, 20), back: make(geometry, back, 10) });
+  const make = (g, m, order) => { const object = new THREE.Mesh(g, m); object.matrixAutoUpdate = false; object.frustumCulled = false; object.renderOrder = order; root.add(object); return object; };
+  const groups = new Map();
+  for (const mesh of meshes) {
+    const anchor = groupOf?.(mesh) ?? mesh;
+    if (!groups.has(anchor)) groups.set(anchor, []);
+    groups.get(anchor).push(mesh);
+  }
+  for (const [source, members] of groups) {
+    let body, geometry;
+    if (members.length === 1 && members[0] === source) {
+      body = source.geometry; geometry = edgeGeometry(body);
+    } else {
+      // Each member in its anchor's space, as it sits now; its edges found on its
+      // own (as before), then joined.
+      source.updateWorldMatrix(true, false);
+      const toAnchor = source.matrixWorld.clone().invert();
+      const parts = members.map(mesh => {
+        mesh.updateWorldMatrix(true, false);
+        const part = new THREE.BufferGeometry();
+        part.setAttribute('position', mesh.geometry.getAttribute('position').clone());
+        if (mesh.geometry.getAttribute('normal')) part.setAttribute('normal', mesh.geometry.getAttribute('normal').clone());
+        if (mesh.geometry.index) part.setIndex(mesh.geometry.index.clone());
+        return part.applyMatrix4(toAnchor.clone().multiply(mesh.matrixWorld));
+      });
+      const edges = parts.map(edgeGeometry);
+      body = combine(parts, parts.every(part => part.getAttribute('normal')) ? ['position', 'normal'] : ['position']);
+      geometry = combine(edges, ['position', 'end', 'normalA', 'normalB', 'corner', 'boundary']);
+      [...parts, ...edges].forEach(g => g.dispose()); resources.add(body);
+    }
+    resources.add(geometry);
+    copies.push({ source, depth: make(body, depth, -100), surface: make(body, surface, -50), front: make(geometry, front, 20), back: make(geometry, back, 10) });
   }
   const stopPalette = watchPaletteUniforms(uniforms, colors => {
     if (followTheme) {

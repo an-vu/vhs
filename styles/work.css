@@ -164,19 +164,16 @@
    entrance owns its opacity. */
 .project-panel { --tagline-fade: 1; }
 /* The reading position: the title landed in the header and the project's first
-   picture just below the blur, a place the scroll settles into (work-title.js).
-   A switch (Nov 10, on trial): 1 = on, 0 = off. */
+   picture just below the blur, where coming down catches for a moment, a detent
+   (work-title.js; Nov 11). A switch: 1 = on, 0 = off. */
 :root { --reader-stop: 1; }
-/* The browser's own snapping, gentle mode (proximity): two resting places, the
-   page's top and the reading position (a point on the first picture's top); a
-   scroll that ends near one glides into it, anywhere else is free. Going down, a
-   flick slows into the reading position where the browser allows it
-   (scroll-snap-stop); going up it doesn't. */
+/* The browser's own snapping, gentle mode (proximity), on only near the point while
+   coming down (work-title.js turns .reader-snap on and off), so it can only pull the
+   last few px into place; a flick slows into it (scroll-snap-stop). */
 html.reader-snap {
   scroll-snap-type: y proximity;
   scroll-padding-top: var(--reader-top, 0px);
 }
-.reader-snap-top,
 .reader-snap-point {
   position: absolute;
   left: 0;
@@ -184,13 +181,8 @@ html.reader-snap {
   height: 1px;
   pointer-events: none;
 }
-/* The top's resting place sits the page's scroll-padding down, so it rests at
-   exactly 0 (at 0 itself it pointed above the page, and Firefox ignored it and
-   pulled a fresh page down to the reading position). */
-.reader-snap-top { top: var(--reader-top, 0px); }
-html:not(.reader-snap) :is(.reader-snap-top, .reader-snap-point) { display: none; }
-html.reader-snap :is(.reader-snap-top, .reader-snap-point) { scroll-snap-align: start; }
-html.reader-snap.is-scrolling-down .reader-snap-point { scroll-snap-stop: always; }
+html:not(.reader-snap) .reader-snap-point { display: none; }
+html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop: always; }
 .project-panel .project-tagline { filter: opacity(calc(1 - var(--leaving, 0) * var(--tagline-fade))); }
 /* The phone's invisible scroller over the row (work.js); not on larger screens. */
 .project-scroller { display: none; }

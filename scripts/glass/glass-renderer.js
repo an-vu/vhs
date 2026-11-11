@@ -67,7 +67,12 @@ export function entering(shape, kind, t) {
   return { ...shape, hw, hh, radius, smooth, scale, appear, burst };
 }
 
-export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
+// `fit`: the canvas covers only the glasses (their box, edge and shadow, on a
+// 128 px grid), not the whole view, so far less is cleared and blended each frame
+// (Nov 11: the site's was 2560 x 1600 on a 2016 MacBook Pro for a 200 px glass).
+// Everything is still worked out in view coordinates; the canvas is placed at its
+// box (left, top) and the shader adds the box's corner (uOrigin).
+export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false } = {}) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true });
   if (!gl) return null;
   const builds = [startProgram(gl, pageShader()), startProgram(gl, glassShader(extra))];
@@ -110,11 +115,39 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   // Style changes (springs, fades) only repaint the rows of the elements that
   // changed; anything else (a project opening, an image loading) repaints it all.
   const changed = new Set(), animating = new Set();
+  // How far (CSS px) a changed element can be from the copied rows and still be looked at.
+  const FAR = 300;
+  // Styles read every frame that hardly ever change (layer order, the blur's
+  // reach, the page's background), kept until the page changes for real (dirty),
+  // is resized, or is attached again (Nov 11: five style reads a frame).
+  let looks = null;
   let lastRects = new WeakMap(), fixedParents = new WeakMap();
   let dpr = 1, dirty = true, doc = null, win = null, observer = null, ignored = [], unhook = () => {};
   // The canvas's top on the page and in the view (CSS px), set each frame.
   let canvasTop = 0, offset = 0;
 
+  // Changes that never alter a pixel, so they don't make the glass copy the page
+  // again (Nov 11: Work flipped <html>'s scroll-direction class on every change of
+  // direction, each a whole new copy): accessibility and loading hints, the glass's
+  // own marks, and <html> classes that only steer scroll snapping (work-title.js).
+  const QUIET = new Set(['inert', 'tabindex', 'role', 'title', 'loading', 'decoding', 'fetchpriority', 'data-nosnippet', 'data-glass-delay', 'data-glass-wait']);
+  const QUIET_ROOT_CLASSES = new Set(['is-scrolling-down', 'reader-snap']);
+  // A style change that only moves a lens's growth (--lens-grow, the logos inside
+  // a glass opening with it): the copy holds the lens at full size (page-snapshot.js).
+  const LENS = /--lens-grow:\s*[^;]*;?\s*/g;
+  function quiet(record) {
+    const name = record.attributeName;
+    if (!name) return false;
+    if (name.startsWith('aria-') || QUIET.has(name)) return true;
+    if (name === 'style' && record.oldValue !== null) {
+      const now = record.target.getAttribute('style') ?? '';
+      if (now.includes('--lens-grow') || record.oldValue.includes('--lens-grow')) return now.replace(LENS, '') === record.oldValue.replace(LENS, '');
+    }
+    if (name !== 'class' || record.target !== doc.documentElement) return false;
+    const before = new Set((record.oldValue || '').split(/\s+/).filter(Boolean)), after = new Set(doc.documentElement.classList);
+    const flipped = [...before, ...after].filter(token => before.has(token) !== after.has(token));
+    return flipped.length > 0 && flipped.every(token => QUIET_ROOT_CLASSES.has(token));
+  }
   // Points the glass at a page: make its WebGL canvases keep their last frame
   // (the rover renders on demand, so a copy would otherwise come back blank) and
   // note every draw, then listen for anything that changes what it shows.
@@ -157,15 +190,19 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     observer = new win.MutationObserver(records => {
       for (const record of records) {
         const target = record.target.nodeType === 1 ? record.target : record.target.parentElement;
-        if (!target || ignored.some(element => element === target || element.contains(target)) || skip?.(record)) continue;
+        if (!target || quiet(record) || ignored.some(element => element === target || element.contains(target)) || skip?.(record)) continue;
         // A logo coming into the strip is laid over like its moves (marquee()).
         if (band.element && band.element !== target && band.element.contains(target)) { band.moved = true; continue; }
         if (record.type === 'attributes' && record.attributeName === 'style' && target !== doc.documentElement) changed.add(target);
         else dirty = true;
       }
     });
-    observer.observe(doc.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
-    const listeners = [[win, 'resize', mark], [doc, 'load', mark, true]];
+    observer.observe(doc.documentElement, { subtree: true, childList: true, attributes: true, attributeOldValue: true, characterData: true });
+    // A picture loading only changes its own spot (the site's pictures have their
+    // room set), so only its rows are copied again; anything else loading (a
+    // stylesheet) may change all of it.
+    const loaded = event => { if (event.target instanceof win.HTMLImageElement) changed.add(event.target); else dirty = true; };
+    const listeners = [[win, 'resize', mark], [doc, 'load', loaded, true]];
     // Transitions and CSS animations change what's drawn without any mutation.
     for (const [run, ...ends] of [['transitionrun', 'transitionend', 'transitioncancel'], ['animationstart', 'animationend', 'animationcancel']]) {
       listeners.push([doc, run, event => animating.add(event.target), true]);
@@ -180,20 +217,48 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     };
   }
 
+  // The view (device px), and the canvas's box in it when it fits the glasses.
+  const view = { w: 0, h: 0 }, out = { x: 0, y: 0, w: 0, h: 0 };
   function resize(width, height, ratio) {
     dpr = ratio;
-    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    view.w = Math.round(width * dpr); view.h = Math.round(height * dpr);
+    if (fit) out.w = out.h = 0;
+    else { canvas.width = view.w; canvas.height = view.h; }
     gl.viewport(0, 0, canvas.width, canvas.height);
     dirty = true;
+  }
+  // How far a glass's edge reaches past its box (device px): it grows with a big
+  // glass (the Glass Lab's), and a lens that shrinks the page (zoom below 1) looks a
+  // little past its own edge. With its shadow: the most it can tint.
+  const reachFor = (item, look) => ((40 + look.wall * 2) * Math.max(item.k, 1) + Math.max(item.hw, item.hh) * Math.max(0, 1 / look.zoom - 1)
+    + (look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0)) * dpr;
+  const padOf = (item, look) => reachFor(item, look) + (look.shadow > 0 ? 110 * dpr : 0);
+  // Fit: the canvas to the glasses' box (with their edge and shadow), on a 128 px
+  // grid so it's only resized when a glass moves or grows past it.
+  function place(shapes, padOf) {
+    const grid = (v, up) => (up ? Math.ceil : Math.floor)(v / 128) * 128;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const item of shapes) {
+      const pad = padOf(item);
+      x0 = Math.min(x0, (item.x - item.hw) * dpr - pad); x1 = Math.max(x1, (item.x + item.hw) * dpr + pad);
+      y0 = Math.min(y0, (item.y - item.hh) * dpr - pad); y1 = Math.max(y1, (item.y + item.hh) * dpr + pad);
+    }
+    x0 = Math.max(0, grid(x0)); y0 = Math.max(0, grid(y0)); x1 = Math.min(view.w, grid(x1, true)); y1 = Math.min(view.h, grid(y1, true));
+    if (x1 <= x0 || y1 <= y0) return;
+    if (x0 === out.x && y0 === out.y && x1 - x0 === out.w && y1 - y0 === out.h) return;
+    Object.assign(out, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    canvas.width = out.w; canvas.height = out.h;
+    Object.assign(canvas.style, { left: `${out.x / dpr}px`, top: `${out.y / dpr}px`, width: `${out.w / dpr}px`, height: `${out.h / dpr}px` });
   }
 
   // One frame. `time` (s) drives the slow corner sway.
   function draw(shapes, look, time, viewOffset = 0) {
+    shapes = shapes.filter(item => item.appear > 0);
+    if (fit && shapes.length) place(shapes, item => padOf(item, look));
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    shapes = shapes.filter(item => item.appear > 0);
     if (!doc?.body || !shapes.length || !ready()) return;
-    const cssH = canvas.height / dpr;
+    const cssH = view.h / dpr;
     offset = viewOffset; canvasTop = win.scrollY + offset;
 
     // Copy only the area the glasses can show (device px), on a 64px grid so small
@@ -201,20 +266,16 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     // so it needs no copy: only the glass's own box and how far its edge reaches.
     const snap = (v, up) => (up ? Math.ceil : Math.floor)(v / 64) * 64;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    // The edge's reach grows with a big glass (the Glass Lab's), and a lens that
-    // shrinks the page (zoom below 1) looks a little past its own edge.
-    const reachOf = item => ((40 + look.wall * 2) * Math.max(item.k, 1) + Math.max(item.hw, item.hh) * Math.max(0, 1 / look.zoom - 1)
-      + (look.echoOn ? look.echoGap * item.k * (look.echoes + .4) + 6 : 0)) * dpr;
-    const padOf = item => reachOf(item) + (look.shadow > 0 ? 110 * dpr : 0);
+    const reachOf = item => reachFor(item, look);
     for (const item of shapes) {
       const pad = reachOf(item);
       x0 = Math.min(x0, snap((item.x - item.hw) * dpr - pad)); y0 = Math.min(y0, snap((item.y - item.hh) * dpr - pad));
       x1 = Math.max(x1, snap((item.x + item.hw) * dpr + pad, true)); y1 = Math.max(y1, snap((item.y + item.hh) * dpr + pad, true));
     }
-    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(canvas.width, x1); y1 = Math.min(canvas.height, y1);
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(view.w, x1); y1 = Math.min(view.h, y1);
     if (x1 <= x0 || y1 <= y0) return;
     if (dirty) {
-      dirty = false; ring.v1 = ring.v0; fixedDirty = liveDirty = true; changed.clear(); stale = []; clip = null;
+      dirty = false; ring.v1 = ring.v0; fixedDirty = liveDirty = true; changed.clear(); stale = []; clip = null; looks = null;
       band.element = band.fast ? doc.querySelector('[data-glass-marquee]') : null;
       band.under = null; band.checked = false;
     }
@@ -243,17 +304,26 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     // browser draws over the glass, blur and all, so the copy leaves it out: bent
     // in the lens too, "vHuman / Work" showed twice and the header read as under
     // the glass. A canvas outside the page (the Glass Lab's) is over all of it.
-    const glassZ = canvas.ownerDocument === doc ? parseInt(win.getComputedStyle(canvas).zIndex, 10) || 0 : Infinity;
-    const headerElement = doc.querySelector('.site-header'), footerElement = doc.querySelector('.site-footer');
-    const headerOver = !!headerElement && (parseInt(win.getComputedStyle(headerElement).zIndex, 10) || 0) > glassZ;
+    if (!looks) {
+      const glassZ = canvas.ownerDocument === doc ? parseInt(win.getComputedStyle(canvas).zIndex, 10) || 0 : Infinity;
+      const headerElement = doc.querySelector('.site-header'), footerElement = doc.querySelector('.site-footer');
+      const bodyStyle = win.getComputedStyle(doc.body);
+      looks = {
+        glassZ, headerElement, footerElement,
+        headerOver: !!headerElement && (parseInt(win.getComputedStyle(headerElement).zIndex, 10) || 0) > glassZ,
+        reach: (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22),
+        fill: /rgba?\([^)]*,\s*0\)$/.test(bodyStyle.backgroundColor) ? win.getComputedStyle(doc.documentElement).backgroundColor : bodyStyle.backgroundColor
+      };
+    }
+    const { glassZ, headerElement, footerElement, headerOver } = looks, reach = looks.reach * dpr;
     if (headerOver !== wasOver) { wasOver = headerOver; fixedDirty = true; }
-    const reach = (parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--blur-reach')) || 22) * dpr;
     const header = headerOver ? null : headerElement?.getBoundingClientRect(), footer = footerElement?.getBoundingClientRect();
-    const footerOpacity = footerElement ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
     // The header's blur stretches down behind its open menu.
     const headerBottom = header ? Math.max(header.bottom, headerElement.querySelector('.header-blur')?.getBoundingClientRect().bottom ?? -Infinity) : -Infinity;
     const reaches = (top, bottom) => inView.y < bottom * dpr + reach && inView.y + inView.h > top * dpr - reach;
-    const bars = (header && reaches(header.top, headerBottom)) || (footer && footerOpacity > 0 && reaches(footer.top, footer.bottom));
+    // The footer's opacity (it fades in and out) only matters once it's near.
+    const footerOpacity = footer && reaches(footer.top, footer.bottom) ? parseFloat(win.getComputedStyle(footerElement).opacity) : 0;
+    const bars = (header && reaches(header.top, headerBottom)) || footerOpacity > 0;
     if (fixedDirty && bars) {
       fixedDirty = false; fixedShown = true;
       snapshot.fixed(fixedCanvas, doc, inView, dpr, false, glassZ);
@@ -272,9 +342,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     }
 
     // The page's own background, so dark and light handling follow what's really there.
-    const bodyStyle = win.getComputedStyle(doc.body);
-    const fill = /rgba?\([^)]*,\s*0\)$/.test(bodyStyle.backgroundColor) ? win.getComputedStyle(doc.documentElement).backgroundColor : bodyStyle.backgroundColor;
-    const bg = (fill.match(/[\d.]+/g) ?? [249, 248, 246]).slice(0, 3).map(v => v / 255);
+    const bg = (looks.fill.match(/[\d.]+/g) ?? [249, 248, 246]).slice(0, 3).map(v => v / 255);
     const lum = bg[0] * .299 + bg[1] * .587 + bg[2] * .114;
     // The page under the glasses, into pageTexture (pageShader()).
     gl.activeTexture(gl.TEXTURE3);
@@ -288,7 +356,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     gl.viewport(0, 0, block.w, block.h);
     gl.disable(gl.BLEND);
     gl.useProgram(pageProgram);
-    gl.uniform2f(P.uRes, canvas.width, canvas.height);
+    gl.uniform2f(P.uRes, view.w, view.h);
     gl.uniform4f(P.uBlock, block.x, block.y, block.w, block.h);
     gl.uniform4f(P.uRing, ring.w, ring.rows, Math.round(canvasTop * dpr), 0);
     gl.uniform4f(P.uFixed, fixedBlock.x, fixedBlock.y, fixedBlock.w, fixedBlock.h);
@@ -303,7 +371,10 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     gl.useProgram(glassProgram);
-    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform2f(U.uRes, view.w, view.h);
+    // The canvas's corner in the view, from the bottom (0, 0 without fit).
+    const originX = fit ? out.x : 0, originY = fit ? view.h - out.y - out.h : 0;
+    gl.uniform2f(U.uOrigin, originX, originY);
     gl.uniform4f(U.uBlock, block.x, block.y, block.w, block.h);
     gl.uniform1f(U.uEdgePow, look.edgePower ?? 2.4);
     gl.uniform1f(U.uRimBand, look.rimBand ?? 0);
@@ -344,10 +415,10 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
     // Each glass only shades its own box (plus its shadow), not the whole canvas.
     gl.enable(gl.SCISSOR_TEST);
     for (const item of shapes) {
-      const pad = padOf(item), left = Math.max(0, Math.floor((item.x - item.hw) * dpr - pad)), right = Math.min(canvas.width, Math.ceil((item.x + item.hw) * dpr + pad));
-      const bottom = Math.max(0, Math.floor((cssH - item.y - item.hh) * dpr - pad)), top = Math.min(canvas.height, Math.ceil((cssH - item.y + item.hh) * dpr + pad));
+      const pad = padOf(item, look), left = Math.max(0, Math.floor((item.x - item.hw) * dpr - pad)), right = Math.min(view.w, Math.ceil((item.x + item.hw) * dpr + pad));
+      const bottom = Math.max(0, Math.floor((cssH - item.y - item.hh) * dpr - pad)), top = Math.min(view.h, Math.ceil((cssH - item.y + item.hh) * dpr + pad));
       if (right <= left || top <= bottom) continue;
-      gl.scissor(left, bottom, right - left, top - bottom);
+      gl.scissor(left - originX, bottom - originY, right - left, top - bottom);
       // Effect sizes follow the glass: its size next to the tuned one, and the bubble growing in.
       const size = item.scale * item.k, short = Math.min(item.hw, item.hh);
       gl.uniform1f(U.uScale, size);
@@ -373,9 +444,9 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
   function updateRing(x0, y0, x1, y1) {
     // Rows come in only as wide as the glasses can show (see refreshChanged).
     const fill = (a, b) => { paintRows(a, b, x0, x1); narrow(x0, x1); };
-    const slack = Math.round(160 * dpr), rows = canvas.height + 2 * slack;
-    if (ring.w !== canvas.width || ring.rows !== rows) {
-      Object.assign(ring, { w: canvas.width, rows, v0: 0, v1: 0 });
+    const slack = Math.round(160 * dpr), rows = view.h + 2 * slack;
+    if (ring.w !== view.w || ring.rows !== rows) {
+      Object.assign(ring, { w: view.w, rows, v0: 0, v1: 0 });
       clip = null;
       ringTexture.data(ring.w, ring.rows, null, true);
     }
@@ -410,8 +481,16 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms } = {}) {
       if (!element.isConnected) continue;
       // The strip's logos are laid over the copy after this (marquee()).
       if (band.element && band.element !== element && band.element.contains(element)) { band.moved = true; continue; }
-      if (isFixed(element)) { fixedDirty = liveDirty = true; continue; }
-      const r = element.getBoundingClientRect(), before = lastRects.get(element);
+      // A fixed element changing (Work's title folding into the header) means the
+      // header and footer copy may be stale; the live layer (a WebGL canvas, the
+      // rover) only if there is one, or it would be looked for again every frame.
+      if (isFixed(element)) { fixedDirty = true; if (liveOn) liveDirty = true; continue; }
+      // Far from the rows the glass keeps, as last seen: not measured at all
+      // (a rise or fade moves an element 44 px at most; anything bigger is a
+      // change that copies everything again).
+      const before = lastRects.get(element);
+      if (before && (before[0] * dpr > ring.v1 + FAR * dpr || before[1] * dpr < ring.v0 - FAR * dpr)) continue;
+      const r = element.getBoundingClientRect();
       const now = [r.top + sy, r.bottom + sy, r.left + sx, r.right + sx];
       lastRects.set(element, now);
       // First sighting: its old spot is unknown, so allow for a short slide.

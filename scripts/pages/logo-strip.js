@@ -188,14 +188,16 @@ export function driftLogoStrip(section) {
   run();
 }
 
-// The strip comes in last (An, Nov 10: "text scrolled > bottom dock scrolled in >
-// bubble glass appears"): once it's on screen and `ready()` says the text above it
-// has finished rising, its label and then its logos rise in like the text (the
-// site's entrance spring). Its glass is let go (data-glass-wait, glass.js) once
-// the logos are halfway up, so it grows in just after them (An, Nov 10: "almost
-// same time as the dock but just after the dock started"). Called before the
-// glass is made. Reduce motion: no rise, the glass isn't held.
-export function riseLogoStrip(section, ready = () => true) {
+// The strip comes in at the end of the text (An, Nov 11: "bottom dock appear
+// before the text scroll finished and the bubble glass start appear right when
+// the bottom text finished"): once it's on screen, its label and then its logos
+// rise in like the text's next two lines (the site's entrance spring, .09 s apart,
+// after `start()`, the seconds until the last line on screen starts rising; null
+// while one on screen hasn't started yet), so they overlap the last lines' rise.
+// Its glass is let go (data-glass-wait, glass.js) the moment `landed()` says the
+// text is in place. Called before the glass is made. Reduce motion: no rise, the
+// glass isn't held.
+export function riseLogoStrip(section, { start = () => 0, landed: textLanded = () => true } = {}) {
   if (!section) return;
   const M = StudioMotion;
   const spot = section.querySelector('.glass-spot');
@@ -205,19 +207,21 @@ export function riseLogoStrip(section, ready = () => true) {
   M.paintEntrance(parts, parts.map(() => M.spring(0)));
   // In place to the eye: within a pixel, no longer bouncing.
   const landed = s => s.delay <= 0 && Math.abs(s.target - s.value) * 44 < 1 && Math.abs(s.velocity) * 44 < 20;
+  const waiting = () => spot && 'glassWait' in spot.dataset;
   let springs = null, inView = false, done = false;
   const loop = M.createLoop(dt => {
     if (done) return false;
     // Waiting: checked each frame while the strip is on screen.
     if (!springs) {
-      if (!inView || !ready()) return inView;
-      springs = parts.map((_, i) => M.spring(0, 1, M.entranceDelay(i)));
+      const wait = inView ? start() : null;
+      if (wait == null) return inView;
+      springs = parts.map((_, i) => M.spring(0, 1, wait + .09 * (i + 1)));
     }
     let moving = false;
     for (const s of springs) moving = M.step(s, dt) || moving;
     M.paintEntrance(parts, springs);
-    if (spot && 'glassWait' in spot.dataset && springs.at(-1).value >= .5) delete spot.dataset.glassWait;
-    if (springs.every(landed)) {
+    if (waiting() && textLanded()) delete spot.dataset.glassWait;
+    if (springs.every(landed) && !waiting()) {
       done = true;
       parts.forEach(part => { part.style.removeProperty('opacity'); part.style.removeProperty('transform'); });
       watch.disconnect();

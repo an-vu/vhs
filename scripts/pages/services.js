@@ -10,7 +10,8 @@ createPageMenu();
 // The address at the end (and any in the text) opens an email and copies it,
 // like FAQ's and Contact's.
 copyAddressOnClick(content.querySelectorAll('a[href^="mailto:"]'));
-// Text, then the logo strip rising in, then its glass (riseLogoStrip).
+// The logo strip rises in as the text's last lines do, and its glass grows once
+// the text has landed (riseLogoStrip).
 const text = StudioIntroText(content);
 
 // Work's logo strip at the end (logo-strip.js), under its glass (scripts/glass):
@@ -18,7 +19,7 @@ const text = StudioIntroText(content);
 // grows in (--lens-grow, logo-strip.css); without glass it just shows.
 const clients = document.querySelector(".work-clients");
 driftLogoStrip(clients);
-riseLogoStrip(clients, text.inPlace);
+riseLogoStrip(clients, { start: text.lastStart, landed: text.inPlace });
 const open = grow => clients.style.setProperty('--lens-grow', grow.toFixed(3));
 open(0);
 clients.querySelector('.glass-spot').addEventListener('glassgrow', ({ detail }) => open(detail.grow));

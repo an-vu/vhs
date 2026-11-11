@@ -2,7 +2,7 @@ import { MODEL_THEME_EVENT } from "./effects/model-palette.js";
 import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
 import * as defaults from "./config.js";
-import { createPLYPointCloud } from "./ply-points.js";
+import { createPLYPointCloud, BLEED_STEPS } from "./ply-points.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
 export async function createModelScene(container, model, onRevealProgress = () => { }, options = {}) {
@@ -32,6 +32,49 @@ export async function createModelScene(container, model, onRevealProgress = () =
     aircraft.quaternion.premultiply(turn.setFromAxisAngle(screenRight, nextPitch - pitch));
     pitch = nextPitch;
   }
+  // The bleed (config.js): the model's turn over the last BLEED_DELAY seconds,
+  // kept each frame, goes to the shader as BLEED_STEPS turns from now back to then
+  // (in the dots' own frame, so each dot can be drawn where it was).
+  const turns = [], past = new THREE.Quaternion(), toNow = new THREE.Quaternion(), step = new THREE.Quaternion();
+  const still = new THREE.Quaternion();
+  function turnAt(time, out) {
+    if (time <= turns[0].time) return out.copy(turns[0].turn);
+    for (let i = turns.length - 1; i > 0; i--) {
+      if (turns[i - 1].time <= time) {
+        const a = turns[i - 1], b = turns[i];
+        return out.slerpQuaternions(a.turn, b.turn, (time - a.time) / Math.max(b.time - a.time, 1e-6));
+      }
+    }
+    return out.copy(turns[turns.length - 1].turn);
+  }
+  // How much of the scan shows (0 to 1): faded in once the model has formed, then on.
+  let bleedFrom = null;
+  function bleedAmount() {
+    if (!state.revealComplete) { bleedFrom = null; return 0; }
+    bleedFrom ??= elapsed;
+    const p = Math.min(1, (elapsed - bleedFrom) / (C.BLEED_FADE ?? 1.5));
+    return p * p * (3 - 2 * p);
+  }
+  function bleed() {
+    const delay = C.BLEED_DELAY ?? 0, uniform = material?.uniforms.uBleed;
+    if (!uniform || !(delay > 0)) return;
+    // The history always reaches BLEED_DELAY back; the shader (ply-points.js)
+    // picks how far back each knocked-back dot is drawn.
+    const reach = delay;
+    if (material.uniforms.uBleedAmount) material.uniforms.uBleedAmount.value = bleedAmount();
+    const recycled = turns.length > 2 && turns[1].time < elapsed - delay ? turns.shift() : null;
+    turns.push({ time: elapsed, turn: (recycled?.turn ?? new THREE.Quaternion()).copy(aircraft.quaternion) });
+    while (turns.length > 2 && turns[1].time < elapsed - delay) turns.shift();
+    const dots = aircraft.children.find(child => child.isPoints)?.quaternion ?? step.identity();
+    toNow.copy(aircraft.quaternion).multiply(dots).invert();
+    for (let k = 0; k < BLEED_STEPS; k++) {
+      turnAt(elapsed - reach * k / (BLEED_STEPS - 1), past).multiply(dots).premultiply(toNow);
+      // No further back than BLEED_MAX_TURN degrees, along the same turn.
+      const angle = 2 * Math.acos(Math.min(1, Math.abs(past.w))), cap = (C.BLEED_MAX_TURN ?? 12) * Math.PI / 180;
+      if (angle > cap) past.slerp(still, 1 - cap / angle);
+      uniform.value[k].set(past.x, past.y, past.z, past.w);
+    }
+  }
   let textTexture;
   let material, visible = false, last = null, elapsed = 0, lastControlOpacity = -1;
   let formationDuration = null, cameraDuration = null, formationDone = false;
@@ -42,7 +85,9 @@ export async function createModelScene(container, model, onRevealProgress = () =
     const { width, height } = container.getBoundingClientRect();
     camera.aspect = width / Math.max(1, height);
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, C.DOTS_PIXEL_RATIO ?? 2));
+    // Dots too small for a pixel keep the coverage they'd have at full sharpness.
+    if (material) material.uniforms.uCoverage.value = renderer.getPixelRatio() / Math.min(devicePixelRatio, 2);
     renderer.setSize(width, height, false);
     if (material) material.uniforms.uScale.value = renderer.domElement.height / 2;
     // Resizing clears the drawing buffer. Paint synchronously before the
@@ -86,6 +131,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
       options.onTextForeground?.();
     }
     camera.lookAt(0, 0, 0);
+    bleed();
     const rendered = diagnostic?.start('WebGL render CPU submission');
     renderer.render(scene, camera);
     rendered?.();
@@ -115,6 +161,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
   resize();
   try {
     material = await createPLYPointCloud(aircraft, renderer, model, undefined, options.prepareDissolve);
+    material.uniforms.uCoverage.value = renderer.getPixelRatio() / Math.min(devicePixelRatio, 2);
     // Prepare shaders during the intro without advancing the reveal animation.
     const compiled = diagnostic?.start('Shader compile (async wall time)');
     await renderer.compileAsync(scene, camera);

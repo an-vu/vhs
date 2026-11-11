@@ -1,10 +1,11 @@
 // Carry fractional refresh intervals forward instead of restarting the cap every frame.
+// tick's `rate` can lower the cap for a moment (About's rover, playing on its own).
 export function createFrameClock(fps = 60) {
-  const interval = 1000 / fps;
   let previous = null, budget = 0, elapsed = 0;
   return {
     reset() { previous = null; budget = elapsed = 0; },
-    tick(now, immediate = false) {
+    tick(now, immediate = false, rate = fps) {
+      const interval = 1000 / rate;
       if (previous === null) { previous = now; return 0; }
       const delta = Math.max(0, now - previous);
       previous = now;

@@ -36,6 +36,8 @@ let halfSize = null;
 const frameClock = createFrameClock();
 let spectralPreparation, preparingSpectral;
 const meshes = [];
+// What each part moves with (set once the model loads): its nearest animated part, or the model.
+let partGroup = null;
 const scene = new THREE.Scene();
 // draw() updates the hierarchy once for the line effect and renderer.
 scene.matrixWorldAutoUpdate = false;
@@ -97,7 +99,11 @@ function draw(now) {
   if (!roverView.expanded && !roverView.transitioning && !onScreen()) { last = null; return; }
   if (held && !(spectral && !reduced.matches && revealedAt === null)) { last = null; return; }
   if (last === null) frameClock.reset();
-  const dt = frameClock.tick(now, reduced.matches);
+  // Playing on its own (the slow parts moving), it draws 30 times a second, half the
+  // work; 60 while it's revealed, dragged, zoomed, opened or closed (Nov 11).
+  const onItsOwn = playbackStarted && !roverView.expanded && !roverView.transitioning && !state.dragging
+    && Math.abs(state.velocityX) + Math.abs(state.velocityY) <= .0001 && Math.abs(zoom - state.targetCameraZ) <= .001;
+  const dt = frameClock.tick(now, reduced.matches, onItsOwn ? 30 : 60);
   last = now;
   if (dt === null) { wake(); return; }
   // Held, the dots still fill in, but their sweep up the rover waits.
@@ -186,7 +192,8 @@ function rotateView(yaw, deltaPitch) {
 function prepareSpectral() {
   if (disposed || spectral || reduced.matches) return;
   if (spectralPreparation) return spectralPreparation;
-  const effect = createSpectral(meshes, { deferPreparation: true, scanRoot: rotation });
+  // The dots go in the same moving groups as the lines (model-spectral.js).
+  const effect = createSpectral(meshes, { deferPreparation: true, scanRoot: rotation, groupOf: mesh => partGroup?.(mesh) ?? mesh });
   preparingSpectral = effect;
   Object.assign(effect.options, curiositySettings.spectral);
   if (viewportWidth < 700) {
@@ -268,7 +275,12 @@ async function start() {
     halfSize = size.clone().multiplyScalar(scale / 2 * 1.15);
     scene.updateMatrixWorld(true);
     camera.position.copy(view); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
-    lines = createModelLines(meshes, scene, entrance, { followTheme: true });
+    // Parts that always move together are drawn as one (model-lines.js): each
+    // follows its nearest animated part, or the model.
+    const moving = new Set((gltf.animations[0]?.tracks ?? []).map(track => THREE.PropertyBinding.parseTrackName(track.name).nodeName));
+    const groupOf = mesh => { for (let node = mesh; node && node !== wrapper; node = node.parent) if (moving.has(node.name)) return node; return model; };
+    partGroup = groupOf;
+    lines = createModelLines(meshes, scene, entrance, { followTheme: true, groupOf });
     Object.assign(lines.options, curiositySettings.line, {
       // Opaque paper-colored faces occlude page text while preserving the line style.
       surface: 'solid', shading: false,

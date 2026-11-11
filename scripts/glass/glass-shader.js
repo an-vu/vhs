@@ -14,6 +14,9 @@ export function glassShader(extra = {}) {
 uniform float uVivid;
 uniform sampler2D uPageTex;
 uniform vec2 uRes, uC, uHalf;
+// Where the canvas's corner sits in the view (device px, from the bottom): the
+// site's glass canvas covers only the glasses (glass-renderer.js, fit).
+uniform vec2 uOrigin;
 uniform vec4 uBlock;
 uniform vec3 uBg;
 uniform float uDpr, uTime, uDark, uAppear;
@@ -86,7 +89,7 @@ vec2 glassNormal(vec2 p) {
   return g / max(length(g), 1e-4);
 }
 void main() {
-  vec2 px = gl_FragCoord.xy;
+  vec2 px = gl_FragCoord.xy + uOrigin;
   vec2 p = px - uC;
   float d = uAppear > 0.0 ? sdGlass(p) : 1e4;
   // Outside: only see-through tints over the live page (premultiplied).

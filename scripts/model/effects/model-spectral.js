@@ -8,7 +8,11 @@ export const spectralDefaults = { density: 100000, size: 1.6, variation: .35, sp
 export const spectralPalettes = ['Spectrum', 'Aurora', 'Ember', 'Ultraviolet', 'Glacier', 'vHuman'];
 
 // Triangle areas are measured in the displayed pose; samples remain component-local.
-export function createSpectral(meshes, { deferPreparation = false, scanRoot = null } = {}) {
+// `groupOf(mesh)`, optional: the object a mesh always moves with (About's rover: its
+// nearest animated part, or the model). The dots of meshes with the same one are
+// one cloud on it, one draw instead of one per mesh (Nov 11: 70 rover parts, 33
+// clouds).
+export function createSpectral(meshes, { deferPreparation = false, scanRoot = null, groupOf = null } = {}) {
   const options = { ...spectralDefaults }, clouds = [], surfaces = [];
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
   const wa = new THREE.Vector3(), wb = new THREE.Vector3(), wc = new THREE.Vector3();
@@ -125,6 +129,7 @@ uniform float opacity; varying vec3 tint;varying float alpha;
     if (!prepared) yield* prepareSurfaces();
     for (const cloud of clouds) { cloud.removeFromParent(); cloud.geometry.dispose(); } clouds.length = 0;
     let allocated = 0, cumulativeArea = 0;
+    const groups = new Map();
     for (const surface of surfaces) {
       cumulativeArea += surface.area;
       const next = Math.round(options.density * cumulativeArea / totalArea), count = next - allocated; allocated = next;
@@ -160,10 +165,31 @@ uniform float opacity; varying vec3 tint;varying float alpha;
         seeds.set([Math.random() * Math.PI * 2, Math.random(), Math.random(), Math.random()], i * 4);
         if (i % 256 === 255) yield;
       }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('edgePoint', new THREE.BufferAttribute(edgeFlags, 1)); geometry.setAttribute('edgeTarget', new THREE.BufferAttribute(targets, 3)); geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); geometry.setAttribute('surfaceNormal', new THREE.BufferAttribute(normals, 3)); geometry.setAttribute('seed', new THREE.BufferAttribute(seeds, 4));
-      const cloud = new THREE.Points(geometry, material); cloud.frustumCulled = false; cloud.visible = visible; mesh.add(cloud); clouds.push(cloud);
+      // In the space of what the mesh moves with, so its group shares one cloud.
+      const anchor = groupOf?.(mesh) ?? mesh;
+      if (anchor !== mesh) {
+        anchor.updateWorldMatrix(true, false); mesh.updateWorldMatrix(true, false);
+        const toAnchor = anchor.matrixWorld.clone().invert().multiply(mesh.matrixWorld), turn = new THREE.Matrix3().getNormalMatrix(toAnchor);
+        for (let i = 0; i < count; i++) {
+          wa.fromArray(positions, i * 3).applyMatrix4(toAnchor).toArray(positions, i * 3);
+          wa.fromArray(targets, i * 3).applyMatrix4(toAnchor).toArray(targets, i * 3);
+          wa.fromArray(normals, i * 3).applyMatrix3(turn).normalize().toArray(normals, i * 3);
+        }
+      }
+      if (!groups.has(anchor)) groups.set(anchor, []);
+      groups.get(anchor).push({ edgeFlags, targets, positions, normals, seeds });
       yield;
+    }
+    const join = (parts, key) => {
+      const array = new Float32Array(parts.reduce((n, part) => n + part[key].length, 0));
+      let at = 0;
+      for (const part of parts) { array.set(part[key], at); at += part[key].length; }
+      return array;
+    };
+    for (const [anchor, parts] of groups) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('edgePoint', new THREE.BufferAttribute(join(parts, 'edgeFlags'), 1)); geometry.setAttribute('edgeTarget', new THREE.BufferAttribute(join(parts, 'targets'), 3)); geometry.setAttribute('position', new THREE.BufferAttribute(join(parts, 'positions'), 3)); geometry.setAttribute('surfaceNormal', new THREE.BufferAttribute(join(parts, 'normals'), 3)); geometry.setAttribute('seed', new THREE.BufferAttribute(join(parts, 'seeds'), 4));
+      const cloud = new THREE.Points(geometry, material); cloud.frustumCulled = false; cloud.visible = visible; anchor.add(cloud); clouds.push(cloud);
     }
   }
   function rebuild() {

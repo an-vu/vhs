@@ -124,8 +124,10 @@ export function createSnapshot(onIconLoad) {
     const win = doc.defaultView, ops = [], scrollY = win.scrollY;
     const range = doc.createRange();
     // The logo strip's layers keep to their side of the middle circle
-    // ([data-glass-circle] inside or outside, radius --circle, times --lens-grow
-    // while its glass grows in).
+    // ([data-glass-circle] inside or outside, radius --circle), at full size even
+    // while the glass grows in (--lens-grow): the glass only shows the copy inside
+    // its own circle, which grows with the lens, so the copy needn't be made again
+    // for each step (Nov 11; glass-renderer.js leaves those changes out).
     // `stack`: the stacking order of the outermost layer an element sits in (the
     // header's, for its text), what decides whether it's over the glass.
     let fixed = false, circle = null, stack = null;
@@ -183,9 +185,7 @@ export function createSnapshot(onIconLoad) {
       const side = element.dataset?.glassCircle;
       if (side) {
         const box = element.getBoundingClientRect();
-        const grow = parseFloat(style.getPropertyValue('--lens-grow'));
-        const r = (parseFloat(style.getPropertyValue('--circle')) || (parseFloat(style.getPropertyValue('--select-size')) || 104) / 2)
-          * (Number.isNaN(grow) ? 1 : grow);
+        const r = parseFloat(style.getPropertyValue('--circle')) || (parseFloat(style.getPropertyValue('--select-size')) || 104) / 2;
         circle = { x: box.left + box.width / 2, y: box.top + box.height / 2 + dy, r, inside: side === 'inside' };
       }
       const add = op => {
@@ -213,6 +213,10 @@ export function createSnapshot(onIconLoad) {
         if (image) add({ kind: 'image', icon: true, source: image, rect, radius: 0, border: null, fit: 'fill', tint: element.hasAttribute('data-color') ? null : style.color });
         return;
       }
+      // A box that clips what's in it, outside the area: nothing inside can show
+      // there, so its children aren't visited (Nov 11: every copy walked the whole
+      // page, about 170 style and position reads each).
+      if (!hits(rect) && /hidden|clip/.test(style.overflow) && !tilt) return;
       if (element !== doc.body && hits(rect) && (visibleColor(style.backgroundColor) || border)) {
         add({ kind: 'box', rect, radius, fill: visibleColor(style.backgroundColor) ? style.backgroundColor : null, border, clip: style.clipPath.startsWith('polygon(') ? style.clipPath : null });
       }

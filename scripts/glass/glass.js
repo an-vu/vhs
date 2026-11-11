@@ -42,7 +42,8 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   canvas.setAttribute('data-glass-ignore', '');
   Object.assign(canvas.style, { position: 'absolute', left: '0', top: '0', pointerEvents: 'none', zIndex: String(zIndex) });
   document.body.append(canvas);
-  const renderer = createGlassRenderer(canvas);
+  // The canvas covers only the glasses (glass-renderer.js, fit), placed each time they move past it.
+  const renderer = createGlassRenderer(canvas, { fit: true });
   if (!renderer) { canvas.remove(); return null; }
   renderer.attach(window, document, { ignore: [canvas] });
 
@@ -90,13 +91,12 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     return shape;
   }
 
-  // The view's size in CSS px, set on the canvas too: a phone's 100vh is the
-  // tallest view (toolbar hidden), so with the toolbar showing the canvas was
-  // stretched and the glass drawn lower the further down the screen it sat.
+  // The view's size in CSS px (the renderer fits the canvas to the glasses in it):
+  // innerHeight, not 100vh, which on a phone is the tallest view (toolbar hidden),
+  // so with the toolbar showing the glass was drawn lower the further down it sat.
   let width = 0, height = 0;
   function resize() {
     width = document.documentElement.clientWidth; height = innerHeight;
-    Object.assign(canvas.style, { width: `${width}px`, height: `${height}px` });
     renderer.resize(width, height, Math.min(devicePixelRatio || 1, 2));
     start();
   }

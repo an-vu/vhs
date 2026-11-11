@@ -5,8 +5,9 @@ import { StudioMotion } from './motion.js';
 // paragraph as one line), then the links. Lines further down rise as they come
 // into view. onSettled runs once, when the lines in the first view have finished
 // their bounce and the fonts are in (About begins its rover then). Returns
-// { inPlace }: whether the text has finished arriving where you are (Services'
-// logo strip waits for it).
+// { inPlace, lastStart }: whether the text has finished arriving where you are,
+// and when its last line on screen starts rising (Services' logo strip and its
+// glass follow them).
 export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   const M = StudioMotion;
   const paragraph = content?.querySelector(".about-intro");
@@ -14,7 +15,7 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   const sentences = [...content?.querySelectorAll(".about-sentence") ?? []];
   const details = [...content?.querySelectorAll(".intro-detail > :is(h2, h3), .intro-detail li, .intro-detail > p") ?? []];
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  if (!paragraph) return { inPlace: () => true };
+  if (!paragraph) return { inPlace: () => true, lastStart: () => 0 };
   // A link to a part of the page (/services#3d-and-spatial, from the Sitemap).
   const target = (() => {
     try {
@@ -26,8 +27,12 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   let lines = [], entrance = [], layout = "", entered = false, visibleLineCount = 0, settled = false;
   const loop = M.createLoop(dt => {
     let moving = false;
-    for (const s of entrance) moving = M.step(s, dt) || moving;
-    M.paintEntrance(lines, entrance);
+    // Only lines whose rise moved are painted again (Nov 11: every line was, each
+    // frame, while any one moved).
+    entrance.forEach((s, i) => {
+      moving = M.step(s, dt) || moving;
+      if (s.painted !== s.value) { M.paintEntrance([lines[i]], [s]); s.painted = s.value; }
+    });
     announceSettled();
     return moving;
   }, () => !reduced.matches);
@@ -55,6 +60,16 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   const onScreen = line => { const box = line.getBoundingClientRect(); return box.bottom > 0 && box.top < innerHeight; };
   // Every line that has started rising has landed, and none on screen still waits.
   const inPlace = () => entrance.every((s, i) => s.target === 1 ? landed(s) : !onScreen(lines[i]));
+  // Seconds until the last line on screen starts rising; null while one on screen
+  // still waits to be seen.
+  const lastStart = () => {
+    let at = 0;
+    for (let i = 0; i < entrance.length; i++) {
+      if (entrance[i].target === 1) at = Math.max(at, entrance[i].delay);
+      else if (onScreen(lines[i])) return null;
+    }
+    return at;
+  };
 
   function announceSettled() {
     if (settled || document.fonts.status !== 'loaded') return;
@@ -94,7 +109,7 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
       // The rest waits for the view to be where it will be (land()).
       land(watchWaiting);
     }
-    M.paintEntrance(lines, entrance); loop.wake();
+    M.paintEntrance(lines, entrance); entrance.forEach(s => { s.painted = s.value; }); loop.wake();
   }
   // Where the view's top will be, on the screen as it is now.
   function viewTop() {
@@ -148,5 +163,5 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   if (document.fonts.status === "loading") document.fonts.ready.then(() => {
     layout = ""; configure();
   });
-  return { inPlace };
+  return { inPlace, lastStart };
 }
