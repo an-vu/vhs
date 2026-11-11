@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -297,8 +298,30 @@ def markdown(path):
     return page.text().encode()
 
 
+def last_changed(path):
+    """The day the file last changed in git (YYYY-MM-DD), or None if git can't say."""
+    try:
+        day = subprocess.run(["git", "log", "-1", "--format=%cs", "--", path], cwd=ROOT,
+                             capture_output=True, text=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return day or None
+
+
+def with_lastmod(data):
+    """sitemap.xml with a lastmod per page: the last commit that changed its file, so
+    the dates are real and Google and Bing can tell which pages changed. The publish
+    workflow checks out the full history for this (fetch-depth: 0)."""
+    def add(match):
+        page = (urlsplit(match.group(1)).path.strip("/") or "index") + ".html"
+        day = last_changed(page)
+        return match.group(0) + (f"<lastmod>{day}</lastmod>" if day else "")
+    return re.sub(r"<loc>([^<]+)</loc>", add, data.decode()).encode()
+
+
 def main():
     files = stamp(public_files())
+    files["sitemap.xml"] = with_lastmod(files["sitemap.xml"])
     for page in MARKDOWN:
         files[Path(page).with_suffix(".md").as_posix()] = markdown(page)
     shutil.rmtree(OUTPUT, ignore_errors=True)

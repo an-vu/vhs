@@ -1,6 +1,6 @@
 # agents.md · vHuman
 
-Last updated: November 2, 2026
+Last updated: November 3, 2026
 
 ## What this is
 
@@ -75,13 +75,16 @@ Every page is public and plain HTML, and nothing needs signing in. There are no 
 
 ## Structured data
 
-Pages carry schema.org JSON-LD:
+Pages carry schema.org JSON-LD in their HTML source (a fetch that turns pages into text drops it; read the raw HTML):
 
-- Home: Organization, WebSite, and the studio's services
-- About: AboutPage
+- Home: Organization (name, alternate name, legal name, logo, email, contact point, address, description, the four services) and WebSite
+- About: AboutPage, with the studio's founding year (2022), founder (An Vu), legal name and where it was founded (Wyoming)
 - Work: CollectionPage with the project list
-- FAQ: FAQPage
-- About, Work, FAQ, and Legal: BreadcrumbList
+- Services: WebPage with the four practice areas as Service items, each with its own address (/services#research and so on) and what it includes
+- Contact: ContactPage
+- FAQ: FAQPage, every answer word for word as on the page
+- Sitemap: WebPage
+- Every page but Home: BreadcrumbList
 
 ## Notes for crawlers
 

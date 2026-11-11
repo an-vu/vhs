@@ -84,15 +84,24 @@
   z-index: 5;
 }
 .about-model-expanded .about { pointer-events: none; }
-.about-intro, .about .main-nav {
+.about-intro, .about .main-nav, .about-facts {
   transition: translate .55s ease, opacity .55s ease;
 }
 .about-model-expanded .about-intro { translate: 0 -100px; opacity: 0; }
 .about-model-expanded .about .main-nav { translate: 0 100px; opacity: 0; }
+.about-model-expanded .about-facts { opacity: 0; }
 .about-model-expanded .site-header,
 .about-model-expanded .site-footer { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
-  #about-rover, .about-intro, .about .main-nav { transition: none; }
+  #about-rover, .about-intro, .about .main-nav, .about-facts { transition: none; }
+}
+
+/* About's facts (founded, by whom, where): small and grey like the footer's words. */
+.about-facts {
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 /* Contact's details under its big text: reading size, like an FAQ answer. */
