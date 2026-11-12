@@ -213,7 +213,7 @@
   }
 }
 
-@media(max-width:760px) {
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   .vflow {
     --gallery-height: clamp(250px, 50vw, 520px);
     --gallery-air: 32px;

@@ -3,6 +3,7 @@ import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
 import * as defaults from "./config.js";
 import { createPLYPointCloud, BLEED_STEPS } from "./ply-points.js";
+import { sideways } from "../shared/phone.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
 export async function createModelScene(container, model, onRevealProgress = () => { }, options = {}) {
@@ -81,15 +82,44 @@ export async function createModelScene(container, model, onRevealProgress = () =
   let settledNotified = false, textForegroundNotified = false;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   container.append(renderer.domElement);
+  // A phone on its side: the model sits in the left half, beside Home's text, and
+  // big, sized from the screen's width rather than its height (Safari's bars can
+  // leave under 300 px of it): side-on, its length (the longest side, 3.5 units
+  // once loaded) is SIDE_FILL of the width, running past the screen's edge, the
+  // dots keeping out of the letters. The view is shifted and zoomed, not the
+  // canvas, so the Dissolve's dots still hand over where they are; opened
+  // (Explore model), it glides back to the middle.
+  // Centred at 41% of the width, so side-on (the widest it gets as it turns, its
+  // near end about 5% bigger for the perspective) it stays about 25 px inside the
+  // left edge and reaches about to the headline.
+  const SIDE_SHIFT = -.09, SIDE_FILL = .72, MODEL_LENGTH = 3.5;
+  const sideZoom = () => SIDE_FILL * viewWidth / viewHeight
+    * 2 * C.CAMERA_END.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / MODEL_LENGTH;
+  let shift = 0, centered = false, viewWidth = 1, viewHeight = 1;
+  function placeView(dt = null) {
+    const target = sideways.matches && !centered ? SIDE_SHIFT : 0;
+    const zoom = sideways.matches ? sideZoom() : 1;
+    if (camera.zoom !== zoom) { camera.zoom = zoom; camera.updateProjectionMatrix(); }
+    if (dt === null && shift === target && !shift) return;
+    shift = dt === null || reduced.matches ? target : THREE.MathUtils.lerp(shift, target, 1 - Math.exp(-dt * 6));
+    if (Math.abs(shift - target) < .0005) shift = target;
+    if (shift) camera.setViewOffset(viewWidth, viewHeight, -viewWidth * shift, 0, viewWidth, viewHeight);
+    else camera.clearViewOffset();
+  }
   function resize() {
     const { width, height } = container.getBoundingClientRect();
     camera.aspect = width / Math.max(1, height);
+    viewWidth = Math.max(1, width); viewHeight = Math.max(1, height);
     camera.updateProjectionMatrix();
+    placeView();
     renderer.setPixelRatio(Math.min(devicePixelRatio, C.DOTS_PIXEL_RATIO ?? 2));
     // Dots too small for a pixel keep the coverage they'd have at full sharpness.
     if (material) material.uniforms.uCoverage.value = renderer.getPixelRatio() / Math.min(devicePixelRatio, 2);
     renderer.setSize(width, height, false);
-    if (material) material.uniforms.uScale.value = renderer.domElement.height / 2;
+    // The dots' size follows the zoom too (a phone on its side, placeView()), so a
+    // model drawn bigger has its dots in proportion: kept at the unzoomed size, most
+    // came out under a pixel, were drawn a pixel big, and smeared the model dark.
+    if (material) material.uniforms.uScale.value = renderer.domElement.height / 2 * camera.zoom;
     // Resizing clears the drawing buffer. Paint synchronously before the
     // browser can present it, including the Canvas2D-to-WebGL handoff;
     // waiting for the animation loop leaves a blank particle frame.
@@ -100,6 +130,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
     last = now;
     elapsed += dt;
     const frames = dt * 60;
+    if (shift !== (sideways.matches && !centered ? SIDE_SHIFT : 0)) placeView(dt);
     material.uniforms.uTime.value = elapsed;
     if (formationDuration !== null) {
       const p = reduced.matches ? 1 : Math.min(1, elapsed * 1000 / formationDuration);
@@ -247,6 +278,8 @@ export async function createModelScene(container, model, onRevealProgress = () =
       material.uniforms.uTextEnabled.value = enabled ? 1 : 0;
       if (visible && reduced.matches) draw(performance.now());
     },
+    // Explore model: the view back in the middle (a phone on its side, placeView()).
+    setCentered(value) { centered = value; if (reduced.matches) { placeView(); if (visible) draw(performance.now()); } },
     setVisible(value) { if (value !== visible) { visible = value; if (visible) resize(); sync(); } },
     redraw() { if (visible && reduced.matches) draw(performance.now()); }
   };

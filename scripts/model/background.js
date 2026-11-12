@@ -54,6 +54,7 @@ export async function createModelBackground(container, button, onExpand, onContr
     button.setAttribute("aria-expanded", String(expanded));
     button.setAttribute("aria-label", expanded ? "Close model view" : "Explore model");
     onExpand(expanded);
+    scene.setCentered(expanded);
     if (expanded) {
       cancelAnimationFrame(measurement);
       measurement = 0;

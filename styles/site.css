@@ -38,6 +38,14 @@ body {
   color: var(--fg)
 }
 
+/* Text keeps the sizes set here when a phone turns: Safari on the iPhone otherwise
+   enlarges some of it on its own in landscape (the footer's small type ended up
+   bigger than the page's text). */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   min-height: 100vh;
   font-family: Georgia, "Times New Roman", serif;
@@ -439,13 +447,16 @@ html.page-motion {
   font-size: min(100%, calc((100vw - 28px) / 10.6))
 }
 
-@media(max-width:760px) {
+/* A phone (scripts/shared/phone.js has the same query): up to 760 px wide, or a
+   phone on its side, which keeps its phone layout. */
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   :root {
     --header-height: 64px;
     --brand-size: 22px;
-    /* 15vw, not edge to edge: at 17vw "made human." ran to 14 px from the
-       sides and the page felt cramped on a phone (60 px on an iPhone 16 Pro). */
-    --display-size: min(clamp(52px, 15vw, 92px), 12svh)
+    /* 15% of the screen's short side (its width, upright), not edge to edge: at
+       17% "made human." ran to 14 px from the sides and the page felt cramped on
+       a phone (60 px on an iPhone 16 Pro). */
+    --display-size: min(clamp(52px, 15vmin, 92px), 12svh)
   }
 
   .wrap {
@@ -531,5 +542,21 @@ html.page-motion {
     gap: 6px
   }
 }
+/* A phone on its side: the big text (and the big link menus under About's and the
+   other pages' text) at its size upright, 15% of the short side. Only Home holds
+   it to what its short screen allows, filling it: its headline, menu and the
+   gap between them (home.css) take about 4.6 times this size, plus about 158 px
+   of fixed room (header, the blur's reach below it and above the footer,
+   footer), and 2 px to spare. */
+@media (max-height: 500px) and (pointer: coarse) {
+  :root {
+    --display-size: clamp(52px, 15vmin, 92px)
+  }
+
+  .home-page {
+    --display-size: min(clamp(52px, 15vmin, 92px), (100svh - 160px) / 4.6)
+  }
+}
+
 /* Prevent mouse/touch focus rings, including after controls are moved in the DOM. */
 :root.pointer-input :focus { outline: none; }

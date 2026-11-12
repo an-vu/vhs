@@ -1,4 +1,5 @@
 import { StudioMotion, RISE_WHEN_REACHED } from '../shared/motion.js';
+import { phone } from '../shared/phone.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
 import { driftLogoStrip, riseLogoStrip } from './logo-strip.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
@@ -161,7 +162,6 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   // the logo next to the glass eases into and out of the extra room the glass
   // takes (a quarter sine), so the row slides as one piece.
   const GAP = 40, PHONE_GAP = 24, SIDE = 4;
-  const phone = matchMedia('(max-width: 760px)');
   function spacing() {
     const size = tabs[0].firstElementChild.offsetWidth * .618 / dockScale();
     const glass = parseFloat(getComputedStyle(flow).getPropertyValue('--circle')) || 67;
@@ -169,6 +169,10 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     return { size, step: size + gap, first: glass + gap + size / 2 };
   }
   let inset = -1, unit = 0;
+  // The phone layout coming or going (a window resized across it): the phone's
+  // scroller is measured and put on the project again, or the next swipe would
+  // start from wherever it was left.
+  phone.addEventListener('change', () => { unit = 0; inset = -1; paint(); });
   function paint() {
     const middle = flow.clientWidth / 2, half = content.clientWidth / 2;
     // Where the text column starts, for the phone's edge fade (work.css).
@@ -558,7 +562,8 @@ function restGallery(gallery) {
 // Galleries upgrade to vFlow; without it they stay as plain images. On a phone each
 // shows one side card a side instead of two: in the 16 px beside the
 // picture two read as a stack of slivers, and the outer pair runs to the screen's
-// edge. The near ones stop about 6 px short of it.
+// edge. The near ones stop about 6 px short of it. Upright phones only: a phone on
+// its side has the room for the computer's gallery (work.css).
 const phoneGallery = matchMedia('(max-width: 760px)');
 const galleries = [...document.querySelectorAll('.work-content .project-gallery')];
 if (galleries.length) import('../vflow/vflow.js').then(({ createVFlow }) => {

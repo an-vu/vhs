@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { sideways } from '../shared/phone.js';
+
+// The rover's phone framing: under 700 px wide, or a phone on its side.
+const small = width => width < 700 || sideways.matches;
 
 // About-page presentation: projection, expand/collapse, focus and scroll layers.
 export function createAboutRoverView({
@@ -40,8 +44,8 @@ export function createAboutRoverView({
   function updateProjection() {
     const width = viewportWidth, height = viewportHeight;
     const offset = 1 - viewMix;
-    camera.setViewOffset(width, height, -width * (width < 700 ? .10 : .17) * offset,
-      (height * (width < 700 ? .22 : .19) + blockLift + scrollShift) * offset, width, height);
+    camera.setViewOffset(width, height, -width * (small(width) ? .10 : .17) * offset,
+      (height * (sideways.matches ? .08 : small(width) ? .22 : .19) + blockLift + scrollShift) * offset, width, height);
   }
   function advanceView(dt) {
     if (!viewTransition) return;

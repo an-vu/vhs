@@ -22,7 +22,7 @@
 }
 /* On a phone the glass is the size it was before the docks grew (1 / --dock-scale):
    104 px, logos and gaps a quarter smaller. */
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   .work-page,
   .services-page { --dock-size: .769 }
 }

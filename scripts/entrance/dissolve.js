@@ -79,7 +79,7 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
   let width, height, fontSize, sizeScale = 1, word = [], ink, colors, mask;
   let wordmark = null, wordCenterX = 0, wordCenterY = 0;
   let frame = 0, last = null, elapsed = 0, started = false, disposed = false, transferred = false;
-  let hovering = false, hoverAt = null, advanced = false;
+  let hovering = false, hoverAt = null, advanced = false, paused = false;
   let formationDelayAt = null, onFormationReady = null;
   let bubbles = new Float32Array(dots.count * 4);
   function release() {
@@ -188,12 +188,12 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
   }
   function tick(now) {
     frame = 0;
-    if (disposed || transferred || document.hidden) { last = null; return; }
+    if (disposed || transferred || document.hidden || paused) { last = null; return; }
     const dt = last === null ? 0 : Math.min((now - last) / 1000, .05);
     last = now; draw(dt);
     if (!reduced.matches && !transferred) frame = requestAnimationFrame(tick);
   }
-  function wake() { if (!disposed && !transferred && started && !document.hidden && !frame) { last = null; frame = requestAnimationFrame(tick); } }
+  function wake() { if (!disposed && !transferred && started && !paused && !document.hidden && !frame) { last = null; frame = requestAnimationFrame(tick); } }
   document.addEventListener('visibilitychange', () => { cancelAnimationFrame(frame); frame = 0; wake(); }, { signal: events.signal });
   // Wait a frame so the homepage has applied the new wordmark size first.
   addEventListener('resize', () => requestAnimationFrame(() => {
@@ -232,6 +232,22 @@ export function createDissolveEntrance(brand, onComplete = () => {}, options = {
     },
     get elapsed() { return elapsed; },
     finish() { if (!started || disposed || transferred) return; elapsed = Math.max(elapsed, createDissolveEntrance.duration(timing)); draw(0); },
+    // Home's plain layout (the page no longer fits the swipe layout): the dots stop
+    // and hide, and a word that had started counts as gone, so it never writes over
+    // the header's "vHuman" again. Back in the swipe layout the dots carry on and
+    // can still become the model.
+    pause(value) {
+      if (disposed || transferred || paused === value) return;
+      paused = value;
+      canvas.style.visibility = paused ? 'hidden' : '';
+      if (!paused) { wake(); return; }
+      cancelAnimationFrame(frame); frame = 0; last = null;
+      if (started && !advanced) {
+        advanced = true;
+        if (wordmark) wordmark.style.removeProperty('transform');
+        brand.style.removeProperty('opacity');
+      }
+    },
     dispose() { disposed = true; release(); brand.style.removeProperty('opacity'); }
   };
 }

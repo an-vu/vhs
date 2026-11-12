@@ -149,7 +149,7 @@ html.experience body {
   will-change: transform, opacity;
 }
 
-@media(max-width:760px) {
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   .home-main {
     padding: 24px 10px 12px
   }
@@ -166,6 +166,50 @@ html.experience body {
 
   .home-main .main-nav {
     margin-top: 24px
+  }
+}
+
+/* A phone on its side keeps the swipe layout: the model's expand button leaves the
+   column for the left edge, under the model, and the footer is tighter, so the
+   headline, menu and footer fit the short screen (home.js checks that they do). */
+@media (max-height: 500px) and (pointer: coarse) {
+  .experience .home-model-control {
+    position: absolute;
+    left: 16px;
+    bottom: 44px;
+    height: auto;
+    padding: 0;
+  }
+
+  .experience .site-footer {
+    padding: 8px 0 10px;
+  }
+
+  /* The headline and menu in the right half, right-aligned, under a right thumb;
+     the model in the left half (scene.js). Together they fill the height between
+     the header's blur and the footer's (site.css sizes them to fit): the headline
+     1.15 times the big size, the menu .75 times (bigger than upright's .55, for a
+     thumb), the gap between them .3 times. */
+  .experience .home-main {
+    align-self: flex-end;
+    width: 50%;
+    align-items: flex-end;
+    text-align: right;
+    padding: var(--blur-reach) 22px var(--blur-reach) 0;
+    --nav-align: flex-end;
+  }
+
+  .experience .home-main h1 {
+    font-size: calc(var(--display-size) * 1.15);
+  }
+
+  .experience .home-main .main-nav {
+    margin-top: calc(var(--display-size) * .3);
+    font-size: calc(var(--display-size) * .75);
+  }
+
+  .experience .home-main .main-nav a.is-swap {
+    justify-items: end;
   }
 }
 

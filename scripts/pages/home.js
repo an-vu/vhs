@@ -1,4 +1,5 @@
 import { StudioMotion } from '../shared/motion.js';
+import { phone } from '../shared/phone.js';
 
 // `factory` creates the selected entrance; `dissolve` holds the Dissolve
 // entrance's model, settings and phase reporter, or null for the other entrances.
@@ -19,7 +20,7 @@ export function startHome(factory, dissolve) {
   const lines = items.map(() => M.spring(0));
   const springs = [logo, ...lines, legal];
   const lift = M.createLift();
-  let state = 0, scrubbing = false, active = false, keyReturnStop = false;
+  let state = 0, scrubbing = false, active = false, keyReturnStop = false, introStarted = false;
   let height = innerHeight, width = innerWidth;
   let background = null, backgroundLoading = false, backgroundFailed = false, expanded = false;
   let backgroundRevealed = false, formationPending = false, formationReady = false;
@@ -133,8 +134,9 @@ export function startHome(factory, dissolve) {
   }, () => active, lift.release);
 
   function render() {
-    const mobile = width <= 760, move = M.clamp(logo.value);
-    const startSize = Math.min(width * (mobile ? .16 : .1), mobile ? 88 : 150,
+    // A phone on its side sizes the word from its short side, as when it's upright.
+    const mobile = phone.matches, move = M.clamp(logo.value);
+    const startSize = Math.min((mobile ? Math.min(width, height) : width) * (mobile ? .16 : .1), mobile ? 88 : 150,
       Math.max(1, width - 40) / brandWidthPerPixel);
     // Keep glyph layout stable; move and shrink the rendered wordmark instead.
     // Where the wordmark settles in the header, and its size there.
@@ -226,7 +228,8 @@ export function startHome(factory, dissolve) {
   function configure() {
     entrance.finish();
     const wasActive = active;
-    active = !motion.matches && innerHeight >= 420;
+    // The swipe layout: anything 420 px tall or more, and a phone on its side.
+    active = !motion.matches && (innerHeight >= 420 || phone.matches);
     root.classList.toggle("experience", active);
     if (active && footer.offsetTop + footer.offsetHeight > stage.clientHeight + 1) {
       active = false;
@@ -237,17 +240,23 @@ export function startHome(factory, dissolve) {
     measureBrand();
     height = active ? stage.clientHeight : innerHeight;
     if (!active) {
+      // Leaving the swipe layout mid-intro skips the intro, as a swipe would: back
+      // in it, the page is at its text, and the Dissolve's dots (paused and hidden
+      // meanwhile) carry on into the model.
+      if (wasActive && state === 0 && introStarted) go(1, true);
+      entrance.pause?.(true);
       cancelAutoAdvance();
       lift.reset(); loop.stop(); gestures.reset();
       [brand, content, main, line, footer, ...items].forEach(element => {
         element.removeAttribute("style"); element.inert = false;
       });
     } else {
+      entrance.pause?.(false);
       if (!wasActive) go(state, true);
       render();
       requestAnimationFrame(() => requestAnimationFrame(() => {
         brand.classList.add("is-visible");
-        if (active && state === 0) entrance.start();
+        if (active && state === 0) { entrance.start(); introStarted = true; }
       }));
     }
     root.classList.remove("intro-loading");

@@ -8,6 +8,10 @@ import { paletteColors, MODEL_THEME_EVENT } from './effects/model-palette.js';
 import { createFrameClock } from '../shared/frame-clock.js';
 import { curiositySettings } from './settings/curiosity.js';
 import { createAboutRoverView } from './about-rover-view.js';
+import { sideways } from '../shared/phone.js';
+
+// The rover's phone framing: under 700 px wide, or a phone on its side.
+const small = width => width < 700 || sideways.matches;
 
 const host = document.querySelector('#about-rover');
 const button = document.querySelector('#about-model-expand');
@@ -71,12 +75,13 @@ function resize() {
   if (!renderer) return;
   const { width, height } = host.getBoundingClientRect();
   camera.aspect = width / Math.max(height, 1);
-  // Desktop uses 85% of the original visual size; preserve mobile framing.
-  camera.zoom = width < 700 ? 1 : .85;
+  // Desktop uses 85% of the original visual size; preserve mobile framing. A phone
+  // on its side: 70%, so it fits its band between the header and the text.
+  camera.zoom = sideways.matches ? .7 : small(width) ? 1 : .85;
   viewportWidth = width;
   roverView.resize(width, height);
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio, width < 700 ? 1.25 : 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, small(width) ? 1.25 : 1.5));
   renderer.setSize(width, height, false);
   wake();
 }
@@ -126,9 +131,9 @@ function draw(now) {
   }
   scene.updateMatrixWorld(true);
   // Match Lab dimensions to the About model's smaller desktop framing.
-  const detailScale = viewportWidth < 700 ? 1 : .8 * camera.zoom;
+  const detailScale = small(viewportWidth) ? 1 : .8 * camera.zoom;
   // Use the same dot scale for the entrance and the expanded view.
-  const dotScale = .8 * camera.zoom * (viewportWidth < 700 ? .95 : .75);
+  const dotScale = .8 * camera.zoom * (small(viewportWidth) ? .95 : .75);
   const revealing = useSpectral && !roverView.expanded && revealedAt === null;
   spectral?.setEnabled(Boolean(useSpectral && (roverView.expanded || revealing)));
   if (useSpectral && (roverView.expanded || revealing)) {
@@ -145,16 +150,16 @@ function draw(now) {
     }
   }
   if (revealedAt !== null && (reduced.matches || entranceElapsed - revealedAt >= animationDelay)) playbackStarted = true;
-  const detailBlend = viewportWidth < 700 && !roverView.expanded && revealedAt !== null && !reduced.matches
+  const detailBlend = small(viewportWidth) && !roverView.expanded && revealedAt !== null && !reduced.matches
     ? THREE.MathUtils.smoothstep(entranceElapsed - revealedAt, 0, animationDelay) : 1;
   // Ease in the paper surface and rear edges after the mobile scan clears the model.
   lines.options.surface = roverView.expanded || (revealing && revealedAt === null)
     ? curiositySettings.line.surface : detailBlend < 1 ? 'ghost' : 'solid';
   lines.options.surfaceOpacity = detailBlend;
   lines.options.hiddenOpacity = curiositySettings.line.hiddenOpacity * detailBlend;
-  lines.options.creases = viewportWidth >= 700 && curiositySettings.line.creases;
+  lines.options.creases = !small(viewportWidth) && curiositySettings.line.creases;
   // The faint rear-edge pass costs one draw per mesh and is barely visible at .05.
-  lines.options.hidden = viewportWidth < 700 && (roverView.expanded || revealing) ? 'off' : curiositySettings.line.hidden;
+  lines.options.hidden = small(viewportWidth) && (roverView.expanded || revealing) ? 'off' : curiositySettings.line.hidden;
   lines.update(renderer, useSpectral && (roverView.expanded || revealedAt === null) ? spectral.scan : undefined, true, detailScale);
   renderer.render(scene, camera);
   const interacting = Math.abs(state.velocityX) + Math.abs(state.velocityY) > .0001 || Math.abs(zoom - state.targetCameraZ) > .001;
@@ -196,7 +201,7 @@ function prepareSpectral() {
   const effect = createSpectral(meshes, { deferPreparation: true, scanRoot: rotation, groupOf: mesh => partGroup?.(mesh) ?? mesh });
   preparingSpectral = effect;
   Object.assign(effect.options, curiositySettings.spectral);
-  if (viewportWidth < 700) {
+  if (small(viewportWidth)) {
     effect.options.density = Math.min(effect.options.density, 15000);
   }
   spectralPreparation = (async () => {
@@ -300,7 +305,7 @@ async function start() {
     resize();
     await prepareSpectral();
     if (disposed) return;
-    lines.update(renderer, undefined, true, viewportWidth < 700 ? 1 : .8 * camera.zoom);
+    lines.update(renderer, undefined, true, small(viewportWidth) ? 1 : .8 * camera.zoom);
     await renderer.compileAsync(scene, camera);
     await textReady;
     if (disposed) return;

@@ -1,3 +1,5 @@
+import { phone } from '../shared/phone.js';
+
 // Letter-shaped exclusion behind the Home text. Repaint only when layout changes.
 export function createTextMask(container, text, onPaint) {
   const mask = document.createElement("canvas");
@@ -51,8 +53,8 @@ export function createTextMask(container, text, onPaint) {
     if (mask.height !== height) mask.height = height;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = ctx.strokeStyle = ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#F9F8F6";
-    ctx.shadowBlur = bounds.width <= 760 ? 9 : 12;
-    ctx.lineWidth = bounds.width <= 760 ? 2 : 3;
+    ctx.shadowBlur = phone.matches ? 9 : 12;
+    ctx.lineWidth = phone.matches ? 2 : 3;
     ctx.lineJoin = "round";
     ctx.textBaseline = "alphabetic";
     for (const { element, rect, css } of rows) {

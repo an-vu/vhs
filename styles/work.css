@@ -249,6 +249,8 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
   width: calc(var(--picture-width) / .88);
   margin-left: calc(50% - var(--picture-width) / .88 / 2);
 }
+/* The phone's gallery: upright phones only (a phone on its side gets the
+   computer's, below). */
 @media (max-width: 760px) {
   .project-panel .vflow {
     --picture-width: min(100vw - 32px, 58ch + 12px);
@@ -273,8 +275,16 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
     transition-duration: var(--fade-out-slow);
   }
 }
+/* A phone on its side: the computer's gallery (the picture with thin side
+   pictures beside it), the picture no taller than the screen under the header
+   once Safari's bars have folded away as the page scrolls (lvh), at its 3:2. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .project-panel .vflow {
+    --picture-width: min(58ch * 1.4, (100vw - 20px) * .88, (100lvh - var(--header-height) - 40px) * 1.5);
+  }
+}
 @media (max-width: 1068px) { .project-image-placeholder { margin: 36px 0; } }
-@media (max-width: 760px) { .project-image-placeholder { margin: 32px 0; } }
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) { .project-image-placeholder { margin: 32px 0; } }
 /* About 75 characters a line, like Apple Newsroom's articles (58ch of Georgia). */
 .project-panel > p:not(.project-tagline) {
   max-width: 58ch;
@@ -335,7 +345,7 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
 }
 .project-lens { clip-path: circle(calc(var(--circle) * var(--lens-grow, 1)) at 50% 50%); }
 
-@media(max-width:760px) {
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   /* On a phone: less room above and below the project row, and both docks the
      size they were before they grew (1 / --dock-scale): a 104 px glass, logos and
      gaps a quarter smaller, so two project logos show on each side. */

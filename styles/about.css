@@ -62,14 +62,23 @@
 .about-model-placeholder { display: block; width: 44px; height: 44px; margin-top: 12px; }
 /* On a phone the intro is smaller and a little looser: at the desktop's 34 px
    floor and tight spacing it ran 10+ lines and felt bunched up. */
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
   .about { --headline-size: 29px; }
   .about-intro { line-height: 1.2; letter-spacing: -.03em; }
 }
-@media (max-width: 699px) {
+/* The rover's phone framing (about-rover.js: under 700 px wide, or a phone on its side). */
+@media (max-width: 699px), (max-height: 500px) and (pointer: coarse) {
   #about-rover { transition: opacity .5s ease-out; }
   .about-page .about {
     padding-top: max(40px, calc(50svh - var(--header-height) - 14px - var(--about-block-lift)));
+  }
+}
+/* A phone on its side: the first screen is the rover, in the band between the
+   header and the text, which starts near the screen's bottom edge (the rover
+   centred there and a little smaller: about-rover.js, about-rover-view.js). */
+@media (max-height: 500px) and (pointer: coarse) {
+  .about-page .about {
+    padding-top: max(40px, calc(100svh - var(--header-height) - 80px - var(--about-block-lift)));
   }
 }
 .about-model-expanded { overflow: hidden; }
@@ -84,6 +93,8 @@
   z-index: 5;
 }
 .about-model-expanded .about { pointer-events: none; }
+/* The links under the text (Work, About, Contact) at the text's own size. */
+.about .main-nav { font-size: var(--headline-size); }
 .about-intro, .about .main-nav {
   transition: translate .55s ease, opacity .55s ease;
 }
