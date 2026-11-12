@@ -1,10 +1,15 @@
 import * as THREE from "three";
+import * as defaults from "./config.js";
 import { createPLYPointCloud } from "./ply-points.js";
+import { createBleed } from "./bleed.js";
 
-// A point-cloud model drawn as the homepage draws its aircraft (the same dots,
-// palette and twinkle), but in place: facing the camera, no reveal, no turning.
-// It fills its box, fit to the box's shorter side.
-export async function createStillPoints(container, model) {
+// A point-cloud model drawn in place as the homepage draws its aircraft once it
+// has formed: the same dots, palette and twinkle, turning about the upright axis
+// at the same idle speed (IDLE_ROTATION, config.js) with the same bleed. No
+// reveal; it starts facing the camera. With reduced motion it stays still. It
+// fills its box, fit to the box's shorter side.
+export async function createTurningPoints(container, model) {
+  const C = { ...defaults, ...model.settings };
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, .01, 100);
@@ -14,6 +19,9 @@ export async function createStillPoints(container, model) {
   try { material = await createPLYPointCloud(group, renderer, model); }
   catch (error) { renderer.dispose(); throw error; }
   const radius = group.children[0].geometry.boundingSphere.radius;
+  const bleed = createBleed(group, material, C);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const up = new THREE.Vector3(0, 1, 0);
   container.append(renderer.domElement);
   function resize() {
     const { width, height } = container.getBoundingClientRect();
@@ -29,14 +37,17 @@ export async function createStillPoints(container, model) {
     material.uniforms.uPixelRatio.value = renderer.getPixelRatio();
     renderer.render(scene, camera);
   }
-  // The twinkle, as on the homepage: its clock runs while the smile is on screen
-  // and the tab is showing; otherwise nothing is drawn.
+  // Its clock runs while it's on screen and the tab is showing; otherwise
+  // nothing is drawn.
   let elapsed = 0, last = null, frameId = 0, inView = true;
   function frame(now) {
     frameId = 0;
     if (!inView || document.hidden) { last = null; return; }
-    elapsed += last === null ? 0 : Math.min((now - last) / 1000, .05);
+    const dt = last === null ? 0 : Math.min((now - last) / 1000, .05);
+    elapsed += dt;
     last = now;
+    if (!reduced.matches) group.rotateOnWorldAxis(up, C.IDLE_ROTATION * dt * 60);
+    bleed(elapsed, !reduced.matches);
     material.uniforms.uTime.value = elapsed;
     renderer.render(scene, camera);
     frameId = requestAnimationFrame(frame);

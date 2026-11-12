@@ -4,9 +4,9 @@ import { createPointMaterial } from "./point-material.js";
 import { BLEED_SHARE, BLEED_CYCLE, BLEED_RECOVER, BLEED_DELAY } from "./config.js";
 import { normalizePositions, sampleVisible, twinkleSeeds } from "./point-prep.js";
 
-export async function createPLYPointCloud(group, renderer, model, sourceGeometry, prepareDissolve = false) {
+export async function createPLYPointCloud(group, renderer, model, sourceGeometry) {
   const diagnostic = window.StudioDiagnostics;
-  const geometry = sourceGeometry ?? await loadPreparedPoints(model, prepareDissolve);
+  const geometry = sourceGeometry ?? await loadPreparedPoints(model);
   const settings = model.settings;
   if (sourceGeometry) {
     // Spatial Lab already loaded this geometry; prepare it as the worker does.
@@ -36,7 +36,7 @@ export async function createPLYPointCloud(group, renderer, model, sourceGeometry
     ...settings, POINT_SIZE: (settings.POINT_SIZE ?? .002) * scale
   });
   const points = new THREE.Points(geometry, material);
-  material.userData.geometry = geometry;
+  material.userData.points = points;
   points.rotation.x = settings.MODEL_X_ROTATION ?? 0;
   group.add(points);
   return material;
@@ -134,14 +134,22 @@ export function createTwinkleMaterial(renderer, settings) {
       vAlpha *= uOpacity;
       gl_Position = projectionMatrix * view;
       if (uFormation < 1.0) {
-        vec2 origin = aDissolve.xy;
+        // Where the dot comes from: a dot the intro handed over (scene.js
+        // beginDissolve) carries its spot on the screen, size and opacity in
+        // aDissolve; every other dot (aDissolve left at 0) starts from a spot of
+        // its own, worked out from its seed, one pixel big and unseen.
+        vec4 source = aDissolve;
+        if (source == vec4(0.0)) {
+          vec2 spot = fract(sin(vec2(dot(aSeed.xy, vec2(12.9898, 78.233)), dot(aSeed.yz, vec2(39.3468, 11.1357)))) * 43758.5453);
+          source = vec4(spot * 2.0 - 1.0, 1.0, 0.0);
+        }
         float arrival = smoothstep(aSeed.z * 0.25, 1.0, uFormation);
         // Begin with every bubble in front of the close camera. Blend in
         // homogeneous clip space, avoiding division by zero or negative W
         // for model vertices behind the camera during the pullback.
-        gl_Position = mix(vec4(origin, 0.0, 1.0), gl_Position, uFormation);
-        vAlpha = mix(aDissolve.w, vAlpha, aDissolve.w > 0.0 ? uFormation : arrival);
-        gl_PointSize = mix(aDissolve.z * uPixelRatio, gl_PointSize, uFormation);
+        gl_Position = mix(vec4(source.xy, 0.0, 1.0), gl_Position, uFormation);
+        vAlpha = mix(source.w, vAlpha, source.w > 0.0 ? uFormation : arrival);
+        gl_PointSize = mix(source.z * uPixelRatio, gl_PointSize, uFormation);
         vTone *= uFormation;
       }
       // Fully transparent points still cost raster work unless clipped out.

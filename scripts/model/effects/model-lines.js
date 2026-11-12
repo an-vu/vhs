@@ -1,5 +1,6 @@
 import { scanBandGLSL, scanUniforms } from './model-scan-band.js';
 import * as THREE from 'three';
+import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { paletteColors, watchPaletteUniforms } from './model-palette.js';
 
 const colors = paletteColors();
@@ -87,6 +88,14 @@ ${scanBandGLSL}
 void main(){if(visibleEdge<.5 || (dashed && mod(along,dash+gap)>dash)) discard; float band=scanBand(scanCoordinate(scanPosition));gl_FragColor=vec4(color,opacity*lineCoverage*(hiddenPass?1.:edgeOpacity)*(1.-clamp(band*lineResponse,0.,1.)));
 #include <colorspace_fragment>
 }`;
+// An attribute as plain 32-bit floats: a packed model's positions are 16-bit
+// (KHR_mesh_quantization), and moving them in place would overflow.
+const GET = ['getX', 'getY', 'getZ', 'getW'];
+function floats(attribute) {
+  const size = attribute.itemSize, array = new Float32Array(attribute.count * size);
+  for (let i = 0; i < attribute.count; i++) for (let k = 0; k < size; k++) array[i * size + k] = attribute[GET[k]](i);
+  return new THREE.BufferAttribute(array, size);
+}
 // Several geometries as one (`names`: the attributes to keep, in every one), indexed
 // if any is, so parts that always move together cost one draw instead of many.
 function combine(geometries, names) {
@@ -168,8 +177,8 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
       const parts = members.map(mesh => {
         mesh.updateWorldMatrix(true, false);
         const part = new THREE.BufferGeometry();
-        part.setAttribute('position', mesh.geometry.getAttribute('position').clone());
-        if (mesh.geometry.getAttribute('normal')) part.setAttribute('normal', mesh.geometry.getAttribute('normal').clone());
+        part.setAttribute('position', floats(mesh.geometry.getAttribute('position')));
+        if (mesh.geometry.getAttribute('normal')) part.setAttribute('normal', floats(mesh.geometry.getAttribute('normal')));
         if (mesh.geometry.index) part.setIndex(mesh.geometry.index.clone());
         return part.applyMatrix4(toAnchor.clone().multiply(mesh.matrixWorld));
       });
@@ -203,9 +212,13 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
       uniforms.pixelRatio.value = renderer.getPixelRatio();
       uniforms.color.value.set(options.color); back.uniforms.opacity.value = options.hiddenOpacity; back.uniforms.dashed.value = options.hidden === 'dashed';
       surface = options.shading ? lit : flat; lit.roughness = options.roughness;
-      // Shading needs normals; a model shipped without them (About's rover, slim-glb.py)
-      // gets them worked out from its triangles the first time it's shaded (the lab).
-      if (options.shading) for (const item of copies) if (!item.surface.geometry.getAttribute('normal')) item.surface.geometry.computeVertexNormals();
+      // Shading needs normals; a model shipped without them (About's rover) gets them
+      // worked out from its triangles the first time it's shaded (the lab): smooth
+      // across edges under 30 degrees, sharp at the rest.
+      if (options.shading) for (const item of copies) if (!item.surface.geometry.getAttribute('normal')) {
+        item.surface.geometry = toCreasedNormals(item.surface.geometry, Math.PI / 6);
+        resources.add(item.surface.geometry);
+      }
       surface.color.set(options.surfaceColor); surface.opacity = options.surface === 'solid' ? 1 : options.surfaceOpacity;
       for (const item of copies) { if (!matricesCurrent) item.source.updateWorldMatrix(true, false); for (const key of ['depth', 'surface', 'front', 'back']) item[key].matrix.copy(item.source.matrixWorld); item.surface.material = surface; item.surface.visible = options.surface !== 'none'; item.back.visible = options.hidden !== 'off'; }
     },

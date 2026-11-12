@@ -31,10 +31,15 @@ export const IDLE_ROTATION = 0.001;
 // Sharpness
 // --------------------------------------------------
 
-// How finely Home's dots are drawn on a sharp (Retina) screen: 2 = full Retina,
-// the sharpest and heaviest; 1.5 = a little softer and about 45% fewer pixels to
-// draw each frame. Screens below it draw at their own.
+// How finely Home's dots are drawn on a sharp (Retina) computer screen: 2 = full
+// Retina, the sharpest and heaviest; 1.5 = a little softer and about 45% fewer
+// pixels to draw each frame. Screens below it draw at their own.
 export const DOTS_PIXEL_RATIO = 1.5;
+
+// The same on a touch screen (phones, tablets). A phone's screen is 3x, so at 1.5
+// each dot is stretched over 2 x 2 of its pixels and blurs into its neighbours;
+// at 2 the dots stay as distinct as on a computer.
+export const TOUCH_DOTS_PIXEL_RATIO = 2;
 
 // --------------------------------------------------
 // Bleed

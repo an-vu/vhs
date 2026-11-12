@@ -2,7 +2,8 @@ import { MODEL_THEME_EVENT } from "./effects/model-palette.js";
 import { modelDefaults } from "./registry.js";
 import * as THREE from "three";
 import * as defaults from "./config.js";
-import { createPLYPointCloud, BLEED_STEPS } from "./ply-points.js";
+import { createPLYPointCloud } from "./ply-points.js";
+import { createBleed } from "./bleed.js";
 import { sideways } from "../shared/phone.js";
 
 // Shared scene: the page owns visibility and chooses its own input controls.
@@ -33,54 +34,17 @@ export async function createModelScene(container, model, onRevealProgress = () =
     aircraft.quaternion.premultiply(turn.setFromAxisAngle(screenRight, nextPitch - pitch));
     pitch = nextPitch;
   }
-  // The bleed (config.js): the model's turn over the last BLEED_DELAY seconds,
-  // kept each frame, goes to the shader as BLEED_STEPS turns from now back to then
-  // (in the dots' own frame, so each dot can be drawn where it was).
-  const turns = [], past = new THREE.Quaternion(), toNow = new THREE.Quaternion(), step = new THREE.Quaternion();
-  const still = new THREE.Quaternion();
-  function turnAt(time, out) {
-    if (time <= turns[0].time) return out.copy(turns[0].turn);
-    for (let i = turns.length - 1; i > 0; i--) {
-      if (turns[i - 1].time <= time) {
-        const a = turns[i - 1], b = turns[i];
-        return out.slerpQuaternions(a.turn, b.turn, (time - a.time) / Math.max(b.time - a.time, 1e-6));
-      }
-    }
-    return out.copy(turns[turns.length - 1].turn);
-  }
-  // How much of the scan shows (0 to 1): faded in once the model has formed, then on.
-  let bleedFrom = null;
-  function bleedAmount() {
-    if (!state.revealComplete) { bleedFrom = null; return 0; }
-    bleedFrom ??= elapsed;
-    const p = Math.min(1, (elapsed - bleedFrom) / (C.BLEED_FADE ?? 1.5));
-    return p * p * (3 - 2 * p);
-  }
-  function bleed() {
-    const delay = C.BLEED_DELAY ?? 0, uniform = material?.uniforms.uBleed;
-    if (!uniform || !(delay > 0)) return;
-    // The history always reaches BLEED_DELAY back; the shader (ply-points.js)
-    // picks how far back each knocked-back dot is drawn.
-    const reach = delay;
-    if (material.uniforms.uBleedAmount) material.uniforms.uBleedAmount.value = bleedAmount();
-    const recycled = turns.length > 2 && turns[1].time < elapsed - delay ? turns.shift() : null;
-    turns.push({ time: elapsed, turn: (recycled?.turn ?? new THREE.Quaternion()).copy(aircraft.quaternion) });
-    while (turns.length > 2 && turns[1].time < elapsed - delay) turns.shift();
-    const dots = aircraft.children.find(child => child.isPoints)?.quaternion ?? step.identity();
-    toNow.copy(aircraft.quaternion).multiply(dots).invert();
-    for (let k = 0; k < BLEED_STEPS; k++) {
-      turnAt(elapsed - reach * k / (BLEED_STEPS - 1), past).multiply(dots).premultiply(toNow);
-      // No further back than BLEED_MAX_TURN degrees, along the same turn.
-      const angle = 2 * Math.acos(Math.min(1, Math.abs(past.w))), cap = (C.BLEED_MAX_TURN ?? 12) * Math.PI / 180;
-      if (angle > cap) past.slerp(still, 1 - cap / angle);
-      uniform.value[k].set(past.x, past.y, past.z, past.w);
-    }
-  }
+  // The bleed (bleed.js), once the material exists; it shows once the model has formed.
+  let bleed = () => {};
   let textTexture;
   let material, visible = false, last = null, elapsed = 0, lastControlOpacity = -1;
   let formationDuration = null, cameraDuration = null, formationDone = false;
+  // The Dissolve's handed-over dots while the model forms (beginDissolve).
+  let introDots = null;
   let settledNotified = false, textForegroundNotified = false;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  // Touch screens draw the dots at their own sharpness setting (config.js).
+  const touch = matchMedia("(pointer: coarse)");
   container.append(renderer.domElement);
   // A phone on its side: the model sits in the left half, beside Home's text, and
   // big, sized from the screen's width rather than its height (Safari's bars can
@@ -112,7 +76,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
     viewWidth = Math.max(1, width); viewHeight = Math.max(1, height);
     camera.updateProjectionMatrix();
     placeView();
-    renderer.setPixelRatio(Math.min(devicePixelRatio, C.DOTS_PIXEL_RATIO ?? 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, (touch.matches ? C.TOUCH_DOTS_PIXEL_RATIO : C.DOTS_PIXEL_RATIO) ?? 2));
     // Dots too small for a pixel keep the coverage they'd have at full sharpness.
     if (material) material.uniforms.uCoverage.value = renderer.getPixelRatio() / Math.min(devicePixelRatio, 2);
     renderer.setSize(width, height, false);
@@ -135,7 +99,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
     if (formationDuration !== null) {
       const p = reduced.matches ? 1 : Math.min(1, elapsed * 1000 / formationDuration);
       material.uniforms.uFormation.value = p * p * (3 - 2 * p);
-      if (p === 1 && !formationDone) { formationDone = true; options.onFormed?.(); }
+      if (p === 1 && !formationDone) { formationDone = true; endFormation(); options.onFormed?.(); }
     }
     // Dissolve starts formation and the camera curve together, with separate
     // durations so the model can finish forming during the pullback.
@@ -162,7 +126,7 @@ export async function createModelScene(container, model, onRevealProgress = () =
       options.onTextForeground?.();
     }
     camera.lookAt(0, 0, 0);
-    bleed();
+    bleed(elapsed, state.revealComplete);
     const rendered = diagnostic?.start('WebGL render CPU submission');
     renderer.render(scene, camera);
     rendered?.();
@@ -179,6 +143,14 @@ export async function createModelScene(container, model, onRevealProgress = () =
       onRevealProgress(opacity);
     }
   }
+  // Formed: the handed-over dots go back into the model, drawn just as they were.
+  function endFormation() {
+    if (!introDots) return;
+    introDots.removeFromParent();
+    introDots.geometry.dispose();
+    introDots = null;
+    material.userData.points.geometry.setDrawRange(0, Infinity);
+  }
   function sync() {
     last = null;
     renderer.setAnimationLoop(null);
@@ -191,8 +163,9 @@ export async function createModelScene(container, model, onRevealProgress = () =
   }
   resize();
   try {
-    material = await createPLYPointCloud(aircraft, renderer, model, undefined, options.prepareDissolve);
+    material = await createPLYPointCloud(aircraft, renderer, model);
     material.uniforms.uCoverage.value = renderer.getPixelRatio() / Math.min(devicePixelRatio, 2);
+    bleed = createBleed(aircraft, material, C);
     // Prepare shaders during the intro without advancing the reveal animation.
     const compiled = diagnostic?.start('Shader compile (async wall time)');
     await renderer.compileAsync(scene, camera);
@@ -225,26 +198,36 @@ export async function createModelScene(container, model, onRevealProgress = () =
     beginDissolve(snapshot, duration, pullbackDuration = C.REVEAL_DURATION) {
       if (!snapshot || formationDuration !== null) return;
       const handedOff = diagnostic?.start('Dissolve snapshot handoff');
+      // The intro's dots become the model's first dots (bubble i is the i-th dot
+      // drawn). For the formation they get a small cloud of their own carrying
+      // where each was on the screen, its size, opacity, colour and softness; the
+      // model skips them until it has formed (endFormation), so the rest of its
+      // dots need nothing but a seed.
       const bubbles = snapshot.points;
-      const geometry = material.userData.geometry;
-      const values = geometry.getAttribute('aDissolve');
-      const colors = geometry.getAttribute('aDissolveColor');
-      const softCores = geometry.getAttribute('aDissolveSoftCore');
+      const points = material.userData.points, geometry = points.geometry;
       const indices = geometry.index?.array;
-      const count = Math.min(bubbles.length / 4, indices?.length ?? values.count);
+      const position = geometry.getAttribute('position').array, seeds = geometry.getAttribute('aSeed').array;
+      const count = Math.min(bubbles.length / 4, indices?.length ?? position.length / 3);
+      const at = new Float32Array(count * 3), seed = new Float32Array(count * 4);
+      const colors = new Float32Array(count * 3), softCores = new Float32Array(count);
       const color = new THREE.Color();
-      // Full buffers were prepared in the worker and uploaded during warm-up.
-      // Only the entrance particles change at the visible handoff.
       for (let i = 0; i < count; i++) {
         const vertex = indices ? indices[i] : i;
-        values.array.set(bubbles.subarray(i * 4, i * 4 + 4), vertex * 4);
-        color.set(snapshot.colors[i]).toArray(colors.array, vertex * 3);
-        softCores.array[vertex] = snapshot.softCores?.[i] ?? 1;
-        values.addUpdateRange(vertex * 4, 4);
-        colors.addUpdateRange(vertex * 3, 3);
-        softCores.addUpdateRange(vertex, 1);
+        at.set(position.subarray(vertex * 3, vertex * 3 + 3), i * 3);
+        seed.set(seeds.subarray(vertex * 4, vertex * 4 + 4), i * 4);
+        color.set(snapshot.colors[i]).toArray(colors, i * 3);
+        softCores[i] = snapshot.softCores?.[i] ?? 1;
       }
-      values.needsUpdate = colors.needsUpdate = softCores.needsUpdate = true;
+      const handed = new THREE.BufferGeometry();
+      handed.setAttribute('position', new THREE.BufferAttribute(at, 3));
+      handed.setAttribute('aSeed', new THREE.BufferAttribute(seed, 4));
+      handed.setAttribute('aDissolve', new THREE.BufferAttribute(bubbles.slice(0, count * 4), 4));
+      handed.setAttribute('aDissolveColor', new THREE.BufferAttribute(colors, 3));
+      handed.setAttribute('aDissolveSoftCore', new THREE.BufferAttribute(softCores, 1));
+      introDots = new THREE.Points(handed, material);
+      introDots.frustumCulled = false;
+      points.add(introDots);
+      geometry.setDrawRange(count, Infinity);
       formationDuration = Math.max(1, duration);
       cameraDuration = Math.max(1, pullbackDuration); elapsed = 0;
       material.uniforms.uFormation.value = 0;

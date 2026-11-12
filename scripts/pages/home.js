@@ -60,7 +60,9 @@ export function startHome(factory, dissolve) {
         dissolve.report("forming", entrance.elapsed);
       }
       background.setVisible(active && backgroundRevealed && (!handoff || background.dissolveStarted));
-      expandButton.hidden = !settled || !background.controlReady;
+      // Only when it changes: this runs every frame while the model shows.
+      const hide = !settled || !background.controlReady;
+      if (expandButton.hidden !== hide) expandButton.hidden = hide;
       return;
     }
     // Prepare in a worker during the opening pause/fade; reveal still waits for
@@ -69,7 +71,7 @@ export function startHome(factory, dissolve) {
     backgroundLoading = true;
     import("../model/background.js")
       .then(module => module.createModelBackground(modelLayer, expandButton, setExpanded, syncBackground, dissolve ? {
-        prepareDissolve: true, model: dissolve.model,
+        model: dissolve.model,
         onTextForeground: () => root.classList.add("dissolve-text-front"),
         onFormed: () => dissolve.report("pullback", entrance.elapsed),
         onSettled: () => dissolve.report("model", entrance.elapsed)

@@ -32,8 +32,22 @@ class Links(HTMLParser):
     def __init__(self):
         super().__init__()
         self.urls = []
+        self.importmap = None
+
+    # The import map's modules (three.js, scripts/vendor/three/): files the page's
+    # scripts load by name, versioned in the map like any other reference.
+    def handle_data(self, data):
+        if self.importmap is not None:
+            self.importmap.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "script" and self.importmap is not None:
+            self.urls.extend(json.loads("".join(self.importmap)).get("imports", {}).values())
+            self.importmap = None
 
     def handle_starttag(self, tag, attrs):
+        if tag == "script" and dict(attrs).get("type") == "importmap":
+            self.importmap = []
         # The link preview picture: versioned like any file, so apps and Google fetch
         # a new card instead of keeping the one they saved.
         if tag == "meta" and dict(attrs).get("property") == "og:image" and dict(attrs).get("content"):

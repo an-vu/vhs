@@ -431,10 +431,10 @@ html.page-motion {
   justify-items: center;
 }
 
-/* About's footer: the town and its coordinates (about.js), from the left edge,
+/* About's footer: the place and its coordinates (about.js), from the left edge,
    the spot's width gliding between them. Plain text: no pointer, and no grey
    flash on a tap. */
-.footer-town {
+.footer-place {
   justify-items: start;
   cursor: default;
   -webkit-tap-highlight-color: transparent;

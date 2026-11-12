@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/styles/about.css">
   <link rel="stylesheet" href="/styles/model-control.css">
   <script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
+{"imports":{"three":"/scripts/vendor/three/three.module.min.js","three/addons/loaders/GLTFLoader.js":"/scripts/vendor/three/addons/loaders/GLTFLoader.js","three/addons/utils/BufferGeometryUtils.js":"/scripts/vendor/three/addons/utils/BufferGeometryUtils.js"}}
   </script>
 
   <meta name="description"
@@ -144,11 +144,11 @@
     <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
     <!-- About's footer: like every page's, the © line in the left corner and the
          links in the right, with the studio's founding line centred between them
-         (on phones, in the left corner above the © line). The source says
-         "Wyoming"; about.js puts a town picked at random in its place. "Est. 2022
-         by An Vu" can show in Google's results; the town and the rest can't. -->
+         (on phones, in the left corner above the © line). A tap on the place
+         shows its coordinates for a moment (about.js). "Est. 2022 by An Vu" can
+         show in Google's results; the place and the rest can't. -->
     <div class="wrap footer-row is-founded">
-      <div class="footer-facts">Est. 2022 by An Vu<span data-nosnippet> · <span class="footer-town">Wyoming</span></span></div>
+      <div class="footer-facts">Est. 2022 by An Vu<span data-nosnippet> · <span class="footer-place">Wyoming, USA</span></span></div>
       <div class="footer-copy" data-nosnippet><span>© 2026 vHuman LLC</span><span class="footer-also">&nbsp;· vHuman Studios</span></div>
       <div class="legal" data-nosnippet><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
     </div>

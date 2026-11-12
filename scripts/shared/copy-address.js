@@ -42,7 +42,7 @@ export function copyAddressOnClick(links) {
 // copies it and says so for a moment ("Copied"), then shows the address again, or
 // the word once the pointer has left. Touch screens keep copyAddressOnClick (a
 // phone always has a mail app, and there's no pointing).
-// The texts cross-fade in one spot (swap-text.js, shared with About's town). The
+// The texts cross-fade in one spot (swap-text.js, shared with About's footer place). The
 // room the dots behind Home's text make for each word fades with it
 // (text-mask.js); "studio:text-change" starts that.
 export function revealAddressOnHover(link) {

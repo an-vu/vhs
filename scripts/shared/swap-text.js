@@ -3,8 +3,8 @@ import { FADE } from './motion.js';
 // Two texts in one spot cross-fade, soft: the new one fades in from a slight blur
 // while the old one fades out into it, so there's never a gap and the overlap
 // reads as a blend. Timing: the site's fade curve, over FADE.swap (motion.js).
-// Home's Contact turning into the address (copy-address.js) and About's town
-// turning into its coordinates (about.js) both use it.
+// Home's Contact turning into the address (copy-address.js) and About's footer
+// place turning into its coordinates (about.js) both use it.
 //
 // Each text is a span of its own, stacked in one grid cell (.is-swap, site.css).
 // `glide`: the spot's width follows over the same fade, so a centred line it

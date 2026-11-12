@@ -3,8 +3,10 @@ import { normalizePositions, sampleVisible, twinkleSeeds } from './point-prep.js
 // The shipped point clouds are vertex-only binary XYZ PLYs: 16-bit, each dot a
 // step from the one before ("encoding delta16", dev/tools/pack-points.py, about
 // 0.9 MB for a 230,000-dot model), or plain 32-bit floats (the labs' sources).
+// A packed file's "comment unit" is one step's size in the source's units: the
+// dots come back at the model's own size, which their size is set against.
 // Keep their decoding and all O(vertex-count) preparation off the animation thread.
-self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) => {
+self.onmessage = async ({ data: { path, settings } }) => {
   const timings = [];
   const measure = (name, fn) => {
     const start = performance.now();
@@ -22,6 +24,8 @@ self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) =
       if (!end) throw new Error('Unsupported PLY header');
       const all = header.slice(0, end.index).trim().split(/\r?\n/);
       const delta = all.some(line => line.startsWith('comment encoding delta16'));
+      const unit = Number(all.find(line => line.startsWith('comment unit '))?.slice(13) ?? 1);
+      if (!(unit > 0) || !Number.isFinite(unit)) throw new Error('Invalid PLY unit');
       const lines = all.filter(line => !line.startsWith('comment '));
       const count = Number(/^element vertex (\d+)$/.exec(lines[2])?.[1]);
       const type = /^property (float|short) x$/.exec(lines[3])?.[1];
@@ -40,7 +44,7 @@ self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) =
         for (let i = 0; i < result.length; i++) {
           const value = view.getInt16(i * 2, true), axis = i % 3;
           at[axis] = delta ? (at[axis] + value) << 16 >> 16 : value;
-          result[i] = at[axis];
+          result[i] = at[axis] * unit;
         }
         return result;
       }
@@ -54,21 +58,7 @@ self.onmessage = async ({ data: { path, settings, prepareDissolve = false } }) =
     const { scale, radius } = measure('Worker geometry preparation', () => normalizePositions(positions));
     const indices = measure('Worker select visible vertices', () => sampleVisible(count, settings.VISIBLE_FRACTION ?? 1));
     const seeds = measure('Worker generate twinkle seeds', () => twinkleSeeds(count, settings.TWINKLE_CHANCE));
-    const dissolve = prepareDissolve ? measure('Worker prepare dissolve attributes', () => {
-      const values = new Float32Array(count * 4);
-      const colors = new Float32Array(count * 3);
-      const softCores = new Float32Array(count);
-      const visible = indices?.length ?? count;
-      for (let i = 0; i < visible; i++) {
-        const offset = (indices ? indices[i] : i) * 4;
-        values[offset] = Math.random() * 2 - 1;
-        values[offset + 1] = Math.random() * 2 - 1;
-        values[offset + 2] = 1;
-      }
-      return { values, colors, softCores };
-    }) : null;
-    self.postMessage({ positions, indices, seeds, scale, radius, timings, dissolve },
-      [positions.buffer, seeds.buffer, ...(indices ? [indices.buffer] : []),
-        ...(dissolve ? Object.values(dissolve).map(array => array.buffer) : [])]);
+    self.postMessage({ positions, indices, seeds, scale, radius, timings },
+      [positions.buffer, seeds.buffer, ...(indices ? [indices.buffer] : [])]);
   } catch (error) { self.postMessage({ error: error.message }); }
 };
