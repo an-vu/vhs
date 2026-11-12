@@ -5,6 +5,19 @@
 // footer glass; `live` is any fixed canvas (the rover), which redraws all the
 // time. Each word is drawn at the position the browser gave it, so line breaks
 // and spacing match the real page. Units are CSS px.
+// A rounded rectangle on a canvas: its own roundRect where the browser has one,
+// arcs where it hasn't (Safari 15; without it the glass's first copy failed).
+function roundRect(context, x, y, width, height, radius) {
+  if (context.roundRect) { context.roundRect(x, y, width, height, radius); return; }
+  const r = Math.max(0, Math.min(Number(radius) || 0, width / 2, height / 2));
+  context.moveTo(x + r, y);
+  context.arcTo(x + width, y, x + width, y + height, r);
+  context.arcTo(x + width, y + height, x, y + height, r);
+  context.arcTo(x, y + height, x, y, r);
+  context.arcTo(x, y, x + width, y, r);
+  context.closePath();
+}
+
 export function createSnapshot(onIconLoad) {
   const ascents = new Map(), icons = new Map();
   // Each logo's last bitmap, by element, while its shape and ink stay the same:
@@ -313,14 +326,14 @@ export function createSnapshot(onIconLoad) {
               context[i ? 'lineTo' : 'moveTo'](rect.left + px * rect.width, rect.top + py * rect.height);
             }
             context.closePath();
-          } else context.roundRect(rect.left, rect.top, rect.width, rect.height, radius);
+          } else roundRect(context, rect.left, rect.top, rect.width, rect.height, radius);
           context.fillStyle = op.fill; context.fill();
         }
         if (op.kind === 'image' && op.quad) { drawTilted(context, op); return; }
         if (op.kind === 'image' && op.tint) { drawTinted(context, op); return; }
         if (op.kind === 'image') {
           context.save();
-          context.beginPath(); context.roundRect(rect.left, rect.top, rect.width, rect.height, radius); context.clip();
+          context.beginPath(); roundRect(context, rect.left, rect.top, rect.width, rect.height, radius); context.clip();
           const source = op.source, sw = source.naturalWidth || source.width, sh = source.naturalHeight || source.height;
           if (op.fit === 'cover' && sw && sh) {
             const scale = Math.max(rect.width / sw, rect.height / sh), cw = rect.width / scale, ch = rect.height / scale;
@@ -331,7 +344,7 @@ export function createSnapshot(onIconLoad) {
         if (op.border) {
           const [width, color] = op.border, inset = width / 2;
           context.beginPath();
-          context.roundRect(rect.left + inset, rect.top + inset, rect.width - width, rect.height - width, Math.max(0, radius - inset));
+          roundRect(context, rect.left + inset, rect.top + inset, rect.width - width, rect.height - width, Math.max(0, radius - inset));
           context.lineWidth = width; context.strokeStyle = color; context.stroke();
         }
       }

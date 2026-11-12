@@ -10,7 +10,9 @@ export async function createStillPoints(container, model) {
   const camera = new THREE.PerspectiveCamera(40, 1, .01, 100);
   const group = new THREE.Group();
   scene.add(group);
-  const material = await createPLYPointCloud(group, renderer, model);
+  let material;
+  try { material = await createPLYPointCloud(group, renderer, model); }
+  catch (error) { renderer.dispose(); throw error; }
   const radius = group.children[0].geometry.boundingSphere.radius;
   container.append(renderer.domElement);
   function resize() {
@@ -27,17 +29,22 @@ export async function createStillPoints(container, model) {
     material.uniforms.uPixelRatio.value = renderer.getPixelRatio();
     renderer.render(scene, camera);
   }
-  // The twinkle, as on the homepage: its clock runs while the page is on screen.
-  let elapsed = 0, last = null;
+  // The twinkle, as on the homepage: its clock runs while the smile is on screen
+  // and the tab is showing; otherwise nothing is drawn.
+  let elapsed = 0, last = null, frameId = 0, inView = true;
   function frame(now) {
+    frameId = 0;
+    if (!inView || document.hidden) { last = null; return; }
     elapsed += last === null ? 0 : Math.min((now - last) / 1000, .05);
     last = now;
     material.uniforms.uTime.value = elapsed;
     renderer.render(scene, camera);
-    requestAnimationFrame(frame);
+    frameId = requestAnimationFrame(frame);
   }
-  document.addEventListener("visibilitychange", () => { last = null; });
+  const wake = () => { if (!frameId && inView && !document.hidden) frameId = requestAnimationFrame(frame); };
+  document.addEventListener("visibilitychange", () => { last = null; wake(); });
+  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; wake(); }).observe(container);
   new ResizeObserver(resize).observe(container);
   resize();
-  requestAnimationFrame(frame);
+  wake();
 }

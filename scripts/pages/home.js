@@ -38,22 +38,28 @@ export function startHome(factory, dissolve) {
   }
   function syncBackground() {
     if (backgroundFailed) return;
+    // The Dissolve hands its intro dots to the model only if its intro started; a
+    // key or swipe before it did (state left 0 first) brings the model in plainly.
+    const handoff = !!dissolve && introStarted;
+    // Without the hand-over the text never gets brought in front of the model by
+    // it (scene.js onTextForeground), so it goes there now.
+    if (dissolve && !handoff && state > 0) root.classList.add("dissolve-text-front");
     const settled = active && state >= 1 &&
       [logo, ...lines].every(s => s.value === 1 && s.velocity === 0 && s.delay <= 0);
     // Start this delay when the last text spring settles, independently of
     // model loading. The entrance keeps the dots moving until the handoff.
-    if (dissolve && settled && !formationPending) {
+    if (handoff && settled && !formationPending) {
       formationPending = true;
       entrance.waitBeforeForm(() => { formationReady = true; syncBackground(); });
     }
     if (background && settled) backgroundRevealed = true;
     if (background) {
       background.setTextSettled(settled);
-      if (dissolve && backgroundRevealed && formationReady && !background.dissolveStarted) {
+      if (handoff && backgroundRevealed && formationReady && !background.dissolveStarted) {
         background.beginDissolve(entrance.takeBubbles(), dissolve.settings.form ?? factory.defaults.form, dissolve.settings.camera ?? factory.defaults.camera);
         dissolve.report("forming", entrance.elapsed);
       }
-      background.setVisible(active && backgroundRevealed && (!dissolve || background.dissolveStarted));
+      background.setVisible(active && backgroundRevealed && (!handoff || background.dissolveStarted));
       expandButton.hidden = !settled || !background.controlReady;
       return;
     }
@@ -74,7 +80,7 @@ export function startHome(factory, dissolve) {
         if (dissolve) {
           entrance.dispose();
           root.classList.add("dissolve-text-front");
-          if (active) go(1, true);
+          if (active) go(Math.max(1, state), true);
         }
         modelLayer.hidden = true;
         expandButton.hidden = true;

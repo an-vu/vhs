@@ -17,7 +17,9 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <meta name="theme-color" content="#F9F8F6">
-  <script>document.documentElement.classList.add("intro-loading");</script>
+  <!-- Hidden until the page's script starts its intro; if the script never comes,
+       the page shows after 5 s anyway. -->
+  <script>document.documentElement.classList.add("intro-loading"); setTimeout(() => document.documentElement.classList.remove("intro-loading"), 5000);</script>
   <link rel="stylesheet" href="/styles/site.css">
   <link rel="stylesheet" href="/styles/home.css">
   <link rel="stylesheet" href="/styles/entrance.css">

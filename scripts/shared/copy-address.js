@@ -8,11 +8,30 @@ import { swapText } from './swap-text.js';
 const addressOf = link => decodeURIComponent(link.getAttribute('href').slice(7).split('?')[0]);
 const textOf = link => link.querySelector('[data-nosnippet]') ?? link;
 
+// Copies text: the clipboard where the browser allows it, else the older copy
+// command from a hidden field (some apps' built-in browsers block the clipboard).
+// Resolves true once it's copied.
+function copyFromField(text) {
+  const field = Object.assign(document.createElement('textarea'), { value: text });
+  field.setAttribute('readonly', '');
+  field.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+  document.body.append(field);
+  field.select();
+  let copied = false;
+  try { copied = document.execCommand('copy'); } catch {}
+  field.remove();
+  return copied;
+}
+function copy(text) {
+  if (!navigator.clipboard?.writeText) return Promise.resolve(copyFromField(text));
+  return navigator.clipboard.writeText(text).then(() => true, () => copyFromField(text));
+}
+
 export function copyAddressOnClick(links) {
   for (const link of links) {
     link.addEventListener('click', () => {
       const address = addressOf(link);
-      navigator.clipboard?.writeText(address).catch(() => {});
+      copy(address);
       textOf(link).textContent = address;
       link.classList.add('is-address');
     });
@@ -48,9 +67,11 @@ export function revealAddressOnHover(link) {
     leaving = setTimeout(() => { if (!copied && !pointed) show(word); }, 500);
   });
   link.addEventListener('click', () => {
-    navigator.clipboard?.writeText(address).catch(() => {});
-    show('Copied');
-    clearTimeout(copied);
-    copied = setTimeout(() => { copied = 0; show(pointed ? address : word); }, 1500);
+    copy(address).then(done => {
+      if (!done) return;
+      show('Copied');
+      clearTimeout(copied);
+      copied = setTimeout(() => { copied = 0; show(pointed ? address : word); }, 1500);
+    });
   });
 }

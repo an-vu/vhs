@@ -290,6 +290,8 @@ export function createVFlow(images, title = "Project", options = {}) {
   });
   stage.addEventListener("pointermove", event => {
     if (!drag || event.pointerId !== drag.id) return;
+    // Let go outside before it moved sideways: no button held any more.
+    if (event.pointerType === "mouse" && event.buttons === 0 && !drag.horizontal) { drag = null; return; }
     const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
     if (!drag.horizontal && Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
     if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {

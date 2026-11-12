@@ -28,7 +28,9 @@ import { opus } from './opus.js';
 // The glass's shader builds in the background (glass-renderer.js): entrances wait
 // for it, and if it can't build, each element gets a last 'glassgrow' (grow 1,
 // done) and the glass goes away, as if there were no WebGL.
-export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4, reference = 200 } = {}) {
+// `restored`: started over after the browser took the graphics chip back (below),
+// so the lenses are already open and grow in no more.
+export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4, reference = 200, restored = false } = {}) {
   // A page shown inside a glass tool (the Glass Lab's frame, data-glass-host)
   // already has glass drawn over it.
   if (window.frameElement?.hasAttribute('data-glass-host')) return null;
@@ -47,6 +49,24 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   if (!renderer) { canvas.remove(); return null; }
   renderer.attach(window, document, { ignore: [canvas] });
 
+  // The browser can take the graphics chip back (an iPhone tab left in the
+  // background a long time, a graphics restart). The glass pauses; when the chip
+  // comes back it starts over on a fresh canvas, lenses already open, and if it
+  // hasn't come back within LOST_WAIT ms the page shows without the glass (fail()).
+  const LOST_WAIT = 3000;
+  let lost = false, lostTimer = 0, destroyed = false;
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    lost = true;
+    cancelAnimationFrame(raf); raf = 0;
+    lostTimer = setTimeout(fail, LOST_WAIT);
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    clearTimeout(lostTimer);
+    destroy();
+    createGlass({ look, selector, zIndex, reference, restored: true });
+  });
+
   // Glasses near the view are drawn; each one's entrance starts once it's fully in view.
   const starts = new Map(), grown = new Set(), onScreen = new Set();
   let targets = [], raf = 0, last = 0, clock = 0;
@@ -60,6 +80,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   function scan() {
     watcher.disconnect();
     targets = [...document.querySelectorAll(selector)];
+    if (restored) for (const target of targets) { starts.set(target, -1e6); grown.add(target); }
     targets.forEach(target => watcher.observe(target));
     start();
   }
@@ -105,11 +126,18 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
   // most IDLE_RATE times a second: a 120 Hz screen drew the same glass 120 times.
   const IDLE_RATE = 30;
   let drawn = 0, lastKey = '';
+  // An error in a frame shows the page without the glass (fail()), as when WebGL is
+  // missing, instead of leaving it stopped where it was.
   function frame(now) {
     raf = 0;
+    try { if (!drawFrame(now)) return; }
+    catch (error) { console.warn('Glass stopped:', error); fail(); return; }
+    start();
+  }
+  function drawFrame(now) {
     const dt = last ? Math.min((now - last) / 1000, .05) : 1 / 60;
     last = now; clock += dt;
-    if (renderer.failed()) { fail(); return; }
+    if (renderer.failed()) { fail(); return false; }
     if (innerHeight !== height || document.documentElement.clientWidth !== width) resize();
     const ready = renderer.ready();
     const shapes = targets.filter(target => onScreen.has(target)).map(target => shapeOf(target, ready)).filter(Boolean);
@@ -124,7 +152,7 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
       canvas.style.transform = `translate(${scrollX}px, ${top}px)`;
       renderer.draw(shapes.map(shape => ({ ...shape, y: shape.y - offset })), look, clock, offset);
     }
-    start();
+    return true;
   }
   function fail() {
     for (const target of targets) {
@@ -133,11 +161,14 @@ export function createGlass({ look = opus, selector = '[data-glass]', zIndex = 4
     destroy();
   }
   function start() {
-    if (raf) return;
+    if (raf || lost || destroyed) return;
     if (!onScreen.size || document.hidden) { last = 0; return; }
     raf = requestAnimationFrame(frame);
   }
   function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    clearTimeout(lostTimer);
     cancelAnimationFrame(raf); raf = 0;
     watcher.disconnect();
     removeEventListener('resize', resize);

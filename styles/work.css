@@ -250,7 +250,7 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
   margin-left: calc(50% - var(--picture-width) / .88 / 2);
 }
 /* The phone's gallery: upright phones only (a phone on its side gets the
-   computer's, below). */
+   computer's, as it is: the picture wider than the text, two side pictures each side). */
 @media (max-width: 760px) {
   .project-panel .vflow {
     --picture-width: min(100vw - 32px, 58ch + 12px);
@@ -273,14 +273,6 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
   .project-panel .vflow.is-resting .vflow-card:not([aria-current="true"]) .vflow-surface {
     opacity: 0;
     transition-duration: var(--fade-out-slow);
-  }
-}
-/* A phone on its side: the computer's gallery (the picture with thin side
-   pictures beside it), the picture no taller than the screen under the header
-   once Safari's bars have folded away as the page scrolls (lvh), at its 3:2. */
-@media (max-height: 500px) and (pointer: coarse) {
-  .project-panel .vflow {
-    --picture-width: min(58ch * 1.4, (100vw - 20px) * .88, (100lvh - var(--header-height) - 40px) * 1.5);
   }
 }
 @media (max-width: 1068px) { .project-image-placeholder { margin: 36px 0; } }

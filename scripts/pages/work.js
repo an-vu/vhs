@@ -264,7 +264,9 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   // it isn't, the text stops waiting for it (scrolled down in the first moment,
   // the project's text would stay blank till the row came back).
   let rowAway = false;
-  new IntersectionObserver(([entry]) => { rowAway = entry.intersectionRatio < 1; arrive(); }, { threshold: 1 }).observe(flow);
+  // Measured up and down only: the row is the window's width, so where a scrollbar
+  // takes room it never fits side to side (the root reaches 40 px past each side).
+  new IntersectionObserver(([entry]) => { rowAway = entry.intersectionRatio < 1; arrive(); }, { threshold: 1, rootMargin: '0px 40px' }).observe(flow);
   // Fades the text on show out (or back in).
   function fade(panel, out) {
     if (!out) { if (panel.style.opacity) panel.style.removeProperty('opacity'); return; }
@@ -319,20 +321,22 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
       if (!reduced.matches) [...panels[i].children].forEach(child => { child.style.opacity = 0; });
       pending = i;
     } else {
-      history.replaceState(null, '', `${page}#${link(panels[i])}`);
+      history.replaceState(null, '', `${page}${location.search}#${link(panels[i])}`);
       bring(i);
       // The row is already there (a swipe stopped on it): the old text fades out first.
       if (settled && pending >= 0 && !reduced.matches) { holdUntil = performance.now() + FADE_OUT; setTimeout(arrive, FADE_OUT); }
     }
     if (first || settled) { position = i; paint(); syncScroller(); }
     else glide(i, duration, curve);
-    if (focus) tabs[i].focus();
+    if (focus) tabs[i].focus({ preventScroll: true });
     if (first) return;
     if (flow.getBoundingClientRect().top < 0) flow.scrollIntoView({ block: 'start', behavior: reduced.matches ? 'instant' : 'smooth' });
   }
   let suppressClick = false;
   tabs.forEach((tab, i) => tab.addEventListener('click', () => { if (!suppressClick) select(i); }));
   track.addEventListener('keydown', event => {
+    // With Alt, Ctrl or Cmd held the keys are the browser's (Alt+Left is Back).
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     const next = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: count - 1 }[event.key];
     if (next === undefined) return;
     event.preventDefault();
@@ -354,6 +358,8 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   });
   flow.addEventListener('pointermove', event => {
     if (!drag || event.pointerId !== drag.id) return;
+    // Let go outside the row before it moved sideways: no button held any more.
+    if (event.pointerType === 'mouse' && event.buttons === 0 && !drag.horizontal) { drag = null; return; }
     const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
     if (!drag.horizontal) {
       if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }

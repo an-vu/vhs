@@ -203,6 +203,9 @@ export function createModelLines(meshes, scene, entrance = null, { followTheme =
       uniforms.pixelRatio.value = renderer.getPixelRatio();
       uniforms.color.value.set(options.color); back.uniforms.opacity.value = options.hiddenOpacity; back.uniforms.dashed.value = options.hidden === 'dashed';
       surface = options.shading ? lit : flat; lit.roughness = options.roughness;
+      // Shading needs normals; a model shipped without them (About's rover, slim-glb.py)
+      // gets them worked out from its triangles the first time it's shaded (the lab).
+      if (options.shading) for (const item of copies) if (!item.surface.geometry.getAttribute('normal')) item.surface.geometry.computeVertexNormals();
       surface.color.set(options.surfaceColor); surface.opacity = options.surface === 'solid' ? 1 : options.surfaceOpacity;
       for (const item of copies) { if (!matricesCurrent) item.source.updateWorldMatrix(true, false); for (const key of ['depth', 'surface', 'front', 'back']) item[key].matrix.copy(item.source.matrixWorld); item.surface.material = surface; item.surface.visible = options.surface !== 'none'; item.back.visible = options.hidden !== 'off'; }
     },
