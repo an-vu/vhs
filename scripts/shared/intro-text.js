@@ -1,9 +1,9 @@
-import { StudioMotion } from './motion.js';
+import { StudioMotion, RISE_WHEN_REACHED } from './motion.js';
 
 // The big text of About, Contact, Services, the FAQ and Legal: its sentences rise
 // in line by line, then the details under it (each heading, list item and
-// paragraph as one line), then the links. Lines further down rise as they come
-// into view. onSettled runs once, when the lines in the first view have finished
+// paragraph as one line), then the links. Lines further down are already in place
+// (or rise as they come into view: RISE_WHEN_REACHED, motion.js). onSettled runs once, when the lines in the first view have finished
 // their bounce and the fonts are in (About begins its rover then). Returns
 // { inPlace, lastStart }: whether the text has finished arriving where you are,
 // and when its last line on screen starts rising (Services' logo strip and its
@@ -27,8 +27,7 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
   let lines = [], entrance = [], layout = "", entered = false, visibleLineCount = 0, settled = false;
   const loop = M.createLoop(dt => {
     let moving = false;
-    // Only lines whose rise moved are painted again (Nov 11: every line was, each
-    // frame, while any one moved).
+    // Only lines whose rise moved are painted again.
     entrance.forEach((s, i) => {
       moving = M.step(s, dt) || moving;
       if (s.painted !== s.value) { M.paintEntrance([lines[i]], [s]); s.painted = s.value; }
@@ -36,9 +35,9 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
     announceSettled();
     return moving;
   }, () => !reduced.matches);
-  // Lines outside the first view wait, hidden, and rise as they come into view
-  // (An, Nov 10: scrolling down fast, the text further down was still on its way
-  // from the top, up to 4 s). Lines that come in together rise .09 s apart,
+  // With RISE_WHEN_REACHED, lines outside the first view wait, hidden, and rise as
+  // they come into view (so a fast scroll down doesn't wait for the text on its way
+  // from the top). Lines that come in together rise .09 s apart,
   // squeezed into .6 s like the first view, starting at once (lines come into
   // view in order anyway).
   const waiting = new IntersectionObserver(entries => {
@@ -94,8 +93,8 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
     } else {
       // The entrance starts with the first line in view, not the page's first
       // line: opened on a part far down (a link, or a scroll the browser brings
-      // back), the lines there waited for every line above them to rise in first,
-      // up to 2.6 s (An, Nov 10). A link's part may not be scrolled to yet, so the
+      // back), the lines there would wait for every line above them to rise in
+      // first. A link's part may not be scrolled to yet, so the
       // view is where the browser will put it.
       const top = viewTop(), rects = lines.map(line => line.getBoundingClientRect());
       let first = rects.findIndex(rect => rect.bottom > top);
@@ -104,7 +103,8 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
       // Keep the visible stagger within 600ms, including on narrow screens with
       // more wrapped lines.
       const staggerScale = Math.min(1, .6 / (.09 * Math.max(1, visibleLineCount - first - 1)));
-      entrance = lines.map((_, i) => i >= first && i < visibleLineCount ? M.spring(0, 1, M.entranceDelay((i - first) * staggerScale)) : M.spring(0));
+      // The rest is already in place, or waits to be reached (RISE_WHEN_REACHED).
+      entrance = lines.map((_, i) => i >= first && i < visibleLineCount ? M.spring(0, 1, M.entranceDelay((i - first) * staggerScale)) : M.spring(RISE_WHEN_REACHED ? 0 : 1));
       entered = true;
       // The rest waits for the view to be where it will be (land()).
       land(watchWaiting);
@@ -118,8 +118,8 @@ export function StudioIntroText(content, { onSettled = () => {} } = {}) {
     return Math.min(target.getBoundingClientRect().top - margin(target), room);
   }
   // A linked line is put where it will settle. Browsers scroll to it where it is
-  // drawn, and mid-rise that's up to 44 px low (paintEntrance), so it settled that
-  // much higher, its top under the header's blur (Safari on the iPhone, Nov 10).
+  // drawn, and mid-rise that's up to 44 px low (paintEntrance), so it would settle
+  // that much higher, its top under the header's blur (Safari on the iPhone).
   // While the page opens (until a touch, a key, the wheel, or 3 s), each time the
   // browser scrolls, the line's place on the page goes back where it belongs.
   // `then` runs once the view is there (at once without a linked line), so the

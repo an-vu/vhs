@@ -11,8 +11,9 @@ import { createPageMenu } from '../shared/page-menu.js';
 // like the logo row. Where the three parts don't fit on one line (most phones with
 // a long name), the header's words shrink to fit as the name comes in; the header
 // itself keeps its height. Reduce motion: the name just appears once the title is
-// half under the header. A scroll that ends near where the title has landed and
-// the project's first picture starts just below the header settles there (the
+// half under the header. Coming down, a scroll that ends once the title has
+// touched the header's blur finishes the fold and settles where the title has
+// landed and the project's first picture starts just below the header (the
 // reading position, below). Returns the header's menus (page-menu.js).
 export function dockProjectTitle({ panels, labels, ids, select }) {
   const header = document.querySelector('.site-header');
@@ -152,8 +153,8 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     update();
   }
   // Each frame: from the scroll alone (no layout reads), set everything. Tied
-  // straight to the scroll, so it never lags the finger (Nov 10: a spring that
-  // glided after it lagged, then jumped), at an even pace (an ease made it hang,
+  // straight to the scroll, so it never lags the finger (a spring gliding after
+  // it would lag, then jump), at an even pace (an ease made it hang,
   // then rush), so the name moves on one straight line.
   function update() {
     frame = 0;
@@ -176,7 +177,7 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     crumb.classList.toggle('is-flying', !docked);
     // Only when it changes: setting it at all counts as a change to the page, and
     // the logo row's glass copies the page again for anything but a style change
-    // (glass-renderer.js), which on phones made the fold stutter (Nov 10).
+    // (glass-renderer.js), which on phones makes the fold stutter.
     if (crumb.inert === docked) crumb.inert = !docked;
     title.classList.toggle('is-docked', e > 0);
     // The project's own menu closes once its name starts to leave; another open
@@ -198,18 +199,16 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
     flight.style.transform = `translate(${x}px, ${y2}px)`;
   }
 
-  // The reading position's catch, a detent (Nov 11, An: free scrolling, but "that
-  // feeling when things go into place... like cạch", "the pause, the snap... not
-  // the pixel"): the browser's own snapping, gentle mode, switched on only within
-  // NEAR px of the reading position while scrolling down. A scroll that ends that
-  // close settles the last bit into place, a flick slows into it
-  // (scroll-snap-stop), and anywhere else scrolling stays free (always on, Safari
-  // pulled from hundreds of px away: "tiny scroll boom it right there"). Once it has
-  // caught, it lets go, so the next scroll down is free; it's ready again once
-  // you've gone back up above it. Never going up. (Nov 10: a stop made in code
-  // felt like hitting a bumper.) A switch: --reader-stop in work.css.
-  // 48 at first, then 24 (An, Nov 11: "anything less than 48px?"), settled at 36 ("36px?").
-  const NEAR = 36;
+  // The reading position's catch, a detent: the browser's own snapping, gentle
+  // mode, switched on while scrolling down from the moment the title touches the
+  // header's blur (foldStart, where the fold starts) to PAST px beyond the reading
+  // position. A scroll that ends in there finishes the fold and settles into
+  // place, a flick slows into it (scroll-snap-stop), and anywhere else scrolling
+  // stays free (always on, Safari pulls from hundreds of px away). Once it has
+  // caught, it lets go, so the next scroll down is free; it's ready again once the
+  // title is back below the blur. Never going up. (A stop made in code feels like
+  // hitting a bumper.) A switch: --reader-stop in work.css.
+  const PAST = 36;
   const snapAt = Object.assign(document.createElement('div'), { className: 'reader-snap-point' });
   snapAt.setAttribute('aria-hidden', 'true');
   document.body.append(snapAt);
@@ -225,12 +224,12 @@ export function dockProjectTitle({ panels, labels, ids, select }) {
   }
   function watch() {
     const y = scrollY;
-    if (y !== lastY) { down = y > lastY; root.classList.toggle('is-scrolling-down', down); }
-    if (y < reader - NEAR * 2) armed = true;
+    if (y !== lastY) down = y > lastY;
+    if (y < foldStart) armed = true;
     else if (armed && Math.abs(y - reader) < 1) armed = false;
     // On only coming down into it; once on, it stays on while it settles (a settle
     // can move up a little).
-    if (!stops || !armed || Math.abs(y - reader) > NEAR) root.classList.remove('reader-snap');
+    if (!stops || !armed || y < foldStart || y > reader + PAST) root.classList.remove('reader-snap');
     else if (down) root.classList.add('reader-snap');
     lastY = y;
   }

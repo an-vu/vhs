@@ -160,12 +160,12 @@
 .project-panel .project-title.is-docked { visibility: hidden; }
 /* The tagline fades as it scrolls into the header's blur, so it doesn't pass
    behind the header's words once the title has moved up (work-title.js sets
-   --leaving). A switch (Nov 10, on trial): 1 = on, 0 = off. A filter, since the
+   --leaving). A switch: 1 = on, 0 = off. A filter, since the
    entrance owns its opacity. */
 .project-panel { --tagline-fade: 1; }
 /* The reading position: the title landed in the header and the project's first
    picture just below the blur, where coming down catches for a moment, a detent
-   (work-title.js; Nov 11). A switch: 1 = on, 0 = off. */
+   (work-title.js). A switch: 1 = on, 0 = off. */
 :root { --reader-stop: 1; }
 /* The browser's own snapping, gentle mode (proximity), on only near the point while
    coming down (work-title.js turns .reader-snap on and off), so it can only pull the
@@ -265,7 +265,7 @@ html.reader-snap .reader-snap-point { scroll-snap-align: start; scroll-snap-stop
      restGallery) they fade away and only the front one stays, with the project
      row's fade in (.7s) and a longer fade away (1.4s, --fade-out-slow): at the
      row's .9s, big dark pictures read as vanishing much faster than its small grey
-     logos (An, Nov 10). The picture's surface fades (vflow.js moves the card
+     logos. The picture's surface fades (vflow.js moves the card
      itself), shadow and all. */
   .project-panel .vflow-surface { transition: opacity var(--fade-in) var(--fade-ease); }
   .project-panel .vflow.is-resting .vflow-card:not([aria-current="true"]) .vflow-surface {

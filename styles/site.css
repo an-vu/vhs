@@ -5,13 +5,11 @@
   --light-gray: #C7C6C4;
   --muted: var(--nav-fg);
   --image-border: .5px solid rgba(98, 98, 94, .3);
-  /* Pictures' corner: Apple Newsroom's 10 px (Oct 28) made a little rounder (Oct 29),
-     since the gallery's turned cards squeeze their corners and 10 px read as
-     neither sharp nor round there. The same at every width. */
+  /* Pictures' corner, the same at every width: the gallery's turned cards squeeze
+     their corners, so less reads as neither sharp nor round there. */
   --image-radius: 14px;
-  /* The "›" after a header menu's name ("Work ›"): a switch. Off since Nov 10
-     (An: "just vhuman / work / project"); the menus still open on a tap. On:
-     --menu-arrow: "›"; */
+  /* The "›" after a header menu's name ("Work ›"): a switch, off; the menus
+     still open on a tap. On: --menu-arrow: "›"; */
   --menu-arrow: none;
   /* The site's fades (FADE in shared/motion.js has the same): a soft start and
      landing, a gentle fade in, a slower fade away. */
@@ -22,8 +20,7 @@
      faster than small things at the same speed, so they take longer. */
   --fade-out-slow: 1.4s;
   /* The header bar: its words in the middle, about 26 px above and below on a
-     computer, 21 on a phone (Nov 10, was 86 and 72: An, "the gap between the
-     header text and top screen and the gap below look big"). */
+     computer, 21 on a phone. */
   --header-height: 76px;
   --brand-size: 24px;
   --blur-reach: 22px;
@@ -328,7 +325,6 @@ html.page-motion {
   position: relative;
   z-index: 2;
   flex-shrink: 0;
-  /* Nov 10: 10% less room above and below (was 18 and 22). */
   padding: 16px 0 20px;
 }
 
@@ -344,9 +340,7 @@ html.page-motion {
   color: var(--muted);
 }
 
-/* The © line, on one line always (An, Nov 11: "if must be 2 line dont show
-   vhuman studios just show vhuman llc"): where all of it doesn't fit (a 320 px
-   phone), " · vHuman Studios" wraps onto a second line that the one-line height
+/* The © line, on one line always: where all of it doesn't fit (a 320 px phone), " · vHuman Studios" wraps onto a second line that the one-line height
    cuts off, leaving "© 2026 vHuman LLC". */
 .footer-copy {
   display: flex;
@@ -402,15 +396,15 @@ html.page-motion {
   color: var(--fg)
 }
 
-/* Links inside reading text (Contact's details; the FAQ's, Services' and Legal's
-   open rows), like Work's "Ask about …": the menus' grey, darkening when pointed at. */
-:is(.intro-detail, .disclosure-detail) a {
+/* Links inside reading text (the text pages' details), like Work's "Ask about …":
+   the menus' grey, darkening when pointed at. */
+.intro-detail a {
   color: var(--nav-fg);
   transition: color .2s ease
 }
 
-:is(.intro-detail, .disclosure-detail) a:hover,
-:is(.intro-detail, .disclosure-detail) a:focus-visible {
+.intro-detail a:hover,
+.intro-detail a:focus-visible {
   color: var(--fg)
 }
 
@@ -429,9 +423,9 @@ html.page-motion {
   justify-items: center;
 }
 
-/* About's footer: "Cody, Wyoming" and its coordinates (about.js), from the left
-   edge, the spot's width gliding between them. Plain text: no pointer, and no
-   grey flash on a tap. */
+/* About's footer: the town and its coordinates (about.js), from the left edge,
+   the spot's width gliding between them. Plain text: no pointer, and no grey
+   flash on a tap. */
 .footer-town {
   justify-items: start;
   cursor: default;
@@ -463,7 +457,7 @@ html.page-motion {
   }
 
   /* One line on phones too: the © line on the left, Legal and Sitemap on the
-     right (with two links it fits from a 375 px phone up; Nov 10). */
+     right (with two links it fits from a 375 px phone up). */
   .footer-row {
     gap: 12px
   }
@@ -501,7 +495,7 @@ html.page-motion {
   }
 
   .main-nav a,
-  :is(.intro-detail, .disclosure-detail) a {
+  .intro-detail a {
     transition: none
   }
 }

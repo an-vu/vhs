@@ -10,8 +10,7 @@ export const spectralPalettes = ['Spectrum', 'Aurora', 'Ember', 'Ultraviolet', '
 // Triangle areas are measured in the displayed pose; samples remain component-local.
 // `groupOf(mesh)`, optional: the object a mesh always moves with (About's rover: its
 // nearest animated part, or the model). The dots of meshes with the same one are
-// one cloud on it, one draw instead of one per mesh (Nov 11: 70 rover parts, 33
-// clouds).
+// one cloud on it, one draw instead of one per mesh.
 export function createSpectral(meshes, { deferPreparation = false, scanRoot = null, groupOf = null } = {}) {
   const options = { ...spectralDefaults }, clouds = [], surfaces = [];
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();

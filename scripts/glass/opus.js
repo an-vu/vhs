@@ -1,6 +1,5 @@
-// Opus: the site's glass look. From a spec for the vHuman v in a glass
-// circle, then An's tuning in the Glass Lab's Icon tab (Oct 24), made puffy and
-// decisive like Apple Music's note: a sharp-knee edge on a wide bevel (.4) with a
+// Opus: the site's glass look, for the vHuman v in a glass circle, tuned in the
+// Glass Lab's Icon tab. Puffy and decisive: a sharp-knee edge on a wide bevel (.4) with a
 // 120 px pull and no fold. The bend sits on the top-right / bottom-left diagonal
 // but fades out slowly around the circle (corner focus 1, off-corner bend .15), so
 // a line runs straight, then sweeps along the rim in one curve instead of

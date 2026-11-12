@@ -20,14 +20,28 @@ import { swapText } from '../shared/swap-text.js';
   });
 })();
 
-// A small egg in the footer (An, Nov 11): tapping "Cody, Wyoming" turns it into its
-// coordinates for a moment, then back; tapping again turns it back sooner. Plain
-// text, no link. The same soft swap and timing as Home's Contact (swap-text.js).
+// The town in the footer, in place of the source's "Wyoming": one of TOWNS picked
+// at random on each visit, or RARE_TOWN once in a hundred. Tapping a town that has
+// coordinates (`at`) turns it into them for a moment, then back; tapping again
+// turns it back sooner. Plain text, no link. The same soft swap and timing as
+// Home's Contact (swap-text.js).
+const TOWNS = [
+  { name: 'Cody, Wyoming', at: '44.60114° N, 109.52514° W' },
+  { name: 'Venice, Los Angeles' },
+  { name: 'Malibu, California' },
+  { name: 'Aspen, Colorado' },
+  { name: 'Hurricane, Utah' },
+  { name: 'Moapa Valley, Nevada' }
+];
+const RARE_TOWN = { name: 'Omaha, Nebraska' }, RARE_CHANCE = .01;
+
 (() => {
   const town = document.querySelector('.footer-town');
   if (!town) return;
-  const name = town.textContent.trim(), at = town.dataset.coordinates, HOLD = 2500;
-  const show = swapText(town, { glide: true });
+  const { name, at } = Math.random() < RARE_CHANCE ? RARE_TOWN : TOWNS[Math.floor(Math.random() * TOWNS.length)];
+  town.textContent = name;
+  if (!at) return;
+  const show = swapText(town, { glide: true }), HOLD = 2500;
   let back = 0;
   town.addEventListener('click', () => {
     clearTimeout(back);

@@ -6,8 +6,8 @@ User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
-# No training AI models on vHuman's pages (An, Oct 29, 2026): the crawlers that
-# collect pages for training are kept out.
+# No training AI models on vHuman's pages: the crawlers that collect pages for
+# training are kept out.
 User-agent: GPTBot
 User-agent: ClaudeBot
 User-agent: Google-Extended

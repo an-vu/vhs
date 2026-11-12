@@ -7,6 +7,10 @@
 // and spacing match the real page. Units are CSS px.
 export function createSnapshot(onIconLoad) {
   const ascents = new Map(), icons = new Map();
+  // Each logo's last bitmap, by element, while its shape and ink stay the same:
+  // finding it by its markup meant writing out every logo's SVG on each frame the
+  // strip moved. forget() drops a logo once something inside it changes.
+  const known = new WeakMap();
 
   function ascent(context, font) {
     let value = ascents.get(font);
@@ -35,7 +39,9 @@ export function createSnapshot(onIconLoad) {
     const aspect = box.width && box.height ? box.width / box.height : 1;
     const w = aspect >= 1 ? 512 : 512 * aspect, h = aspect >= 1 ? 512 / aspect : 512;
     const ink = element.hasAttribute('data-color') ? element.ownerDocument.defaultView.getComputedStyle(element).getPropertyValue('--logo-ink').trim() : '';
-    const key = `${aspect.toFixed(3)}|${ink}|${element.outerHTML}`;
+    const shape = aspect.toFixed(3), seen = known.get(element);
+    if (seen && seen.shape === shape && seen.ink === ink) return seen.entry.raster;
+    const key = `${shape}|${ink}|${element.outerHTML}`;
     let entry = icons.get(key);
     if (!entry) {
       const copy = element.cloneNode(true);
@@ -59,6 +65,7 @@ export function createSnapshot(onIconLoad) {
       image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(copy))}`;
       icons.set(key, entry);
     }
+    known.set(element, { shape, ink, entry });
     return entry.raster;
   }
   // Tinting happens on a scratch canvas kept in memory (like the page copies and
@@ -127,7 +134,7 @@ export function createSnapshot(onIconLoad) {
     // ([data-glass-circle] inside or outside, radius --circle), at full size even
     // while the glass grows in (--lens-grow): the glass only shows the copy inside
     // its own circle, which grows with the lens, so the copy needn't be made again
-    // for each step (Nov 11; glass-renderer.js leaves those changes out).
+    // for each step (glass-renderer.js leaves those changes out).
     // `stack`: the stacking order of the outermost layer an element sits in (the
     // header's, for its text), what decides whether it's over the glass.
     let fixed = false, circle = null, stack = null;
@@ -214,8 +221,7 @@ export function createSnapshot(onIconLoad) {
         return;
       }
       // A box that clips what's in it, outside the area: nothing inside can show
-      // there, so its children aren't visited (Nov 11: every copy walked the whole
-      // page, about 170 style and position reads each).
+      // there, so its children aren't visited.
       if (!hits(rect) && /hidden|clip/.test(style.overflow) && !tilt) return;
       if (element !== doc.body && hits(rect) && (visibleColor(style.backgroundColor) || border)) {
         add({ kind: 'box', rect, radius, fill: visibleColor(style.backgroundColor) ? style.backgroundColor : null, border, clip: style.clipPath.startsWith('polygon(') ? style.clipPath : null });
@@ -440,6 +446,10 @@ export function createSnapshot(onIconLoad) {
   }
 
   return {
+    // Something in the page changed at `node`: a logo it's in is looked up afresh.
+    forget(node) {
+      for (let at = node; at; at = at.parentNode) known.delete(at);
+    },
     // Paints the page's scrolling layer for device rows y..y+h (page coordinates).
     // It's see-through: the shader lays it over the page color, with the rover
     // underneath when the page puts the rover behind the text. `skip` leaves an

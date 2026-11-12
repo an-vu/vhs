@@ -94,7 +94,7 @@ export function StudioPageScroll(content) {
     if (active && !atBottom() && legal.target === 1 && !footer.contains(document.activeElement)) showFooter(false);
   }, { passive: true });
   addEventListener("resize", configure);
-  // Opening a Legal section, or switching Work project (work.js sends a 'toggle'),
+  // Switching Work project (work.js sends a 'toggle')
   // changes the document bottom; start from normal scrolling.
   content.addEventListener("toggle", () => {
     if (!active) return;

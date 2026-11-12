@@ -114,8 +114,7 @@ function combine(geometries, names) {
 
 // `groupOf(mesh)`, optional: the object a mesh always moves with (About's rover:
 // its nearest animated part, or the model). Meshes with the same one are drawn as
-// one, placed by that object, instead of four draws each (Nov 11: 70 rover parts
-// in 33 moving groups, about 280 draws a frame down to about 132).
+// one, placed by that object, instead of four draws each.
 export function createModelLines(meshes, scene, entrance = null, { followTheme = false, groupOf = null } = {}) {
   const root = new THREE.Group(); scene.add(root); root.visible = false;
   const options = { ...lineDefaults }, resources = new Set(), copies = [];

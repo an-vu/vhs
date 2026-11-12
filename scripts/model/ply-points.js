@@ -58,7 +58,7 @@ export function createTwinkleMaterial(renderer, settings) {
     uniform float uPixelRatio;
     // Drawn at a lower pixel ratio than full sharpness (DOTS_PIXEL_RATIO), a dot too
     // small for one pixel is still drawn one pixel big, and that pixel covers more
-    // of the screen, so the cloud read darker (An, Nov 11). uCoverage is the ratio
+    // of the screen, so the cloud would read darker. uCoverage is the ratio
     // drawn at over full sharpness's (1.5 / 2 on a Retina screen; 1 elsewhere or at
     // full sharpness); a dot's strength makes its coverage what it would be there.
     uniform float uCoverage;
@@ -83,9 +83,8 @@ export function createTwinkleMaterial(renderer, settings) {
     void main() {
       vDissolveColor = aDissolveColor;
       vDissolveStyle = vec2(aDissolveSoftCore, step(0.00001, aDissolve.w));
-      // The bleed: the model dissolving here and there without ever dissolving (An,
-      // Nov 11: "like a radar scan... the feeling not the literally scanning visual",
-      // "like dissolving but not really dissolving"). Each dot keeps its own clock (a
+      // The bleed: the model dissolving here and there without ever dissolving.
+      // Each dot keeps its own clock (a
       // cycle of its own length, from its own start); on some cycles it's left
       // behind, frozen where it was or crawling at part speed, fades away as the model
       // turns on, then twinkles back in where it belongs, a little bigger for a moment.

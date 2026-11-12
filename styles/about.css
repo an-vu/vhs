@@ -108,7 +108,7 @@
   font-weight: 400;
 }
 /* Lists (Services, FAQ, Contact, the Sitemap) mark each item with an en dash, not
-   a dot (An, Nov 10). The en space after it is the gap; it doesn't collapse. */
+   a dot. The en space after it is the gap; it doesn't collapse. */
 .intro-detail ul {
   margin: 0 0 1em;
   padding-left: 1.2em;
@@ -133,7 +133,7 @@
   font-weight: 700;
 }
 /* A link to a part (/services#software, from the Sitemap) lands with its name a
-   line below the header's blur, not in it (An, Nov 10): 1.55em is a line here. */
+   line below the header's blur, not in it: 1.55em is a line here. */
 .page-detail [id] { scroll-margin-top: calc(var(--header-height) + 16px + 1.55em); }
 .page-detail > :first-child { margin-top: 0; }
 .page-detail .section-heading + :is(h3, .related) { margin-top: .9em; }

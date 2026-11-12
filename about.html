@@ -7,7 +7,7 @@
   <script>document.documentElement.classList.add("page-loading"); setTimeout(() => document.documentElement.classList.remove("page-loading"), 3000);</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="preload" href="models/curiosity.glb" as="fetch" crossorigin>
+  <link rel="preload" href="/models/curiosity.glb" as="fetch" crossorigin>
   <title>About the Studio - vHuman</title>
   <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/images/icons/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/icons/favicon-16.png">
@@ -19,9 +19,9 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <meta name="theme-color" content="#F9F8F6">
-  <link rel="stylesheet" href="styles/site.css">
-  <link rel="stylesheet" href="styles/about.css">
-  <link rel="stylesheet" href="styles/model-control.css">
+  <link rel="stylesheet" href="/styles/site.css">
+  <link rel="stylesheet" href="/styles/about.css">
+  <link rel="stylesheet" href="/styles/model-control.css">
   <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
   </script>
@@ -142,19 +142,19 @@
 
   <footer class="site-footer">
     <div class="footer-blur" aria-hidden="true"><span class="blur-layer"></span></div>
-    <!-- About's footer (Nov 10): like every page's, the © line in the left corner
-         and the links in the right, with the studio's founding line centred
-         between them (on phones, in the left corner above the © line). Tapping
-         "Cody, Wyoming" turns it into its coordinates for a moment (about.js). The
-         founding line can show in Google's results; the rest can't, as on every page. -->
+    <!-- About's footer: like every page's, the © line in the left corner and the
+         links in the right, with the studio's founding line centred between them
+         (on phones, in the left corner above the © line). The source says
+         "Wyoming"; about.js puts a town picked at random in its place. "Est. 2022
+         by An Vu" can show in Google's results; the town and the rest can't. -->
     <div class="wrap footer-row is-founded">
-      <div class="footer-facts">Est. 2022 by An Vu · <span class="footer-town" data-coordinates="44.60114° N, 109.52514° W">Cody, Wyoming</span></div>
+      <div class="footer-facts">Est. 2022 by An Vu<span data-nosnippet> · <span class="footer-town">Wyoming</span></span></div>
       <div class="footer-copy" data-nosnippet><span>© 2026 vHuman LLC</span><span class="footer-also">&nbsp;· vHuman Studios</span></div>
       <div class="legal" data-nosnippet><a href="/legal">Legal</a><a href="/sitemap">Sitemap</a></div>
     </div>
   </footer>
-  <script type="module" src="scripts/pages/about.js"></script>
-  <script type="module" src="scripts/model/about-rover.js"></script>
+  <script type="module" src="/scripts/pages/about.js"></script>
+  <script type="module" src="/scripts/model/about-rover.js"></script>
 </body>
 
 </html>

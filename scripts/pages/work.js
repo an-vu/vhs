@@ -1,4 +1,4 @@
-import { StudioMotion } from '../shared/motion.js';
+import { StudioMotion, RISE_WHEN_REACHED } from '../shared/motion.js';
 import { StudioPageScroll } from '../shared/page-scroll.js';
 import { driftLogoStrip, riseLogoStrip } from './logo-strip.js';
 import { copyAddressOnClick } from '../shared/copy-address.js';
@@ -36,10 +36,10 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     for (const item of items) {
       if (!item.spring) continue;
       moving = M.step(item.spring, dt) || moving;
-      // Only when its rise moved (Nov 11: every item was painted each frame).
+      // Only when its rise moved.
       if (item.painted !== item.spring.value) { M.paintEntrance([item.element], [item.spring]); item.painted = item.spring.value; }
       // The row's glass grows in once the row has landed (glass.js, data-glass-wait),
-      // not while it rises: each frame of the rise made it copy the row again (Nov 11).
+      // not while it rises: each frame of the rise would make it copy the row again.
       if (item.element === flow && rowSpot.dataset.glassWait !== undefined && item.spring.delay <= 0
         && Math.abs(1 - item.spring.value) * 44 < 1 && Math.abs(item.spring.velocity) * 44 < 20) delete rowSpot.dataset.glassWait;
     }
@@ -75,12 +75,20 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     }
     // What's on screen already starts now, without waiting for the browser to say
     // so: after a swipe an iPhone can be late, and the text stayed blank till then.
-    // The rest rises as it scrolls in.
+    // The rest is already in place when you scroll to it (or rises as it scrolls
+    // in: RISE_WHEN_REACHED, motion.js).
     const onScreen = new Set(elements.filter(element => {
       const box = element.getBoundingClientRect();
       return box.height > 0 && box.bottom > 0 && box.top < innerHeight;
     }));
     if (onScreen.size) begin(onScreen);
+    if (RISE_WHEN_REACHED) return;
+    for (const item of items) {
+      if (item.spring || !elements.includes(item.element)) continue;
+      item.spring = M.spring(1); item.seen = true;
+      observer.unobserve(item.element);
+    }
+    loop.wake();
   }
   function forget(elements) {
     items = items.filter(item => {
@@ -246,10 +254,11 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
   // another project the same fade and rise follow. On the first load the row is
   // already there, so the text waits for the bubble.
   const ENTER = .5, TEXT_AFTER = .22, FADE_OUT = 200;
-  let pending = -1, glassTime = -Infinity, holdUntil = 0, left = false, swiping = false;
+  // `glassLate`: the text has stopped waiting for the glass (GLASS_WAIT, below).
+  let pending = -1, glassTime = -Infinity, glassLate = false, holdUntil = 0, left = false, swiping = false;
   // The row's glass only grows while the row is fully in view (glass.js), so once
-  // it isn't, the text stops waiting for it: scrolled down in the first moment,
-  // the project's text stayed blank till the row came back (Nov 10).
+  // it isn't, the text stops waiting for it (scrolled down in the first moment,
+  // the project's text would stay blank till the row came back).
   let rowAway = false;
   new IntersectionObserver(([entry]) => { rowAway = entry.intersectionRatio < 1; arrive(); }, { threshold: 1 }).observe(flow);
   // Fades the text on show out (or back in).
@@ -274,13 +283,13 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
     if (open && Math.abs(position - panels.indexOf(open)) > ENTER) { fade(open, true); left = true; }
   }
   function arrive() {
-    if (pending < 0 || Math.abs(position - pending) > ENTER || performance.now() < holdUntil || !(reduced.matches || glassTime >= TEXT_AFTER || rowAway)) return;
+    if (pending < 0 || Math.abs(position - pending) > ENTER || performance.now() < holdUntil || !(reduced.matches || glassTime >= TEXT_AFTER || rowAway || glassLate)) return;
     const panel = panels[pending], opened = panel.hidden;
     pending = -1;
     left = false;
     panels.forEach(other => {
       // Only when it changes: setting it at all counts as a change, which makes
-      // the glass copy the page again (glass-renderer.js; Nov 11).
+      // the glass copy the page again (glass-renderer.js).
       if (other.hidden !== (other !== panel)) other.hidden = other !== panel;
       other.style.removeProperty('opacity');
       other.style.removeProperty('transition');
@@ -504,7 +513,16 @@ import { createRest, REST, REST_TOUCH, REST_LEAVE } from '../shared/rest.js';
       if (detail.done) glassDone();
     });
   });
-  import('../glass/glass.js').then(({ createGlass }) => createGlass())
+  // The text doesn't wait for the glass forever: if the glass's code hasn't come
+  // GLASS_CODE_WAIT ms after this script started (a slow connection), or its bubble
+  // hasn't popped by GLASS_WAIT (something stalled), the text rises without it and
+  // the glass grows in whenever it's ready. A normal load is well inside both.
+  const GLASS_CODE_WAIT = 2000, GLASS_WAIT = 5000;
+  let glassCode = false;
+  const stopWaiting = () => { glassLate = true; arrive(); };
+  setTimeout(() => { if (!glassCode) stopWaiting(); }, GLASS_CODE_WAIT);
+  setTimeout(stopWaiting, GLASS_WAIT);
+  import('../glass/glass.js').then(({ createGlass }) => { glassCode = true; return createGlass(); })
     .catch(error => { console.warn('Glass unavailable:', error); return null; })
     .then(glass => { if (!glass) { hosts.forEach(host => open(host, 1)); glassTime = Infinity; arrive(); glassDone(); } });
 })();
@@ -538,8 +556,8 @@ function restGallery(gallery) {
 }
 
 // Galleries upgrade to vFlow; without it they stay as plain images. On a phone each
-// shows one side card a side instead of two (Nov 10): in the 16 px beside the
-// picture two read as a stack of slivers, and the outer pair ran to the screen's
+// shows one side card a side instead of two: in the 16 px beside the
+// picture two read as a stack of slivers, and the outer pair runs to the screen's
 // edge. The near ones stop about 6 px short of it.
 const phoneGallery = matchMedia('(max-width: 760px)');
 const galleries = [...document.querySelectorAll('.work-content .project-gallery')];

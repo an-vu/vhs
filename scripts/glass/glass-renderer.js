@@ -68,8 +68,7 @@ export function entering(shape, kind, t) {
 }
 
 // `fit`: the canvas covers only the glasses (their box, edge and shadow, on a
-// 128 px grid), not the whole view, so far less is cleared and blended each frame
-// (Nov 11: the site's was 2560 x 1600 on a 2016 MacBook Pro for a 200 px glass).
+// 128 px grid), not the whole view, so far less is cleared and blended each frame.
 // Everything is still worked out in view coordinates; the canvas is placed at its
 // box (left, top) and the shader adds the box's corner (uOrigin).
 export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false } = {}) {
@@ -106,6 +105,9 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
   // The live layer (the rover) is copied at CSS resolution: it redraws every
   // frame, and a full Retina copy would cost several ms each time.
   let fixedBlock = null, fixedDirty = true, liveDirty = true, liveOn = 0, fixedShown = false, wasOver = false;
+  // How many WebGL canvases the page has besides the glass's own (attach() counts
+  // them as they're made). With none, the live layer is never looked for again.
+  let liveCanvases = 0;
   // The logo strip: its box (page device px, its own clip), whether its logos
   // moved, the page under them (`under`, a region of the ring as painted without
   // them), and this frame's logos (null until asked for). `fast` turns off for
@@ -119,7 +121,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
   const FAR = 300;
   // Styles read every frame that hardly ever change (layer order, the blur's
   // reach, the page's background), kept until the page changes for real (dirty),
-  // is resized, or is attached again (Nov 11: five style reads a frame).
+  // is resized, or is attached again.
   let looks = null;
   let lastRects = new WeakMap(), fixedParents = new WeakMap();
   let dpr = 1, dirty = true, doc = null, win = null, observer = null, ignored = [], unhook = () => {};
@@ -127,11 +129,10 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
   let canvasTop = 0, offset = 0;
 
   // Changes that never alter a pixel, so they don't make the glass copy the page
-  // again (Nov 11: Work flipped <html>'s scroll-direction class on every change of
-  // direction, each a whole new copy): accessibility and loading hints, the glass's
-  // own marks, and <html> classes that only steer scroll snapping (work-title.js).
+  // again: accessibility and loading hints, the glass's own marks, and <html>
+  // classes that only steer scroll snapping (work-title.js).
   const QUIET = new Set(['inert', 'tabindex', 'role', 'title', 'loading', 'decoding', 'fetchpriority', 'data-nosnippet', 'data-glass-delay', 'data-glass-wait']);
-  const QUIET_ROOT_CLASSES = new Set(['is-scrolling-down', 'reader-snap']);
+  const QUIET_ROOT_CLASSES = new Set(['reader-snap']);
   // A style change that only moves a lens's growth (--lens-grow, the logos inside
   // a glass opening with it): the copy holds the lens at full size (page-snapshot.js).
   const LENS = /--lens-grow:\s*[^;]*;?\s*/g;
@@ -163,6 +164,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
       const context = getContext.call(this, type, /webgl/.test(type) && this !== canvas ? { ...options, preserveDrawingBuffer: true } : options);
       if (context && /webgl/.test(type) && this !== canvas && !context.__glassWatched) {
         context.__glassWatched = true;
+        liveCanvases++;
         for (const name of ['drawArrays', 'drawElements', 'clear']) {
           const draw = context[name];
           context[name] = function (...args) { liveDirty = true; return draw.apply(this, args); };
@@ -189,6 +191,7 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
     observer?.disconnect();
     observer = new win.MutationObserver(records => {
       for (const record of records) {
+        snapshot.forget(record.target);
         const target = record.target.nodeType === 1 ? record.target : record.target.parentElement;
         if (!target || quiet(record) || ignored.some(element => element === target || element.contains(target)) || skip?.(record)) continue;
         // A logo coming into the strip is laid over like its moves (marquee()).
@@ -295,7 +298,12 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
     refreshChanged(x0, y0, x1, y1);
     if (band.moved) { band.moved = false; marquee(x0, x1); }
     const block = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, offset };
-    if (!fixedBlock || ['x', 'y', 'w', 'h', 'offset'].some(key => fixedBlock[key] !== block[key])) { fixedBlock = block; fixedDirty = liveDirty = true; }
+    // The live layer is only looked for again where there can be one: on Work and
+    // Services that meant a walk over the whole page every 64 px of scrolling.
+    if (!fixedBlock || ['x', 'y', 'w', 'h', 'offset'].some(key => fixedBlock[key] !== block[key])) {
+      fixedBlock = block; fixedDirty = true;
+      if (liveOn || liveCanvases) liveDirty = true;
+    }
     // The fixed layer (the header and footer) is copied where it sits in the view,
     // only while the copy reaches them: elsewhere it would be empty, and copying it
     // again each time the glass scrolled 64 px made scrolling stutter.
@@ -596,7 +604,10 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
     }
     const ops = logos();
     if (!ops) { band.fast = false; dirty = true; return; }
-    const pixels = u.data.slice();
+    // One buffer kept for this, not a new one each frame (half a megabyte a frame).
+    if (band.pixels?.length !== u.data.length) band.pixels = new Uint8ClampedArray(u.data.length);
+    const pixels = band.pixels;
+    pixels.set(u.data);
     snapshot.overlay(pixels, u, ops, dpr, box);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, ringTexture.texture);
@@ -610,8 +621,10 @@ export function createGlassRenderer(canvas, { extra = {}, uniforms, fit = false 
   return {
     attach, resize, draw, ready,
     // Whether the next frame has anything new to copy (glass.js draws less often
-    // when it hasn't and nothing moves).
-    busy: () => dirty || changed.size > 0 || animating.size > 0 || stale.length > 0 || band.moved || (liveDirty && liveOn > 0),
+    // when it hasn't and nothing moves). Rows that changed outside the glass's
+    // view (stale) don't count: they're repainted once a scroll brings them in, and
+    // a scroll makes a new frame anyway.
+    busy: () => dirty || changed.size > 0 || animating.size > 0 || band.moved || (liveDirty && liveOn > 0),
     failed: () => failed,
     // Something changed that the page itself doesn't report (its colors, say): copy it all again.
     invalidate() { dirty = true; },

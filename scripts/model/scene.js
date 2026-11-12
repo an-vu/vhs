@@ -223,10 +223,18 @@ export async function createModelScene(container, model, onRevealProgress = () =
     },
     state, rotateView, element: renderer.domElement,
     setTextMask(canvas, enabled) {
+      // A texture keeps the size of its first upload, so a mask that has changed
+      // size (the window resized, a phone turned) gets a new one; otherwise the
+      // gap around the words is drawn in the wrong place.
+      if (textTexture && (textTexture.userData.width !== canvas.width || textTexture.userData.height !== canvas.height)) {
+        textTexture.dispose();
+        textTexture = null;
+      }
       if (!textTexture) {
         textTexture = new THREE.CanvasTexture(canvas);
         textTexture.generateMipmaps = false;
         textTexture.minFilter = THREE.LinearFilter;
+        textTexture.userData = { width: canvas.width, height: canvas.height };
         material.uniforms.uTextMask.value = textTexture;
       }
       textTexture.needsUpdate = true;

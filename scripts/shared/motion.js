@@ -8,6 +8,12 @@
 // uses ease and swap (copy-address.js), and Home's dots follow it.
 export const FADE = { ease: 'cubic-bezier(.4, 0, .2, 1)', in: 700, out: 900, swap: 600 };
 
+// Text further down a page, out of sight as the page (or a Work project) opens:
+// false, it's already in place when you scroll to it, and only what's on screen
+// at the start rises in; true, it rises as you reach it. The text pages
+// (intro-text.js) and Work's projects (work.js) follow it.
+export const RISE_WHEN_REACHED = false;
+
 export const StudioMotion = (() => {
   const clamp = value => Math.max(0, Math.min(1, value));
   const spring = (value, target = value, delay = 0) => ({ value, target, velocity: 0, delay });

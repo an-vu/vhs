@@ -28,23 +28,19 @@ export const REVEAL_ROTATION_START = 0.00135;
 export const IDLE_ROTATION = 0.001;
 
 // --------------------------------------------------
-// Sharpness (An, Nov 11: "make it switch on off so later if i want the sharpness back")
+// Sharpness
 // --------------------------------------------------
 
 // How finely Home's dots are drawn on a sharp (Retina) screen: 2 = full Retina,
 // the sharpest and heaviest; 1.5 = a little softer and about 45% fewer pixels to
-// draw each frame (the default since Nov 11). Screens below it draw at their own.
+// draw each frame. Screens below it draw at their own.
 export const DOTS_PIXEL_RATIO = 1.5;
 
 // --------------------------------------------------
-// Bleed (An, Nov 11: "make the dots bleed a bit... it doesn't look like a scan")
+// Bleed
 // --------------------------------------------------
 
-// Dissolving without dissolving (Nov 11; An: "like a radar scan everytime it scan the
-// dot some will show delay go slower", "the slower one delayed one eventually fade
-// away disappear", "the feeling not the literally scanning visual", "like
-// dissolving but not really dissolving", and no "normal then bleed" rhythm). Each
-// dot keeps its own clock, a cycle between the two BLEED_CYCLE lengths from its own
+// Dissolving without dissolving, with no rhythm to it. Each dot keeps its own clock, a cycle between the two BLEED_CYCLE lengths from its own
 // start; on BLEED_SHARE of its cycles it's left behind, frozen where it was or
 // crawling at part speed, and fades away over its own time between the two
 // BLEED_RECOVER values; then it twinkles back in where it belongs (0.5 s, a little

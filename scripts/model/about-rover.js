@@ -100,7 +100,7 @@ function draw(now) {
   if (held && !(spectral && !reduced.matches && revealedAt === null)) { last = null; return; }
   if (last === null) frameClock.reset();
   // Playing on its own (the slow parts moving), it draws 30 times a second, half the
-  // work; 60 while it's revealed, dragged, zoomed, opened or closed (Nov 11).
+  // work; 60 while it's revealed, dragged, zoomed, opened or closed.
   const onItsOwn = playbackStarted && !roverView.expanded && !roverView.transitioning && !state.dragging
     && Math.abs(state.velocityX) + Math.abs(state.velocityY) <= .0001 && Math.abs(zoom - state.targetCameraZ) <= .001;
   const dt = frameClock.tick(now, reduced.matches, onItsOwn ? 30 : 60);

@@ -188,9 +188,7 @@ export function driftLogoStrip(section) {
   run();
 }
 
-// The strip comes in at the end of the text (An, Nov 11: "bottom dock appear
-// before the text scroll finished and the bubble glass start appear right when
-// the bottom text finished"): once it's on screen, its label and then its logos
+// The strip comes in at the end of the text: once it's on screen, its label and then its logos
 // rise in like the text's next two lines (the site's entrance spring, .09 s apart,
 // after `start()`, the seconds until the last line on screen starts rising; null
 // while one on screen hasn't started yet), so they overlap the last lines' rise.
