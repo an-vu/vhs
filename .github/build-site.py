@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "_site"
 DOMAIN = (ROOT / "CNAME").read_text().strip()  # Full addresses on this domain are local files too.
 PAGES = {"index.html", "about.html", "work.html", "services.html", "contact.html", "faq.html", "legal.html", "sitemap.html", "404.html"}
-SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt", "agents.md"}
+SEEDS = PAGES | {"robots.txt", "sitemap.xml", "site.webmanifest", "CNAME", "llms.txt", "agents.md",
+                 "BingSiteAuth.xml"}
 EXTENSIONS = {".html", ".css", ".js", ".json", ".webmanifest", ".txt", ".md", ".xml",
               ".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif",
               ".glb", ".gltf", ".bin", ".ply", ".woff", ".woff2", ".mp4", ".webm"}
